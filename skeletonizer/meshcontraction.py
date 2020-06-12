@@ -29,6 +29,8 @@ from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
 
 logger = logging.getLogger('skeletonizer')
 
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler())
 
 def contract_mesh(mesh, iterations=10, SL=10, WC=2):
     """Contract mesh.
