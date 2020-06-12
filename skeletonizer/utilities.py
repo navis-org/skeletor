@@ -132,7 +132,7 @@ def getMeshVPos(mesh, extra_points=[]):
 
 
 def averageFaceArea(mesh):
-    return 1.0 / (10.0 * np.sqrt(np.mean(mesh.area_faces)))
+    return np.mean(mesh.area_faces)
 
 
 def getOneRingAreas(mesh):

@@ -61,7 +61,8 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2):
     m = _make_trimesh(mesh)
 
     n = len(m.vertices)
-    initialFaceWeight = averageFaceArea(m)
+    #initialFaceWeight = (10**-3) * np.sqrt(averageFaceArea(m))
+    initialFaceWeight = 1.0 / (10.0 * np.sqrt(averageFaceArea(m)))
     originalOneRing = getOneRingAreas(m)
     zeros = np.zeros((n, 3))
 
