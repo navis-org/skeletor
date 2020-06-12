@@ -16,4 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-__version__ = "0.1.0"
+__version__ = "0.1.0"from .meshcontraction import contract_mesh
+
+from .meshcontraction import contract_mesh
