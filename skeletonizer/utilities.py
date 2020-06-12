@@ -136,15 +136,11 @@ def averageFaceArea(mesh):
 
 
 def getOneRingAreas(mesh):
-    # Collect areas of faces connected to each vertex
-    by_vert = OrderedDict()
-    by_vert.update({ix: [] for ix in range(len(mesh.vertices))})
+    # Collect areas of faces adjacent to each vertex
+    vertex_areas = mesh.area_faces[mesh.vertex_faces.flatten()].reshape(mesh.vertex_faces.shape)
+    vertex_areas[np.where(mesh.vertex_faces == -1)] = 0
 
-    for f, a in zip(mesh.faces, mesh.area_faces):
-        for v in f:
-            by_vert[v].append(a)
-
-    return np.array([np.min(np.sqrt(np.sum(np.square(v)))) for v in by_vert.values()])
+    return np.sum(vertex_areas, axis=1)
 
 
 def buildKDTree(mesh):
