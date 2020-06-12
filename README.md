@@ -10,6 +10,9 @@ Code modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
 addon created by #0K Srinivasan Ramachandran and published under GPL3.
 
+## Important
+**Currently only the mesh contraction has been implemented!** (see example below)
+
 ## Install
 
 `pip3 install git+git://github.com/schlegelp/skeletonizer@master`
@@ -23,9 +26,19 @@ Automatically installed with `pip`:
 ### Usage
 
 ``` Python
-import skeletonizer
+# Requires cloudvolume: pip install cloud-volume
+from cloudvolume import CloudVolume
+# Load a neuron from the Janelia Research Campus hemibrain connectome
+# (see references)
+vol = CloudVolume('precomputed://gs://neuroglancer-janelia-flyem-hemibrain/segmentation_52a13', fill_missing=True)
+m = vol.mesh.get(5812983825, lod=2)[5812983825]
 
+import skeletonizer as sk
+# Contract the mesh
+cont = sk.contract_mesh(m, iterations=3)
 ```
+
+![full-neuron](https://user-images.githubusercontent.com/7161148/84507953-89db4f80-acb9-11ea-8da0-b2e598a2bdb0.png "full") ![zoom1](https://user-images.githubusercontent.com/7161148/84507964-8c3da980-acb9-11ea-941a-c95a2328eabd.png "zoom1") ![zoom2](https://user-images.githubusercontent.com/7161148/84507966-8cd64000-acb9-11ea-98bd-87e140f6584e.png "zoom2")
 
 ## Notes
 - meshes need to be triangular
@@ -34,3 +47,5 @@ import skeletonizer
 ## TO-DO:
 - mesh contraction algorithm (done)
 - skeletonization of contracted mesh
+
+# References
