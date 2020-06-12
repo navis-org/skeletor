@@ -38,6 +38,8 @@ import skeletonizer as sk
 cont = sk.contract_mesh(m, iterations=3)
 ```
 
+Full mesh in white, contract meshes in red.
+
 ![full-neuron](https://user-images.githubusercontent.com/7161148/84507953-89db4f80-acb9-11ea-8da0-b2e598a2bdb0.png "full") ![zoom1](https://user-images.githubusercontent.com/7161148/84507964-8c3da980-acb9-11ea-941a-c95a2328eabd.png "zoom1") ![zoom2](https://user-images.githubusercontent.com/7161148/84507966-8cd64000-acb9-11ea-98bd-87e140f6584e.png "zoom2")
 
 ## Notes
