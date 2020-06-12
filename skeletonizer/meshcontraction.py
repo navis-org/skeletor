@@ -133,5 +133,5 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07):
         timetracker.append(full_end - full_start)
         full_start = time.time()
 
-    logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: ', np.sum(timetracker), ' FOR VERTEX COUNT ::: #', n)
+    logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
     return dm
