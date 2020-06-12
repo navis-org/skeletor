@@ -32,7 +32,8 @@ logger = logging.getLogger('skeletonizer')
 if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
-def contract_mesh(mesh, iterations=10, SL=10, WC=2):
+
+def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07):
     """Contract mesh.
 
     Parameters
@@ -50,6 +51,11 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2):
                     for each iteration.
     WC :            float, optional
                     Weight factor that affects the attraction constraint.
+    lsqr_tol :      float, optional
+                    Sets the stopping tolerances for finding the least-squares
+                    solution (`atol` and `btol` in `scipy.sparse.linalg.lsqr`).
+                    Increasing the tolerance will give dramatic speed-ups but
+                    may lead to funny contractions.
 
     Returns
     -------
@@ -98,7 +104,7 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2):
         cpts = np.zeros((n, 3))
 
         for j in range(3):
-            cpts[:, j] = lsqr(A, b[:, j])[0]
+            cpts[:, j] = lsqr(A, b[:, j], atol=lsqr_tol, btol=lsqr_tol)[0]
 
         dm.vertices = cpts
 
