@@ -16,28 +16,33 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+import logging
 import time
 
 import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import lsqr
+from tqdm.auto import trange
 
-from .utilities import meanCurvatureLaplaceWeights
-from .utilities import getMeshVPos
-from .utilities import averageFaceArea, getOneRingAreas
-from .utilities import _make_trimesh
+from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
+                        averageFaceArea, getOneRingAreas, _make_trimesh)
+
+logger = logging.getLogger('skeletonizer')
 
 
-def meshContraction(m, iterations=10, SL=10, WC=2):
-    """ Given a mesh, create a duplicate and return the contracted
-    representation of the given mesh.
+def contract_mesh(mesh, iterations=10, SL=10, WC=2):
+    """Contract mesh.
 
     Parameters
-    -----------
-    m :             mesh obj | dict
-                    The mesh to be contracted
+    ----------
+    mesh :          mesh obj | dict
+                    The mesh to be contracted. Can any object (e.g.
+                    a trimesh.Trimesh) that has ``.vertices`` and ``.faces``
+                    properties or a tuple ``(vertices, faces)`` or a dictionary
+                    ``{'vertices': vertices, 'faces': faces}``.
+                    Vertices and faces must be (N, 3) numpy arrays.
     iterations :    int, optional
-                    Total number of iterations to apply with:
+                    Total rounds of contractions.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied
                     for each iteration.
@@ -48,9 +53,10 @@ def meshContraction(m, iterations=10, SL=10, WC=2):
     -------
     trimesh.Trimesh
                     Contracted copy of original mesh.
-    """
 
-    m = _make_trimesh(m)
+    """
+    # Force into trimesh
+    m = _make_trimesh(mesh)
 
     n = len(m.vertices)
     initialFaceWeight = averageFaceArea(m)
@@ -81,7 +87,7 @@ def meshContraction(m, iterations=10, SL=10, WC=2):
     goodvertices = [[]]
     timetracker = []
 
-    for i in range(iterations):
+    for i in trange(iterations, desc='Contracting'):
         start = time.time()
         vpos = getMeshVPos(dm)
         A = sp.sparse.vstack([L.dot(WL), WH])
@@ -94,22 +100,22 @@ def meshContraction(m, iterations=10, SL=10, WC=2):
         dm.vertices = cpts
 
         end = time.time()
-        print('TOTAL TIME FOR SOLVING LEAST SQUARES: {:.3f}s'.format(end - start))
+        logger.debug('TOTAL TIME FOR SOLVING LEAST SQUARES: {:.3f}s'.format(end - start))
         newringareas = getOneRingAreas(dm)
         changeinarea = np.power(newringareas, -0.5)
         area_ratios.append(np.sum(newringareas) / originalFaceAreaSum)
 
         if(area_ratios[-1] > area_ratios[-2]):
-            print('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
-            print('ITERATION TERMINATED AT: {}'.format(i))
-            print('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
+            logger.debug('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
+            logger.debug('ITERATION TERMINATED AT: {}'.format(i))
+            logger.debug('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
 
             cpts = goodvertices[0]
             dm.vertices = cpts
             break
 
         goodvertices[0] = cpts
-        print('RATIO OF CHANGE IN FACE AREA: {:.4f}'.format(area_ratios[-1]))
+        logger.debug('RATIO OF CHANGE IN FACE AREA: {:.4f}'.format(area_ratios[-1]))
         WL = sp.sparse.dia_matrix(WL.multiply(SL))
         WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
         L = -meanCurvatureLaplaceWeights(dm, normalized=True)
@@ -118,5 +124,5 @@ def meshContraction(m, iterations=10, SL=10, WC=2):
         timetracker.append(full_end - full_start)
         full_start = time.time()
 
-    print('TOTAL TIME FOR MESH CONTRACTION ::: ', np.sum(timetracker), ' FOR VERTEX COUNT ::: #', n)
+    logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: ', np.sum(timetracker), ' FOR VERTEX COUNT ::: #', n)
     return dm
