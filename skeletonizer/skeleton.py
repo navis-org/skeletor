@@ -54,13 +54,6 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     """
     assert isinstance(mesh, tm.Trimesh)
 
-    # Make sure face winding is consistent
-    mesh.fix_normals()
-
-    # Initialise empty matrices:
-    # Matrix of k matrices
-    all_K = np.zeros((3, 4, mesh.edges_unique.shape[0]))
-
     # Shorthand faces and edges
     # We convert to arrays to (a) make a copy and (b) remove potential overhead
     # from these originally being trimesh TrackedArrays
@@ -96,33 +89,40 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     a = np.fabs(a)
     b = a * edge_co0
 
-    # Iterate over each edge
-    for k, (a, b) in enumerate(zip(a, b)):
-        # Store matrix for this edge
-        all_K[:, :, k] = np.array([[0, 0 - a[2], a[1], 0 - b[0]],
-                                   [a[2], 0, 0 - a[0], 0 - b[1]],
-                                   [0 - a[1], a[0], 0, 0 - b[2]]])
+    # Bunch of zeros
+    zero = np.zeros(a.shape[0])
+
+    # Generate matrix K
+    K = [[zero,    -a[:, 2], a[:, 1],    -b[:, 0]],
+         [a[:, 2],  zero,    -a[:, 0],   -b[:, 1]],
+         [-a[:, 1], a[:, 0], zero,       -b[:, 2]]]
+    K = np.array(K)
 
     # Q for vertex i is then the sum of the products of (kT,k) for ALL edges
     # connected to vertex i:
+    # Initialize matrix of correct shape
     Q_array = np.zeros((4, 4, verts.shape[0]))
-    for v in range(verts.shape[0]):  # loop over vertices
-        # Get all edges connected to this vertex
-        # (get the index of that edge in the list 'edges'
-        # Note that this is regardless of directionality
+
+    # Generate (kT, K)
+    kT = np.transpose(K, axes=(1, 0, 2))
+
+    # To get the sum of the products in the correct format we have to
+    # do some annoying transposes to get to (4, 4, len(edges))
+    K_dot = np.matmul(K.T, kT.T).T
+
+    # Iterate over all vertices
+    for v in range(len(verts)):
+        # Find edges that contain this vertex
         cond1 = edges[:, 0] == v
         cond2 = edges[:, 1] == v
-        v_edges = cond1 | cond2
-        index = np.where(v_edges)[0]
+        # Note that this does not take directionality of edges into account
+        # Not sure if that's intended?
 
-        # Iterate over all edges
-        # Note that there appeared to be an error in Nik's code at this point
-        # where Q would always be re-initialized for each edge which led
-        # to Q ultimately only representing the last edge
-        Q = np.zeros((4, 4, len(index)))
-        for i, ix in enumerate(index):
-            matrix = all_K[:, :, ix]
-            Q[:, :, i] = np.dot(matrix.T, matrix)  # product for this edge
+        # Get indices of these edges
+        indices = np.where(cond1 | cond2)[0]
+
+        # Get the products for all edges adjacent to mesh
+        Q = K_dot[:, :, indices]
         # Sum over all edges
         Q = Q.sum(axis=2)
         # Add to Q array
@@ -169,6 +169,7 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     adj = sparse.coo_matrix((edge_lengths,
                              (edges[:, 0], edges[:, 1])),
                             shape=(verts.shape[0], verts.shape[0]))
+    adj = adj + adj.T
 
     # Get the lengths associated with each vertex
     # Note that edges are directional here (which I believe is intended?)
