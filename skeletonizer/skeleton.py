@@ -17,9 +17,12 @@
 #    along with this program.
 
 
+import networkx as nx
 import numpy as np
+import pandas as pd
 import trimesh as tm
 import scipy.sparse as sparse
+import scipy.spatial
 
 from tqdm.auto import tqdm
 
@@ -270,13 +273,148 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     return kept
 
 
-def to_graph(edges, vertices):
+def tree_from_mesh(keep, mesh, limit=np.inf):
+    """Generate hierarchical tree by subsetting mesh to given vertices.
+
+    Will (re-)connect vertices based on geodesic distance in original mesh
+    using a minimum spanning tree.
+
+    Parameters
+    ----------
+    keep :      vertex indices
+                Vertices to keep for the tree.
+    mesh :      trimesh.Trimesh
+                Mesh to subset.
+    limit :     float
+                Use this to limit the distance for shortest path search
+                (``scipy.sparse.csgraph.dijkstra``). Can greatly speed up this
+                function at the risk of producing disconnected components.
+
+    Returns
+    -------
+    edges :     np.ndarray
+                List of `node` -> `parent` edges. Note that these edges are
+                already hiearchical, i.e. each node has at exactly 1 parent
+                except for the root node(s) which has parent ``-1``.
+
+    """
+    # Make sure vertices to keep are unique
+    keep = np.unique(keep)
+
+    # Get some shorthands
+    verts = mesh.vertices
+    edges = mesh.edges_unique
+    edge_lengths = mesh.edges_unique_length
+
+    # Produce adjacency matrix from edges and edge lengths
+    adj = sparse.coo_matrix((edge_lengths,
+                             (edges[:, 0], edges[:, 1])),
+                            shape=(verts.shape[0], verts.shape[0]))
+
+    # Get geodesic distances between vertices
+    dist_matrix = sparse.csgraph.dijkstra(csgraph=adj, directed=False,
+                                          indices=keep, limit=limit)
+
+    # Subset along second axis
+    dist_matrix = dist_matrix[:, keep]
+
+    # Get minimum spanning tree
+    mst = sparse.csgraph.minimum_spanning_tree(dist_matrix, overwrite=True)
+
+    # Turn into COO matrix
+    coo = mst.tocoo()
+
+    # Extract edge list
+    edges = np.array([keep[coo.row], keep[coo.col]]).T
+
+    # Last but not least we have to run a depth first search to turn this
+    # into a hierarchical tree, i.e. make edges are orientated in a way that
+    # each node only has a single parent (turn a<-b->c into a->b->c)
+
+    # Generate and populate undirected graph
+    G = nx.Graph()
+    G.add_edges_from(edges)
+
+    # Generate list of parents
+    edges = []
+    # Go over all connected components
+    for c in nx.connected_components(G):
+        # Get subgraph of this connected component
+        SG = nx.subgraph(G, c)
+
+        # Use first node as root
+        r = list(SG.nodes)[0]
+
+        # List of parents: {node: [parent], root: []}
+        this_lop = nx.predecessor(SG, r)
+
+        # Note that we assign -1 as root's parent
+        edges += [(k, v[0] if v else -1) for k, v in this_lop.items()]
+
+    return np.array(edges).astype(int)
+
+
+def edges_to_swc(edges, mesh, reindex=False):
+    """Generate SWC table.
+
+    Parameters
+    ----------
+    edges :     numpy.ndarray
+                (N, 2) Hierarchical edges for SWC - e.g. from ``mesh_to_tree``.
+                First and second column are expected to represent node->parent
+                relationship.
+    mesh :      trimesh.Trimesh
+                Original mesh. We will extract coordinates and radii from this.
+    reindex :   bool
+                If True, will re-number node IDs, if False will keep original
+                vertex IDs.
+
+    Returns
+    -------
+    SWC table : pandas.DataFrame
+
+    """
+    # Generate node table
+    swc = pd.DataFrame(edges, columns=['node_id', 'parent_id'])
+
+    # Map x/y/z coordinates
+    swc['x'] = mesh.vertices[edges[:, 0], 0]
+    swc['y'] = mesh.vertices[edges[:, 0], 1]
+    swc['z'] = mesh.vertices[edges[:, 0], 2]
+
+    # Placeholder radius
+    swc['radius'] = 1
+
+    if reindex:
+        # Sort such that the parent is always before the child
+        swc.sort_values('parent_id', ascending=True, inplace=True)
+
+        # Reset index
+        swc.reset_index(drop=True, inplace=True)
+
+        # Generate mapping
+        new_ids = dict(zip(swc.node_id.values, swc.index.values))
+
+        # -1 (root's parent) stays -1
+        new_ids[-1] = -1
+
+        swc['node_id'] = swc.node_id.map(new_ids)
+        swc['parent_id'] = swc.parent_id.map(new_ids)
+
+    return swc
+
+
+def edges_to_graph(edges, vertices, directed=False):
     """Create networkx Graph from edge list."""
     edges = edges[edges[:, 0] != edges[:, 1]]
 
     import networkx as nx
 
-    G = nx.Graph()
+    if directed:
+        G = nx.DiGraph()
+    else:
+        G = nx.Graph()
+
     nodes = np.unique(edges.flatten())
     coords = vertices[nodes]
     G.add_nodes_from([(e, {'x': co[0], 'y': co[1], 'z': co[2]}) for e, co in zip(nodes, coords)])
@@ -285,99 +423,55 @@ def to_graph(edges, vertices):
     return G
 
 
-def get_sampling_cost_nik(verts, edges, faces, edge_lengths):
-    """Get sampling costs like in Nik's implemention"""
-    # Sum lengths of all edges associated with a given vertex
-    # This is easiest by generating a sparse matrix from the edges
-    # and then summing by row
-    adj = sparse.coo_matrix((edge_lengths,
-                             (edges[:, 0], edges[:, 1])),
-                            shape=(verts.shape[0], verts.shape[0]))
+def add_radius(swc, mesh, method='knn', **kwargs):
+    """Add/update radius to SWC table.
 
-    # Get the lengths associated with each vertex
-    # Note that edges are directional here (which I believe is intended?)
-    # i.e. i->k might be 100 but k->i might be 0 (= not set)
-    # If not, we could symmetrize the sparse matrix above
-    verts_lengths = adj.sum(axis=1)
+    Parameters
+    ----------
+    swc :       pandas.DataFrame
+                SWC table.
+    mesh :      trimesh.Trimesh
+                Mesh to use for radius generation.
+    method :    "knn" | "ray" (TODO)
+                Whether and how to add radius information to each node::
 
-    # We need to flatten this (something funny with summing sparse matrices)
-    verts_lengths = np.array(verts_lengths).flatten()
+                    - "knn" uses k-nearest-neighbors to get radii: fast but potential for being very wrong
+                    - "ray" uses ray-casting to get radii: slow but "more right"
+    **kwargs
+                Keyword arguments are passed to the respective method.
 
-    # Initialise some things
-    # matrix of k matricies
-    all_K = np.zeros((3, 4, len(edges)))
-    # matrix k for each edge
-    matrix_kij = np.zeros((3, 4)) # rows/columns
+    Returns
+    -------
+    Nothing
+                Just adds/updates 'radius' column.
 
-    for k, e in enumerate(edges):
-        current_edge = edges[k]
-        i = verts[e[0]]
-        j = verts[e[1]]
-        a = (j - i) / edge_lengths[k]
-        b = a * i
+    """
+    if method == 'knn':
+        swc['radius'] = _get_radius_kkn(swc[['x', 'y', 'z']].values,
+                                        mesh=mesh, **kwargs)
+    else:
+        raise ValueError(f'Unknown method "{method}"')
 
-        # This can be one line
-        matrix_kij = np.array([[0       , 0 - a[2], a[1]    , 0 - b[0]],
-                               [a[2]    , 0       , 0 - a[0], 0 - b[1]],
-                               [0 - a[1], a[0]    , 0       , 0 - b[2]]])
-        all_K[:, :, k] = matrix_kij
 
-    as_array = np.zeros((4, 4, len(verts)))
-    for q in range(len(verts)):  # loop over verices
-        # get all edges connected to a vertex (get the index of that edge in the list 'edges'
-        index = []
-        for i, e in enumerate(edges):
-            if (e[0] == q or e[1] == q):
-                index.append(i)
-        # sum
-        Q = np.zeros((4, 4, len(index)))
-        for i in range(len(index)):
-            matrix = all_K[:, :, i]
-            Q[:, :, i] = np.dot(matrix.T, matrix)  # product for this edge
-        Q = Q.sum(axis=2)
-        as_array[:, :, q] = Q
-    all_Q = {}
-    for index in range(len(verts)):
-        all_Q[index] = as_array[:, :, index]
+def _get_radius_kkn(coords, mesh, n=5):
+    """Produce radii using k-nearest-neighbors.
 
-    Shape_cost = []
-    Sample_cost = []
+    Parameters
+    ----------
+    coords :    numpy.ndarray
+    mesh :      trimesh.Trimesh
+    n :         int
+                Radius will be the mean over n nearest-neighbors.
+    """
 
-    w = 1
+    # Generate kdTree
+    tree = scipy.spatial.cKDTree(mesh.vertices)
 
-    faces = [set(f) for f in faces]
+    # Query for coordinates
+    dist, ix = tree.query(coords, k=5)
 
-    # These determine if an edge cannot be collapsed - either becuase it
-    # And determine the shape and sample cost of collapsing each edge
-    for i, e in enumerate(edges):
-        # set loops to cost inf
-        if e[0] == e[1]:
-            # set the cost of collapsing loops to infinity
-            Shape_cost.append(np.inf)
-            Sample_cost.append(np.inf)
-            continue
-        #
-        test = 0
-        for f in faces:
-            if set(e) <= f:
-                test = 1
-                break
-        if test == 0:
-            Shape_cost.append(np.inf)
-            Sample_cost.append(np.inf)
-            continue
-
-        # Work out the shape cost of collapsing each node (eq. 7)
-        p = np.append(verts[e[1]], w)
-        F = sum((np.dot(p.T, all_Q[e[0]], p)) + (np.dot(p.T, all_Q[e[1]], p)))
-        Shape_cost.append(F)
-        # get the length of edge i->j
-        len_ij = edge_lengths[i]
-        # Get the sum of lengths of all edges going from i to k, not including i j.
-        len_ik = verts_lengths[e[0]]
-        Sample_cost.append(len_ij * (len_ik - len_ij))
-
-    return Sample_cost, Shape_cost
+    # We will use the mean but note that outliers might really mess this up
+    return np.mean(dist, axis=1)
 
 
 def edge_in_face(edges, faces):
