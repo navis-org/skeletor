@@ -264,8 +264,8 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     # We need one final round of self-loop removal
     edges = edges[edges[:, 0] != edges[:, 1]]
 
-    # Return unique edges
-    kept = np.unique(edges, axis=0)
+    # Return kept vertices
+    kept = np.unique(edges.flatten(), axis=0)
 
     return kept
 
