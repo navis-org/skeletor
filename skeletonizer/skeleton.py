@@ -186,6 +186,11 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     # Calculate sampling cost
     sample_cost = edge_lengths * (ik_edge - edge_lengths)
 
+    # Find edges that are not part of any face
+    has_face = edge_in_face(edges, faces)
+    sample_cost[~has_face] = np.inf
+    shape_cost[~has_face] = np.inf
+
     # Now start collapsing edges one at a time
     face_count = faces.shape[0]  # keep track of face counts for progress bar
     with tqdm(desc='Collapsing faces', total=face_count, disable=progress is False) as pbar:
@@ -194,12 +199,12 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
             # Total Cost - weighted sum of shape and sample cost, equation 8 in paper
             F_T = shape_cost * shape_weight + sample_cost * sample_weight
 
-            # Get the edge that we want to collapsed
+            # Get the edge that we want to collapse
             collapse_ix = np.argmin(F_T)
             collapse_edge = edges[collapse_ix]
             u, v = collapse_edge
 
-            # Replace occurrences of first node u with v
+            # Replace occurrences of first node u with second node v
             edges[np.where(edges == u)] = v
 
             # Add shape cost of u to shape costs of v
@@ -207,7 +212,7 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
 
             # Determine which edges require update of costs:
             # In theory we only need to update costs for for edges that are
-            # associated with vertex v
+            # associated with vertices v and u (now also v)
             has_v = (np.sum(edges == v, axis=1) >= 1) & (F_T < np.inf)
 
             # Uncomment to temporarily force update for all edges
@@ -244,9 +249,9 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, progress=True):
             faces = np.unique(faces, axis=0)
 
             # Find edge that are not part of any face anymore
-            # This includes self-loops and ...
-            # ... therefore also the collapsed edge as (u, v) -> (v, v)
-            has_face = edge_in_face(edges, faces)
+            # This also removes self-loops and ...
+            # ... therefore also the collapsed edge as (u, v) is now (v, v)
+            has_face[has_v] = edge_in_face(edges[has_v], faces)
 
             # Set sampling cost of edges without faces to infinite
             shape_cost[~has_face] = np.inf
@@ -381,22 +386,25 @@ def edge_in_face(edges, faces):
     edges_in_faces = np.concatenate((faces[:,  [0, 1]],
                                      faces[:,  [1, 2]],
                                      faces[:,  [2, 0]]))
-    # Add inverted edges so that u->v is as valid as v->u
-    edges_in_faces = np.concatenate((edges_in_faces, edges_in_faces[:, [1, 0]]),
-                                    axis=0)
+    # Since we don't care about the orientation of edges, we just make it so
+    # that the lower index is always in the first column
+    edges_in_faces = np.sort(edges_in_faces, axis=1)
+    edges = np.sort(edges, axis=1)
 
     # Make unique edges (low ms)
-    edges_in_faces = np.unique(edges_in_faces, axis=0)
+    # - we don't actually need this and it is costly
+    # edges_in_faces = np.unique(edges_in_faces, axis=0)
 
-    # Turn face edges into structured array (us)
+    # Turn face edges into structured array (few us)
     sorted = np.ascontiguousarray(edges_in_faces).view([('', edges_in_faces.dtype)] * edges_in_faces.shape[-1]).ravel()
-    # Sort (low ms)
-    sorted.sort()
+    # Sort (low ms) -> this is the most costly step at the moment
+    sorted.sort(kind='stable')
 
-    # Turn edges into continuous array (us)
+    # Turn edges into continuous array (few us)
     comp = np.ascontiguousarray(edges).view(sorted.dtype)
 
-    # Align edges and arrays (tens of ms)
+    # This asks where elements of "comp" should be inserted which basically
+    # tries to align edges and edges_in_faces (tens of ms)
     ind = sorted.searchsorted(comp)
 
     # If edges are "out of bounds" of the sorted array of face edges the will
