@@ -33,7 +33,7 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07):
+def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
     """Contract mesh.
 
     Parameters
@@ -96,7 +96,7 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07):
     goodvertices = [[]]
     timetracker = []
 
-    for i in trange(iterations, desc='Contracting'):
+    for i in trange(iterations, desc='Contracting', disable=progress is False):
         start = time.time()
         vpos = getMeshVPos(dm)
         A = sp.sparse.vstack([L.dot(WL), WH])
