@@ -22,7 +22,7 @@ import time
 import trimesh as tm
 
 from .meshcontraction import contract_mesh
-from .skeleton import skeletonize, tree_from_mesh, edges_to_swc, add_radius
+from .skeleton import skeletonize, tree_from_mesh, make_swc, add_radius
 
 logger = logging.getLogger('skeletonizer')
 
@@ -127,8 +127,8 @@ class Skeletonizer:
         Parameters
         ----------
         **kwargs
-                 Keyword arguments superseed parametres set during
-                 initialization and are passed to meshcontraction.contract_mesh().
+                 Keyword arguments superseed parameters set during
+                 initialization and are passed to ``meshcontraction.contract_mesh()``.
 
         """
         params = dict(iterations=self.cnt_iterations,
@@ -150,8 +150,8 @@ class Skeletonizer:
         use_contracted :    bool
                             If False will use original mesh.
         **kwargs
-                            Keyword arguments superseed parametres set during
-                            initialization and are passed to skeleton.skeletonize().
+                            Keyword arguments superseed parameters set during
+                            initialization and are passed to ``skeleton.skeletonize()``.
 
         """
         mesh = self.mesh_contracted if use_contracted else self.mesh
@@ -161,9 +161,7 @@ class Skeletonizer:
                       progress=self.progress)
         params.update(kwargs)
 
-        self.nodes = skeletonize(mesh, **params)
-        self.edges = tree_from_mesh(self.nodes, mesh)
-        self.swc = edges_to_swc(self.edges, mesh, reindex=True)
+        self.swc, self.graph = skeletonize(mesh, output='both', **params)
 
         # Radius always comes from the full mesh
         add_radius(self.swc, self.mesh, method=self.radii)
