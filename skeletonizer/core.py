@@ -22,7 +22,7 @@ import time
 import trimesh as tm
 
 from .meshcontraction import contract_mesh
-from .skeleton import skeletonize, tree_from_mesh, make_swc, add_radius
+from .skeleton import skeletonize, add_radius
 
 logger = logging.getLogger('skeletonizer')
 
