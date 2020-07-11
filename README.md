@@ -3,8 +3,9 @@ Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
 Most notably it currently implements:
-- mesh contraction via `skeletor.contract` [1]
-- skeleton extraction by _edge collapse_ [1] or by _vertex clustering_ via `skeletor.skeletonize`
+
+ 1. **mesh contraction** via `skeletor.contract` [1]
+ 2. **skeleton extraction** by _edge collapse_ [1] (slow and very accurate) or by _vertex clustering_ (very fast, less accurate) via `skeletor.skeletonize`
 
 Some of the code was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
@@ -12,18 +13,19 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.
 
 ## Install
 
-`pip3 install git+git://github.com/schlegelp/skeletonizer@master`
+`pip3 install git+git://github.com/schlegelp/skeletor@master`
 
 #### Dependencies
 Automatically installed with `pip`:
-- `networkx
+- `networkx`
 - `numpy`
 - `pandas`
 - `scipy`
 - `trimesh`
+- `tqdm`
 
-Optional dependencies but highly recommended:
-- `fastremap` (general speed-ups: `pip3 install fastremap`)
+Optional but highly recommended:
+- [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups: `pip3 install fastremap`
 
 ### Usage
 
