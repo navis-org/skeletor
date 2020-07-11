@@ -18,8 +18,10 @@
 
 try:
     import fastremap
-except:
+except ImportError:
     fastremap = None
+except BaseException:
+    raise
 
 import networkx as nx
 import numpy as np
@@ -442,8 +444,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
             F_T[has_v] = new_shape_cost * shape_weight + new_sample_cost * sample_weight
 
     # Get the corrected edges
-    # corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())
-    corrected_edges = edges[keep]
+    corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())    
 
     # Generate graph
     G = edges_to_graph(corrected_edges, mesh.vertices, fix_tree=True, weight=False,
