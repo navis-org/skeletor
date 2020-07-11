@@ -16,48 +16,79 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+try:
+    import fastremap
+except:
+    fastremap = None
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 import trimesh as tm
-import scipy.sparse as sparse
+import scipy.sparse
 import scipy.spatial
 
 from tqdm.auto import tqdm
 
+from .utilities import make_trimesh
 
-def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
-                progress=True):
+
+def skeletonize(mesh, method, output='swc', progress=True, **kwargs):
     """Skeletonize a (contracted) mesh.
-
-    Important
-    ---------
-    This implementation is somewhat sensitive to the coordinate space of the
-    input mesh: too large and you might experience slow-downs or numpy
-    OverflowErrors; too low and you might get skeletons that don't quite match
-    the mesh (e.g. too few vertices).
 
     Parameters
     ----------
-    mesh :          trimesh.Trimesh
-                    Contracted mesh to be skeletonized.
-    shape_weight :  float, optional
-                    Weight for shape costs which represent impact of merging
-                    two nodes on the shape of the object.
-    sample_weight : float, optional
-                    Weight for sampling costs which increase if a merge would
-                    generate prohibitively long edges.
+    mesh :          mesh obj
+                    The mesh to be skeletonize. Can an object that has
+                    ``.vertices`` and ``.faces`` properties  (e.g. a
+                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
+                    dictionary ``{'vertices': vertices, 'faces': faces}``.
+    method :        "vertex_clusters" | "edge_collapse"
+                    Skeletonization comes in two flavours with different Pros
+                    and Cons::
+
+                     - ``vertex_clusters`` groups and collapses vertices based
+                       on their geodesic distance along the mesh's surface. It's
+                       fast and scales well but can lead to oversimplification.
+                       Good for quick & dirty skeletonizations. See
+                       ``skeletor.skeletonizers.by_vertex_clusters`` for details.
+                     - ``edge_collapse`` implements skeleton extraction by edge
+                       collapse described in [1]. It's rather slow and doesn't
+                       scale well but is really good at preserving topology.
+                       See ``skeletor.skeletonizers.by_edge_collapse`` for
+                       details.
     output :        "swc" | "graph" | "both"
-                    Determines functions output. See Returns.
+                    Determines the function's output. See ``Returns``.
     progress :      bool
                     If True, will show progress bar.
 
+    **kwargs
+                    Keyword arguments are passed to the above mentioned
+                    functions:
 
-    Example
-    -------
-    >>> import trimesh as tm
-    >>> m = tm.primitives.Cylinder()
+    For method "vertex_clusters":
+
+    sampling_dist : float | int, required
+                    Maximal distance at which vertices are clustered. This
+                    parameter should be tuned based on the resolution of your
+                    mesh.
+    cluster_pos :   "median" | "center"
+                    How to determine the x/y/z coordinates of the collapsed
+                    vertex clusters (i.e. the skeleton's nodes)::
+
+                      - "median": Use the vertex closest to cluster's center of
+                        mass.
+                      - "center": Use the center of mass. This makes for smoother
+                        skeletons but can lead to nodes outside the mesh.
+
+    For method "edge_collapse":
+
+    shape_weight :  float, default = 1
+                    Weight for shape costs which penalize collapsing edges that
+                    would drastically change the shape of the object.
+    sample_weight : float, default = 0.1
+                    Weight for sampling costs which penalize collapses that
+                    would generate prohibitively long edges.
 
     Returns
     -------
@@ -68,9 +99,81 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     "both" :        tuple
                     Both of the above: ``(swc, graph)``.
 
+    References
+    ----------
+    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
     """
-    assert isinstance(mesh, tm.Trimesh), f'Expected Trimesh, got "{type(mesh)}"'
+    mesh = make_trimesh(mesh)
+
+    assert method in ['vertex_clusters', 'edge_collapse']
+    required_param = {'vertex_clusters': ['sampling_dist'],
+                      'edge_collapse': []}
+
+    for kw in required_param[method]:
+        if kw not in kwargs:
+            raise ValueError(f'Method "{method}" requires parameter "{kw}" - see help(skeletor.skeletonize)')
+
+    if method == 'vertex_clusters':
+        return by_vertex_clusters(mesh, output=output, progress=progress, **kwargs)
+
+    if method == 'edge_collapse':
+        return by_edge_collapse(mesh, output=output, progress=progress, **kwargs)
+
+
+def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
+                     progress=True):
+    """Skeletonize a (contracted) mesh by collapsing edges.
+
+    Notes
+    -----
+    This algorithm (described in [1]) iteratively collapses edges that are part
+    of a face until no more faces are left. Edges are chosen based on a cost
+    function that penalizes collapses that would change the shape of the object
+    or would introduce long edges.
+
+    This is somewhat sensitive to the dimensions of the input mesh: too large
+    and you might experience slow-downs or numpy OverflowErrors; too low and
+    you might get skeletons that don't quite matc the mesh (e.g. too few nodes).
+    If you experience either, try down- or up-scaling your mesh, respectively.
+
+    Parameters
+    ----------
+    mesh :          mesh obj
+                    The mesh to be skeletonize. Can an object that has
+                    ``.vertices`` and ``.faces`` properties  (e.g. a
+                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
+                    dictionary ``{'vertices': vertices, 'faces': faces}``.
+    shape_weight :  float, optional
+                    Weight for shape costs which penalize collapsing edges that
+                    would drastically change the shape of the object.
+    sample_weight : float, optional
+                    Weight for sampling costs which penalize collapses that
+                    would generate prohibitively long edges.
+    output :        "swc" | "graph" | "both"
+                    Determines the function's output. See ``Returns``.
+    progress :      bool
+                    If True, will show progress bar.
+
+    Returns
+    -------
+    "swc" :         pandas.DataFrame
+                    SWC representation of the skeleton.
+    "graph" :       networkx.Graph
+                    Graph representation of the skeleton.
+    "both" :        tuple
+                    Both of the above: ``(swc, graph)``.
+
+    References
+    ----------
+    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
+    """
     assert output in ['swc', 'graph', 'both']
+
+    mesh = make_trimesh(mesh)
 
     # Shorthand faces and edges
     # We convert to arrays to (a) make a copy and (b) remove potential overhead
@@ -197,9 +300,9 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     # Sum lengths of all edges associated with a given vertex
     # This is easiest by generating a sparse matrix from the edges
     # and then summing by row
-    adj = sparse.coo_matrix((edge_lengths,
-                             (edges[:, 0], edges[:, 1])),
-                            shape=(verts.shape[0], verts.shape[0]))
+    adj = scipy.sparse.coo_matrix((edge_lengths,
+                                   (edges[:, 0], edges[:, 1])),
+                                  shape=(verts.shape[0], verts.shape[0]))
     adj = adj + adj.T
 
     # Get the lengths associated with each vertex
@@ -209,7 +312,7 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     verts_lengths = adj.sum(axis=1)
 
     # We need to flatten this (something funny with summing sparse matrices)
-    verts_lengths = np.array(verts_lengths).flatten()#.astype(np.float64)
+    verts_lengths = np.array(verts_lengths).flatten()
 
     # Map the sum of vertex lengths onto edges (as per first vertex in edge)
     ik_edge = verts_lengths[edges[:, 0]]
@@ -255,9 +358,6 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
             # Get the edge's indices
             clps_edges = np.where(connects_uv)[0]
 
-            #print(f'\rFaces {face_edges.shape[0]} | Collapsed {sum(is_collapsed)} | Kept {sum(keep)} | {collapse_ix} \t ({F_T[collapse_ix]:.2f})',
-            #      end='\t\t')
-
             # Now find find the faces the collapsed edge is part of
             # Note: splitting this into three conditions is marginally faster than
             # np.any(np.isin(face_edges, clps_edges), axis=1)
@@ -294,11 +394,21 @@ def skeletonize(mesh, shape_weight=1, sample_weight=0.1, output='swc',
             # which points from u -> v
             # -> replace occurrences of loosing edge with winning edge
             for win, loose in adj_edges:
-                face_edges[face_edges == loose] = win
+                if fastremap:
+                    face_edges = fastremap.remap(face_edges, {loose: win},
+                                                 preserve_missing_labels=True,
+                                                 in_place=True)
+                else:
+                    face_edges[face_edges == loose] = win
                 is_collapsed[loose] = True
 
             # Replace occurrences of first node u with second node v
-            edges[edges == u] = v
+            if fastremap:
+                edges = fastremap.remap(edges, {u: v},
+                                        preserve_missing_labels=True,
+                                        in_place=True)
+            else:
+                edges[edges == u] = v
 
             # Add shape cost of u to shape costs of v
             Q_array[:, :, v] += Q_array[:, :, u]
@@ -386,23 +496,23 @@ def mst_over_mesh(mesh, verts, limit='auto'):
     edge_lengths = mesh.edges_unique_length
 
     # Produce adjacency matrix from edges and edge lengths
-    adj = sparse.coo_matrix((edge_lengths,
-                             (edges[:, 0], edges[:, 1])),
-                            shape=(verts.shape[0], verts.shape[0]))
+    adj = scipy.sparse.coo_matrix((edge_lengths,
+                                   (edges[:, 0], edges[:, 1])),
+                                  shape=(verts.shape[0], verts.shape[0]))
 
     if limit == 'auto':
         distances = scipy.spatial.distance.pdist(verts[keep])
         limit = np.max(distances) * 3
 
     # Get geodesic distances between vertices
-    dist_matrix = sparse.csgraph.dijkstra(csgraph=adj, directed=False,
-                                          indices=keep, limit=limit)
+    dist_matrix = scipy.sparse.csgraph.dijkstra(csgraph=adj, directed=False,
+                                                indices=keep, limit=limit)
 
     # Subset along second axis
     dist_matrix = dist_matrix[:, keep]
 
     # Get minimum spanning tree
-    mst = sparse.csgraph.minimum_spanning_tree(dist_matrix, overwrite=True)
+    mst = scipy.sparse.csgraph.minimum_spanning_tree(dist_matrix, overwrite=True)
 
     # Turn into COO matrix
     coo = mst.tocoo()
@@ -437,7 +547,179 @@ def mst_over_mesh(mesh, verts, limit='auto'):
     return np.array(edges).astype(int)
 
 
-def make_swc(x, mesh, reindex=False, validate=True):
+def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
+                       output='swc', progress=True):
+    """Skeletonize a contracted mesh by clustering vertices.
+
+    Notes
+    -----
+    This algorithm traverses the graph and groups vertices together that are
+    within a given distance to each other. This uses the geodesic
+    (along-the-mesh) distance, not simply the Eucledian distance. Subsequently
+    these groups of vertices are collapsed and re-connected respecting the
+    topology of the input mesh.
+
+    The graph traversal is fast and scales well, so this method is well suited
+    for meshes with lots of vertices. On the downside: this implementation is
+    not very clever and you might have to play around with the parameters
+    (mostly ``sampling_dist``) to get decent results.
+
+    Parameters
+    ----------
+    mesh :          mesh obj
+                    The mesh to be skeletonize. Can an object that has
+                    ``.vertices`` and ``.faces`` properties  (e.g. a
+                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
+                    dictionary ``{'vertices': vertices, 'faces': faces}``.
+    sampling_dist : float | int
+                    Maximal distance at which vertices are clustered. This
+                    parameter should be tuned based on the resolution of your
+                    mesh (see Examples).
+    cluster_pos :   "median" | "center"
+                    How to determine the x/y/z coordinates of the collapsed
+                    vertex clusters (i.e. the skeleton's nodes)::
+
+                      - "median": Use the vertex closest to cluster's center of
+                        mass.
+                      - "center": Use the center of mass. This makes for smoother
+                        skeletons but can lead to nodes outside the mesh.
+
+    output :        "swc" | "graph" | "both"
+                    Determines the function's output. See ``Returns``.
+    progress :      bool
+                    If True, will show progress bar.
+
+    Returns
+    -------
+    "swc" :         pandas.DataFrame
+                    SWC representation of the skeleton.
+    "graph" :       networkx.Graph
+                    Graph representation of the skeleton.
+    "both" :        tuple
+                    Both of the above: ``(swc, graph)``.
+
+    """
+    assert output in ['swc', 'graph', 'both']
+    assert cluster_pos in ['center', 'median']
+
+    mesh = make_trimesh(mesh)
+
+    # Produce weighted edges
+    edges = np.concatenate((mesh.edges_unique,
+                            mesh.edges_unique_length.reshape(mesh.edges_unique.shape[0], 1)),
+                           axis=1)
+
+    # Generate Graph (must be undirected)
+    G = nx.Graph()
+    G.add_weighted_edges_from(edges)
+
+    # Run the graph traversal that groups vertices into spatial clusters
+    not_visited = set(G.nodes)
+    seen = set()
+    clusters = []
+    to_visit = len(not_visited)
+    with tqdm(desc='Clustering', total=len(not_visited), disable=progress is False) as pbar:
+        while not_visited:
+            # Pick a random node
+            start = not_visited.pop()
+            # Get all nodes in the geodesic vicinity
+            cl, seen = dfs(G, n=start, dist_traveled=0,
+                           max_dist=sampling_dist, seen=seen)
+            cl = set(cl)
+
+            # Append this cluster and track visited/not-visited nodes
+            clusters.append(cl)
+            not_visited = not_visited - cl
+
+            # Update  progress bar
+            pbar.update(to_visit - len(not_visited))
+            to_visit = len(not_visited)
+
+    # Turn clusters into array of arrays
+    clusters = np.array([np.array(list(c)).astype(int) for c in clusters])
+
+    # Get positions of clusters
+    if cluster_pos == 'center':
+        # Get the center of each cluster
+        cl_coords = np.array([np.mean(mesh.vertices[c], axis=0) for c in clusters])
+    elif cluster_pos == 'median':
+        # Get the node that's closest to to the clusters center
+        cl_coords = []
+        for c in clusters:
+            cnt = np.mean(mesh.vertices[c], axis=0)
+            cnt_dist = np.sum(np.fabs(mesh.vertices[c] - cnt), axis=1)
+            median = mesh.vertices[c][np.argmin(cnt_dist)]
+            cl_coords.append(median)
+        cl_coords = np.array(cl_coords)
+
+    # Generate edges
+    cl_edges = np.array(mesh.edges_unique)
+    if fastremap:
+        mapping = {n: i for i, l in enumerate(clusters) for n in l}
+        cl_edges = fastremap.remap(cl_edges, mapping, preserve_missing_labels=False, in_place=True)
+    else:
+        for i, c in enumerate(clusters):
+            cl_edges[np.isin(cl_edges, c)] = i
+
+    # Remove directionality from cluster edges
+    cl_edges = np.sort(cl_edges, axis=1)
+
+    # Get unique edges
+    cl_edges = np.unique(cl_edges, axis=0)
+
+    # Calculate edge lengths
+    co1 = cl_coords[cl_edges[:, 0]]
+    co2 = cl_coords[cl_edges[:, 1]]
+    cl_edge_lengths = np.sqrt(np.sum((co1 - co2)**2, axis=1))
+
+    # Produce adjacency matrix from edges and edge lengths
+    adj = scipy.sparse.coo_matrix((cl_edge_lengths,
+                                   (cl_edges[:, 0], cl_edges[:, 1])),
+                                  shape=(clusters.shape[0], clusters.shape[0]))
+
+    # The cluster graph likely still contain cycles, let's get rid of them using
+    # a minimum spanning tree
+    mst = scipy.sparse.csgraph.minimum_spanning_tree(adj,
+                                                     overwrite=True)
+
+    # Turn into COO matrix
+    coo = mst.tocoo()
+
+    # Extract edge list
+    edges = np.array([coo.row, coo.col]).T
+
+    # Produce final graph - this also takes care of some fixing
+    G = edges_to_graph(edges, None, fix_tree=True)
+
+    if output == 'graph':
+        return G
+
+    # Generate SWC
+    swc = make_swc(G, cl_coords)
+
+    if output == 'both':
+        return swc, G
+
+    return swc
+
+
+def dfs(G, n, dist_traveled, max_dist, seen):
+    """Depth first graph traversal that stops at a given max distance."""
+    visited = [n]
+    seen.add(n)
+    if dist_traveled <= max_dist:
+        for nn in nx.neighbors(G, n):
+            if nn not in seen:
+                new_dist = dist_traveled + G.edges[(nn, n)]['weight']
+                traversed, seen = dfs(G=G, n=nn,
+                                      dist_traveled=new_dist,
+                                      max_dist=max_dist,
+                                      seen=seen)
+                visited += traversed
+    return visited, seen
+
+
+def make_swc(x, coords, reindex=False, validate=True):
     """Generate SWC table.
 
     Parameters
@@ -448,8 +730,8 @@ def make_swc(x, mesh, reindex=False, validate=True):
                     - (N, 2) array of child->parent edges
                     - networkX graph
 
-    mesh :      trimesh.Trimesh
-                Original mesh. We will extract coordinates.
+    coords :    trimesh.Trimesh | np.ndarray of vertices
+                Used to get coordinates for nodes in ``x``.
     reindex :   bool
                 If True, will re-number node IDs, if False will keep original
                 vertex IDs.
@@ -462,7 +744,7 @@ def make_swc(x, mesh, reindex=False, validate=True):
     SWC table : pandas.DataFrame
 
     """
-    assert isinstance(mesh, tm.Trimesh)
+    assert isinstance(coords, (tm.Trimesh, np.ndarray))
 
     if isinstance(x, np.ndarray):
         edges = x
@@ -484,10 +766,13 @@ def make_swc(x, mesh, reindex=False, validate=True):
         roots = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
         swc = pd.concat([swc, roots], axis=0)
 
+    if isinstance(coords, tm.Trimesh):
+        coords = coords.vertices
+
     # Map x/y/z coordinates
-    swc['x'] = mesh.vertices[swc.node_id, 0]
-    swc['y'] = mesh.vertices[swc.node_id, 1]
-    swc['z'] = mesh.vertices[swc.node_id, 2]
+    swc['x'] = coords[swc.node_id, 0]
+    swc['y'] = coords[swc.node_id, 1]
+    swc['z'] = coords[swc.node_id, 2]
 
     # Placeholder radius
     swc['radius'] = 1
@@ -516,20 +801,21 @@ def make_swc(x, mesh, reindex=False, validate=True):
     return swc
 
 
-def edges_to_graph(edges, vertices, fix_tree=True,
+def edges_to_graph(edges, vertices=None, fix_tree=True,
                    drop_disconnected=True, weight=True):
     """Create networkx Graph from edge list."""
     # Drop self-loops
     edges = edges[edges[:, 0] != edges[:, 1]]
 
     # Make sure we don't have a->b and b<-a edges
-    edges = edges[~np.any(edges == edges[:, [1, 0]], axis=1)]
+    edges = np.unique(np.sort(edges, axis=1), axis=0)
 
     G = nx.Graph()
 
     nodes = np.unique(edges.flatten())
-    coords = vertices[nodes]
-    G.add_nodes_from([(e, {'x': co[0], 'y': co[1], 'z': co[2]}) for e, co in zip(nodes, coords)])
+    if isinstance(vertices, np.ndarray):
+        coords = vertices[nodes]
+        G.add_nodes_from([(e, {'x': co[0], 'y': co[1], 'z': co[2]}) for e, co in zip(nodes, coords)])
     G.add_edges_from([(e[0], e[1]) for e in edges])
 
     if fix_tree:
@@ -572,7 +858,7 @@ def edges_to_graph(edges, vertices, fix_tree=True,
         deg = np.array(G.degree)
         G.remove_nodes_from(deg[deg[:, 1] == 0][:, 0])
 
-    if weight:
+    if weight and isinstance(vertices, np.ndarray):
         final_edges = np.array(G.edges)
         vec = vertices[final_edges[:, 0]] - vertices[final_edges[:, 1]]
         weights = np.sqrt(np.sum(vec ** 2, axis=1))
@@ -580,94 +866,3 @@ def edges_to_graph(edges, vertices, fix_tree=True,
         G.add_weighted_edges_from([(e[0], e[1], w) for e, w in zip(final_edges, weights)])
 
     return G
-
-
-def add_radius(swc, mesh, method='knn', **kwargs):
-    """Add/update radius to SWC table.
-
-    Parameters
-    ----------
-    swc :       pandas.DataFrame
-                SWC table.
-    mesh :      trimesh.Trimesh
-                Mesh to use for radius generation.
-    method :    "knn" | "ray" (TODO)
-                Whether and how to add radius information to each node::
-
-                    - "knn" uses k-nearest-neighbors to get radii: fast but potential for being very wrong
-                    - "ray" uses ray-casting to get radii: slow but "more right"
-    **kwargs
-                Keyword arguments are passed to the respective method.
-
-    Returns
-    -------
-    Nothing
-                Just adds/updates 'radius' column.
-
-    """
-    if method == 'knn':
-        swc['radius'] = _get_radius_kkn(swc[['x', 'y', 'z']].values,
-                                        mesh=mesh, **kwargs)
-    else:
-        raise ValueError(f'Unknown method "{method}"')
-
-
-def _get_radius_kkn(coords, mesh, n=5):
-    """Produce radii using k-nearest-neighbors.
-
-    Parameters
-    ----------
-    coords :    numpy.ndarray
-    mesh :      trimesh.Trimesh
-    n :         int
-                Radius will be the mean over n nearest-neighbors.
-    """
-
-    # Generate kdTree
-    tree = scipy.spatial.cKDTree(mesh.vertices)
-
-    # Query for coordinates
-    dist, ix = tree.query(coords, k=5)
-
-    # We will use the mean but note that outliers might really mess this up
-    return np.mean(dist, axis=1)
-
-
-def edge_in_face(edges, faces):
-    """Test if edges are associated with a face. Returns boolean array."""
-    # Concatenate edges of all faces (us)
-    edges_in_faces = np.concatenate((faces[:,  [0, 1]],
-                                     faces[:,  [1, 2]],
-                                     faces[:,  [2, 0]]))
-    # Since we don't care about the orientation of edges, we just make it so
-    # that the lower index is always in the first column
-    edges_in_faces = np.sort(edges_in_faces, axis=1)
-    edges = np.sort(edges, axis=1)
-
-    # Make unique edges (low ms)
-    # - we don't actually need this and it is costly
-    # edges_in_faces = np.unique(edges_in_faces, axis=0)
-
-    # Turn face edges into structured array (few us)
-    sorted = np.ascontiguousarray(edges_in_faces).view([('', edges_in_faces.dtype)] * edges_in_faces.shape[-1]).ravel()
-    # Sort (low ms) -> this is the most costly step at the moment
-    sorted.sort(kind='stable')
-
-    # Turn edges into continuous array (few us)
-    comp = np.ascontiguousarray(edges).view(sorted.dtype)
-
-    # This asks where elements of "comp" should be inserted which basically
-    # tries to align edges and edges_in_faces (tens of ms)
-    ind = sorted.searchsorted(comp)
-
-    # If edges are "out of bounds" of the sorted array of face edges the will
-    # have "ind = sorted.shape[0] + 1"
-    in_bounds = ind < sorted.shape[0]
-
-    # Prepare results (default = False)
-    has_face = np.full(edges.shape[0], False, dtype=bool)
-
-    # Check if actually the same for those indices that are within bounds
-    has_face[in_bounds.flatten()] = sorted[ind[in_bounds]] == comp[in_bounds]
-
-    return has_face

@@ -24,8 +24,8 @@ import scipy.sparse as spsp
 import scipy.spatial as spspat
 
 
-def _make_trimesh(mesh):
-    """ Makes sure we work with a trimesh.Trimesh.
+def make_trimesh(mesh):
+    """Construct trimesh.Trimesh from input data.
 
     Parameters
     ----------
@@ -38,8 +38,8 @@ def _make_trimesh(mesh):
     -------
     vertices
     faces
+    
     """
-
     if isinstance(mesh, trimesh.Trimesh):
         return mesh
     elif isinstance(mesh, (tuple, list)):
@@ -145,3 +145,43 @@ def getOneRingAreas(mesh):
 
 def buildKDTree(mesh):
     return spspat.cKDTree(mesh.vertices)
+
+
+def edge_in_face(edges, faces):
+    """Test if edges are associated with a face. Returns boolean array."""
+    # Concatenate edges of all faces (us)
+    edges_in_faces = np.concatenate((faces[:,  [0, 1]],
+                                     faces[:,  [1, 2]],
+                                     faces[:,  [2, 0]]))
+    # Since we don't care about the orientation of edges, we just make it so
+    # that the lower index is always in the first column
+    edges_in_faces = np.sort(edges_in_faces, axis=1)
+    edges = np.sort(edges, axis=1)
+
+    # Make unique edges (low ms)
+    # - we don't actually need this and it is costly
+    # edges_in_faces = np.unique(edges_in_faces, axis=0)
+
+    # Turn face edges into structured array (few us)
+    sorted = np.ascontiguousarray(edges_in_faces).view([('', edges_in_faces.dtype)] * edges_in_faces.shape[-1]).ravel()
+    # Sort (low ms) -> this is the most costly step at the moment
+    sorted.sort(kind='stable')
+
+    # Turn edges into continuous array (few us)
+    comp = np.ascontiguousarray(edges).view(sorted.dtype)
+
+    # This asks where elements of "comp" should be inserted which basically
+    # tries to align edges and edges_in_faces (tens of ms)
+    ind = sorted.searchsorted(comp)
+
+    # If edges are "out of bounds" of the sorted array of face edges the will
+    # have "ind = sorted.shape[0] + 1"
+    in_bounds = ind < sorted.shape[0]
+
+    # Prepare results (default = False)
+    has_face = np.full(edges.shape[0], False, dtype=bool)
+
+    # Check if actually the same for those indices that are within bounds
+    has_face[in_bounds.flatten()] = sorted[ind[in_bounds]] == comp[in_bounds]
+
+    return has_face

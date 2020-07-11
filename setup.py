@@ -20,16 +20,16 @@ with open('requirements.txt') as f:
     requirements = [l for l in requirements if not l.startswith('#')]
 
 setup(
-    name='skeletonizer',
+    name='skeletor',
     version=verstr,
-    packages=['skeletonizer', ],
+    packages=['skeletor', ],
     license='GNU GPL V3',
     description='Python 3 implementation of Skeleton Extraction by Mesh contraction algorithm',
     long_description=open('README.md').read(),
     url='https://github.com/schlegelp/skeletonizer',
     author='Philipp Schlegel',
     author_email='pms70@cam.ac.uk',
-    keywords='mesh skeletonizer mesh contration skeleton extraction',
+    keywords='mesh skeletonizer mesh contraction skeleton extraction',
     classifiers=[
         'Development Status :: 4 - Beta',
 

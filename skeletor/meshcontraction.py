@@ -25,30 +25,34 @@ from scipy.sparse.linalg import lsqr
 from tqdm.auto import trange
 
 from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
-                        averageFaceArea, getOneRingAreas, _make_trimesh)
+                        averageFaceArea, getOneRingAreas, make_trimesh)
 
-logger = logging.getLogger('skeletonizer')
+logger = logging.getLogger('skeletor')
 
 if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
+def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
     """Contract mesh.
 
     Parameters
     ----------
-    mesh :          mesh obj | dict
+    mesh :          mesh obj
                     The mesh to be contracted. Can any object (e.g.
                     a trimesh.Trimesh) that has ``.vertices`` and ``.faces``
                     properties or a tuple ``(vertices, faces)`` or a dictionary
                     ``{'vertices': vertices, 'faces': faces}``.
                     Vertices and faces must be (N, 3) numpy arrays.
     iterations :    int, optional
-                    Total rounds of contractions.
+                    Max rounds of contractions. Note that the algorithm might
+                    stop early if the sum of the face areas increases from one
+                    iteration to the next instead of decreasing.
     SL :            float, optional
-                    Factor by which the contraction matrix is multiplied
-                    for each iteration.
+                    Factor by which the contraction matrix is multiplied for
+                    each iteration. Lower values are more likely to get you
+                    an optimal contraction at the cost of needing more
+                    iterations.
     WC :            float, optional
                     Weight factor that affects the attraction constraint.
     lsqr_tol :      float, optional
@@ -64,7 +68,7 @@ def contract_mesh(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=Tru
 
     """
     # Force into trimesh
-    m = _make_trimesh(mesh)
+    m = make_trimesh(mesh)
 
     n = len(m.vertices)
     #initialFaceWeight = (10**-3) * np.sqrt(averageFaceArea(m))
