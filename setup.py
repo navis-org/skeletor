@@ -6,7 +6,7 @@ except BaseException:
 
 import re
 
-VERSIONFILE = "skeletonizer/__init__.py"
+VERSIONFILE = "skeletor/__init__.py"
 verstrline = open(VERSIONFILE, "rt").read()
 VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 mo = re.search(VSRE, verstrline, re.M)
@@ -29,7 +29,7 @@ setup(
     url='https://github.com/schlegelp/skeletor',
     author='Philipp Schlegel',
     author_email='pms70@cam.ac.uk',
-    keywords='mesh skeletonizer mesh contraction skeleton extraction',
+    keywords='mesh skeletonization mesh contraction skeleton extraction',
     classifiers=[
         'Development Status :: 4 - Beta',
 
