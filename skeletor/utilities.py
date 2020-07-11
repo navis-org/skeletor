@@ -15,8 +15,6 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
-
-from collections import OrderedDict
 import trimesh
 
 import numpy as np
@@ -38,7 +36,7 @@ def make_trimesh(mesh):
     -------
     vertices
     faces
-    
+
     """
     if isinstance(mesh, trimesh.Trimesh):
         return mesh
@@ -50,18 +48,15 @@ def make_trimesh(mesh):
         return trimesh.Trimesh(vertices=mesh['vertices'],
                                faces=mesh['faces'])
     else:
-        try:
-            return trimesh.Trimesh(vertices=mesh.vertices,
-                                   faces=mesh.faces)
-        except BaseException:
-            pass
+        return trimesh.Trimesh(vertices=mesh.vertices,
+                               faces=mesh.faces)
 
-    raise TypeError('Unable to extract vertices/faces from object of type '
-                    '"{}"'.format(type(mesh)))
+    raise TypeError('Unable to construct a trimesh.Trimesh from object of type '
+                    f'"{type(mesh)}"')
 
 
 def getBBox(verts):
-    """ Returns bounding box of vertices. """
+    """Return bounding box of vertices."""
     min_coords = np.min(verts, axis=0)
     max_coords = np.max(verts, axis=0)
     diameter = np.linalg.norm(max_coords - min_coords)
