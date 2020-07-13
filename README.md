@@ -6,6 +6,7 @@ Most notably it currently implements:
 
  1. **mesh contraction** via `skeletor.contract` [1]
  2. **skeleton extraction** by _edge collapse_ [1] (slow and very accurate) or by _vertex clustering_ (very fast, less accurate) via `skeletor.skeletonize`
+ 3. **radii extraction** by k-nearest neighbors or raycasting
 
 Some of the code was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
@@ -26,6 +27,7 @@ Automatically installed with `pip`:
 
 Optional but highly recommended:
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups: `pip3 install fastremap`
+- [ncollpyde](https://github.com/clbarnes/ncollpyde) for ray-casting (radii): `pip3 install ncollpyde`
 
 ### Usage
 
@@ -35,20 +37,21 @@ Optional but highly recommended:
 # Load a neuron from the Janelia Research Campus hemibrain connectome
 >>> vol = CloudVolume('precomputed://gs://neuroglancer-janelia-flyem-hemibrain/segmentation_52a13', fill_missing=True)
 # m is a trimesh.Trimesh
->>> m = vol.mesh.get(5812983825, lod=2)[5812983825]
+>>> mesh = vol.mesh.get(5812983825, lod=2)[5812983825]
 
 >>> import skeletor as sk
 # Contract the mesh
->>> cont = sk.contract(m, iterations=3)
+>>> cont = sk.contract(mesh, iterations=3)
 # Extract the skeleton from the contracted mesh
->>> swc = sk.skeletonize(cont,  method='vertex_clusters', sampling_dist=50, output='swc')
+>>> swc = sk.skeletonize(cont, method='vertex_clusters', sampling_dist=50, output='swc')
+# Add/update radii
+>>> swc['radius'] = sk.radii(swc, mesh, method='knn', n=5, aggregate='mean')
 >>> swc.head()
-   node_id  parent_id             x             y             z  radius
-0        1         30  16368.385248  34698.573907  27412.404067       1
-1        2         32  16381.961369  36869.856299  25817.206930       1
-2        3        162  16382.860533  36371.151954  26461.314717       1
-3        4        526  16334.821842  15626.407053  11060.381910       1
-4        5        145  16379.626005  36098.558696  24579.275974       1
+   node_id  parent_id             x             y             z     radius
+0        1        108  15171.575407  36698.832858  25797.208983  38.545553
+1        2         75   5673.874254  21973.874094  15498.255429  79.262464
+2        3        866  21668.461494  25084.044197  25855.263837  58.992209
+3        4        212  16397.298583  35225.165481  24259.994014  20.213940
 ```
 
 For visualisation check out [navis](https://navis.readthedocs.io/en/latest/index.html):
@@ -56,8 +59,8 @@ For visualisation check out [navis](https://navis.readthedocs.io/en/latest/index
 ```Python
 >>> import navis
 >>> neuron = navis.TreeNeuron(swc, units='8nm')
->>> mesh = navis.MeshNeuron(m, units='8nm')
->>> navis.plot3d([neuron, mesh], color=[(1, 0, 0), (1, 1, 1, .1)])
+>>> mneuron = navis.MeshNeuron(mesh, units='8nm')
+>>> navis.plot3d([neuron, mneuron], color=[(1, 0, 0), (1, 1, 1, .1)])
 ```
 
 Full mesh in white, skeleton in red.
