@@ -33,7 +33,8 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
+def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True,
+             validate=True):
     """Contract mesh.
 
     Parameters
@@ -60,6 +61,10 @@ def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
                     solution (`atol` and `btol` in `scipy.sparse.linalg.lsqr`).
                     Increasing the tolerance will give dramatic speed-ups but
                     may lead to funny contractions.
+    validate :      bool
+                    If True, will try to fix potential issues with the mesh
+                    (e.g. infinite values, duplicate vertices, degenerate faces)
+                    before collapsing.
 
     Returns
     -------
@@ -68,7 +73,7 @@ def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True):
 
     """
     # Force into trimesh
-    m = make_trimesh(mesh)
+    m = make_trimesh(mesh, validate=validate)
 
     n = len(m.vertices)
     #initialFaceWeight = (10**-3) * np.sqrt(averageFaceArea(m))

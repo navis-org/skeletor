@@ -22,7 +22,7 @@ import scipy.sparse as spsp
 import scipy.spatial as spspat
 
 
-def make_trimesh(mesh):
+def make_trimesh(mesh, validate=True):
     """Construct trimesh.Trimesh from input data.
 
     Parameters
@@ -31,6 +31,9 @@ def make_trimesh(mesh):
                 Tuple: (vertices, faces)
                 dict: {'vertices': [], 'faces': []}
                 mesh-like object: mesh.vertices, mesh.faces
+    validate :  bool
+                If True, will try to fix potential issues with the mesh
+                (e.g. infinite values, duplicate vertices, degenerate faces).
 
     Returns
     -------
@@ -39,20 +42,28 @@ def make_trimesh(mesh):
 
     """
     if isinstance(mesh, trimesh.Trimesh):
-        return mesh
+        pass
     elif isinstance(mesh, (tuple, list)):
         if len(mesh) == 2:
-            return trimesh.Trimesh(vertices=mesh[0],
+            mesh = trimesh.Trimesh(vertices=mesh[0],
                                    faces=mesh[1])
     elif isinstance(mesh, dict):
-        return trimesh.Trimesh(vertices=mesh['vertices'],
+        mesh = trimesh.Trimesh(vertices=mesh['vertices'],
                                faces=mesh['faces'])
-    else:
-        return trimesh.Trimesh(vertices=mesh.vertices,
+    elif hasattr(mesh, 'vertices') and hasattr(mesh, 'faces'):
+        mesh = trimesh.Trimesh(vertices=mesh.vertices,
                                faces=mesh.faces)
+    else:
+        raise TypeError('Unable to construct a trimesh.Trimesh from object of '
+                        f'type "{type(mesh)}"')
 
-    raise TypeError('Unable to construct a trimesh.Trimesh from object of type '
-                    f'"{type(mesh)}"')
+    if validate:
+        mesh.remove_infinite_values()
+        mesh.merge_vertices()
+        mesh.remove_degenerate_faces()
+        mesh.fix_normals()
+
+    return mesh
 
 
 def getBBox(verts):

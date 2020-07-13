@@ -35,7 +35,8 @@ from tqdm.auto import tqdm
 from .utilities import make_trimesh
 
 
-def skeletonize(mesh, method, output='swc', progress=True, **kwargs):
+def skeletonize(mesh, method, output='swc', progress=True, validate=True,
+                **kwargs):
     """Skeletonize a (contracted) mesh.
 
     Parameters
@@ -63,6 +64,10 @@ def skeletonize(mesh, method, output='swc', progress=True, **kwargs):
                     Determines the function's output. See ``Returns``.
     progress :      bool
                     If True, will show progress bar.
+    validate :      bool
+                    If True, will try to fix potential issues with the mesh
+                    (e.g. infinite values, duplicate vertices, degenerate faces)
+                    before skeletonization.
 
     **kwargs
                     Keyword arguments are passed to the above mentioned
@@ -107,7 +112,7 @@ def skeletonize(mesh, method, output='swc', progress=True, **kwargs):
         contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
 
     """
-    mesh = make_trimesh(mesh)
+    mesh = make_trimesh(mesh, validate=validate)
 
     assert method in ['vertex_clusters', 'edge_collapse']
     required_param = {'vertex_clusters': ['sampling_dist'],
@@ -305,12 +310,13 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     adj = scipy.sparse.coo_matrix((edge_lengths,
                                    (edges[:, 0], edges[:, 1])),
                                   shape=(verts.shape[0], verts.shape[0]))
+
+    # This makes sure the matrix is symmetrical, i.e. a->b == a<-b
+    # Note that I'm not sure whether this is strictly necessary but it really
+    # can't hurt
     adj = adj + adj.T
 
     # Get the lengths associated with each vertex
-    # Note that edges are directional here (which I believe is intended?)
-    # i.e. i->k might be 100 but k->i might be 0 (= not set)
-    # If not, we could symmetrize the sparse matrix above
     verts_lengths = adj.sum(axis=1)
 
     # We need to flatten this (something funny with summing sparse matrices)
@@ -443,8 +449,11 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
 
             F_T[has_v] = new_shape_cost * shape_weight + new_sample_cost * sample_weight
 
-    # Get the corrected edges
-    corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())    
+    # After the edge collapse, the edges are garbled - I have yet to figure out
+    # why and whether that can be prevented. However the vertices in those
+    # edges are correct and so we just need to reconstruct their connectivity
+    # by extracting a minimum spanning tree over the mesh.
+    corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())
 
     # Generate graph
     G = edges_to_graph(corrected_edges, mesh.vertices, fix_tree=True, weight=False,
