@@ -763,7 +763,8 @@ def make_swc(x, coords, reindex=False, validate=True):
     # See if we need to add manually add rows for root node(s)
     miss = swc.parent_id.unique()
     miss = miss[~np.isin(miss, swc.node_id.values)]
-    if any(miss):
+    # Must not use any() here because we might get miss=[0]
+    if len(miss):
         roots = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
         swc = pd.concat([swc, roots], axis=0)
 
