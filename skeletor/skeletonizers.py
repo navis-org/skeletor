@@ -336,10 +336,10 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     face_count = face_edges.shape[0]  # keep track of face counts for progress bar
     is_collapsed = np.full(edges.shape[0], False)
     keep = np.full(edges.shape[0], False)
-    with tqdm(desc='Collapsing faces', total=face_count, disable=progress is False) as pbar:
+    with tqdm(desc='Collapsing edges', total=face_count, disable=progress is False) as pbar:
         while face_edges.size:
             # Uncomment to get a more-or-less random edge collapse
-            F_T[:] = 0
+            # F_T[:] = 0
 
             # Update progress bar
             pbar.update(face_count - face_edges.shape[0])
