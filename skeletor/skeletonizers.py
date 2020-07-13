@@ -809,7 +809,7 @@ def make_swc(x, coords, reindex=False, validate=True):
         if any(swc.node_id.duplicated()):
             raise ValueError('Nodes with multiple parents found.')
 
-    return swc
+    return swc.sort_values('parent_id').reset_index(drop=True)
 
 
 def edges_to_graph(edges, vertices=None, fix_tree=True,
