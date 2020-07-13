@@ -55,8 +55,8 @@ For visualisation check out [navis](https://navis.readthedocs.io/en/latest/index
 
 ```Python
 >>> import navis
->>> neuron = navis.TreeNeuron(swc)
->>> mesh = navis.MeshNeuron(m)
+>>> neuron = navis.TreeNeuron(swc, units='8nm')
+>>> mesh = navis.MeshNeuron(m, units='8nm')
 >>> navis.plot3d([neuron, mesh], color=[(1, 0, 0), (1, 1, 1, .1)])
 ```
 
