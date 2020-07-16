@@ -2,9 +2,6 @@
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
-While this is a general purpose library, my personal focus is on neurons
-which is why they feature in the examples and
-
 The pipeline looks like this:
 
  1. `skeletor.contract()` to contract the mesh [1]
@@ -84,6 +81,9 @@ take fewer steps. Likewise skeletonization using vertex clustering is very
 dependant on the `sampling_dist` parameter.
 
 ## Notes
+- while this is a general purpose library, my personal focus is on neurons and
+  this has certainly influenced things like default parameter values and certain
+  post-processing steps
 - meshes need to be triangular
 - if the mesh consists of multiple disconnected pieces the skeleton will
   likewise be fragmented (i.e. will have multiple roots)
