@@ -786,7 +786,7 @@ def make_swc(x, coords, reindex=False, validate=True):
     swc['z'] = coords[swc.node_id, 2]
 
     # Placeholder radius
-    swc['radius'] = 1
+    swc['radius'] = None
 
     if reindex:
         # Sort such that the parent is always before the child
