@@ -23,8 +23,6 @@ import random
 import numpy as np
 import scipy.spatial
 
-from tqdm.auto import tqdm
-
 from .utilities import make_trimesh
 
 try:
