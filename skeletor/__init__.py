@@ -22,3 +22,4 @@ __verstr__ = "0.2.1"
 from .meshcontraction import contract
 from .skeletonizers import skeletonize
 from .radiusextraction import radii
+from .postprocessing import clean
