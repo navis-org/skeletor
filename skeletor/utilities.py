@@ -62,6 +62,7 @@ def make_trimesh(mesh, validate=True):
         mesh.merge_vertices()
         mesh.remove_degenerate_faces()
         mesh.fix_normals()
+        mesh.remove_unreferenced_vertices()
 
     return mesh
 
@@ -108,11 +109,11 @@ def meanCurvatureLaplaceWeights(mesh, symmetric=False, normalized=False):
 
     W = spsp.csr_matrix((data, (rows, cols)), shape=(n, n))
 
-    if(symmetric and not normalized):
+    if (symmetric and not normalized):
         sum_vector = W.sum(axis=0)
         d = spsp.dia_matrix((sum_vector, [0]), shape=(n, n))
         L = d - W
-    elif(symmetric and normalized):
+    elif (symmetric and normalized):
         sum_vector = W.sum(axis=0)
         sum_vector_powered = np.power(sum_vector, -0.5)
         d = spsp.dia_matrix((sum_vector_powered, [0]), shape=(n, n))
