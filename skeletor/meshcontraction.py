@@ -25,7 +25,7 @@ import scipy as sp
 import trimesh as tm
 
 from scipy.sparse.linalg import lsqr
-from tqdm.auto import trange
+from tqdm.auto import tqdm
 
 from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
                         averageFaceArea, getOneRingAreas, make_trimesh)
@@ -43,14 +43,20 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, iterations=10, precision=1e07, SL=10, WC=2, progress=True,
+def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
              validate=True):
     """Contract mesh.
+
+    In a nutshell: this function contracts the mesh by applying rounds of
+    constraint Laplacian smoothing. The process stops if max ``iterations``
+    is reached or the sum of face areas increases instead of decreases from one
+    round to the next.
+
 
     Parameters
     ----------
     mesh :          mesh obj
-                    The mesh to be contracted. Can any object (e.g.
+                    The mesh to be contracted. Can be any object (e.g.
                     a trimesh.Trimesh) that has ``.vertices`` and ``.faces``
                     properties or a tuple ``(vertices, faces)`` or a dictionary
                     ``{'vertices': vertices, 'faces': faces}``.
@@ -60,10 +66,11 @@ def contract(mesh, iterations=10, precision=1e07, SL=10, WC=2, progress=True,
                     stop early if the sum of the face areas increases from one
                     iteration to the next instead of decreasing.
     precision :     float, optional
-                    Sets the precision for the least-square root solution. This
-                    is the main determinant for speed vs quality: higher values
-                    will take (much) longer but will get you closer to an
-                    optimally contracted mesh.
+                    Sets the precision for finding the least-square solution.
+                    This is the main determinant for speed vs quality: lower
+                    values will take (much) longer but will get you closer to an
+                    optimally contracted mesh. Higher values will be faster but
+                    the iterative contractions might stop early.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied for
                     each iteration. Lower values are more likely to get you
@@ -87,7 +94,6 @@ def contract(mesh, iterations=10, precision=1e07, SL=10, WC=2, progress=True,
     m = make_trimesh(mesh, validate=validate)
 
     n = len(m.vertices)
-    #initialFaceWeight = (10**-3) * np.sqrt(averageFaceArea(m))
     initialFaceWeight = 1.0 / (10.0 * np.sqrt(averageFaceArea(m)))
     originalOneRing = getOneRingAreas(m)
     zeros = np.zeros((n, 3))
@@ -116,45 +122,48 @@ def contract(mesh, iterations=10, precision=1e07, SL=10, WC=2, progress=True,
     goodvertices = [[]]
     timetracker = []
 
-    for i in trange(iterations, desc='Contracting', disable=progress is False):
-        start = time.time()
-        vpos = getMeshVPos(dm)
-        A = sp.sparse.vstack([L.dot(WL), WH])
-        b = np.vstack((zeros, WH.dot(vpos)))
-        cpts = np.zeros((n, 3))
+    with tqdm(total=iterations, desc='Contracting', disable=progress is False) as pbar:
+        for i in range(iterations):
+            start = time.time()
+            vpos = getMeshVPos(dm)
+            A = sp.sparse.vstack([L.dot(WL), WH])
+            b = np.vstack((zeros, WH.dot(vpos)))
+            cpts = np.zeros((n, 3))
 
-        for j in range(3):
-            cpts[:, j] = lsqr(A, b[:, j], atol=-precision, btol=-precision)[0]
+            for j in range(3):
+                cpts[:, j] = lsqr(A, b[:, j], atol=precision, btol=precision)[0]
 
-        dm.vertices = cpts
-
-        end = time.time()
-        logger.debug('TOTAL TIME FOR SOLVING LEAST SQUARES: {:.3f}s'.format(end - start))
-        newringareas = getOneRingAreas(dm)
-        changeinarea = np.power(newringareas, -0.5)
-        area_ratios.append(np.sum(newringareas) / originalFaceAreaSum)
-
-        if(area_ratios[-1] > area_ratios[-2]):
-            logger.debug('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
-            logger.debug('ITERATION TERMINATED AT: {}'.format(i))
-            logger.debug('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
-
-            cpts = goodvertices[0]
             dm.vertices = cpts
-            break
 
-        goodvertices[0] = cpts
-        logger.debug('RATIO OF CHANGE IN FACE AREA: {:.4f}'.format(area_ratios[-1]))
-        WL = sp.sparse.dia_matrix(WL.multiply(SL))
-        WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
-        L = -meanCurvatureLaplaceWeights(dm, normalized=True)
-        full_end = time.time()
+            end = time.time()
+            logger.debug('TOTAL TIME FOR SOLVING LEAST SQUARES: {:.3f}s'.format(end - start))
+            newringareas = getOneRingAreas(dm)
+            changeinarea = np.power(newringareas, -0.5)
+            area_ratios.append(np.sum(newringareas) / originalFaceAreaSum)
+            pbar.update()
 
-        timetracker.append(full_end - full_start)
-        full_start = time.time()
+            if(area_ratios[-1] > area_ratios[-2]):
+                logger.debug('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
+                logger.debug('ITERATION TERMINATED AT: {}'.format(i))
+                logger.debug('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
 
-    logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
-    return dm
+                cpts = goodvertices[0]
+                dm.vertices = cpts
+                break
+
+            goodvertices[0] = cpts
+            logger.debug('RATIO OF CHANGE IN FACE AREA: {:.4f}'.format(area_ratios[-1]))
+            WL = sp.sparse.dia_matrix(WL.multiply(SL))
+            WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
+            L = -meanCurvatureLaplaceWeights(dm, normalized=True)
+            full_end = time.time()
+
+            timetracker.append(full_end - full_start)
+            full_start = time.time()
+            pbar.set_postfix({'facearea': round(area_ratios[-1], 3)})
+
+        logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
+        return dm
 
 
 def merge_vertices(mesh, dist='auto', inplace=False):
