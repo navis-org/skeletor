@@ -43,7 +43,7 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True,
+def contract(mesh, iterations=10, precision=1e07, SL=10, WC=2, progress=True,
              validate=True):
     """Contract mesh.
 
@@ -59,6 +59,11 @@ def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True,
                     Max rounds of contractions. Note that the algorithm might
                     stop early if the sum of the face areas increases from one
                     iteration to the next instead of decreasing.
+    precision :     float, optional
+                    Sets the precision for the least-square root solution. This
+                    is the main determinant for speed vs quality: higher values
+                    will take (much) longer but will get you closer to an
+                    optimally contracted mesh.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied for
                     each iteration. Lower values are more likely to get you
@@ -66,15 +71,11 @@ def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True,
                     iterations.
     WC :            float, optional
                     Weight factor that affects the attraction constraint.
-    lsqr_tol :      float, optional
-                    Sets the stopping tolerances for finding the least-squares
-                    solution (`atol` and `btol` in `scipy.sparse.linalg.lsqr`).
-                    Increasing the tolerance will give dramatic speed-ups but
-                    may lead to funny contractions.
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
-                    before collapsing.
+                    before collapsing. Degenerate meshes can lead to effectively
+                    infinite runtime for this function.
 
     Returns
     -------
@@ -123,7 +124,7 @@ def contract(mesh, iterations=10, SL=10, WC=2, lsqr_tol=1e-07, progress=True,
         cpts = np.zeros((n, 3))
 
         for j in range(3):
-            cpts[:, j] = lsqr(A, b[:, j], atol=lsqr_tol, btol=lsqr_tol)[0]
+            cpts[:, j] = lsqr(A, b[:, j], atol=-precision, btol=-precision)[0]
 
         dm.vertices = cpts
 
