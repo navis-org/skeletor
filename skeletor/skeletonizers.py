@@ -142,7 +142,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
 
     This is somewhat sensitive to the dimensions of the input mesh: too large
     and you might experience slow-downs or numpy OverflowErrors; too low and
-    you might get skeletons that don't quite matc the mesh (e.g. too few nodes).
+    you might get skeletons that don't quite match the mesh (e.g. too few nodes).
     If you experience either, try down- or up-scaling your mesh, respectively.
 
     Parameters

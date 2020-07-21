@@ -54,7 +54,7 @@ def clean(swc, mesh, validate=True, copy=True, **kwargs):
     validate :  bool
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
-                before skeletonization.
+                before cleaning up.
     copy :      bool
                 If True will make and return a copy of the SWC table.
 
@@ -128,7 +128,7 @@ def recenter_vertices(swc, mesh, copy=True):
 
     """
     if not ncollpyde:
-        raise ImportError('skeletor.collapse_line_of_sight_twigs() requires '
+        raise ImportError('skeletor.recenter_vertices() requires '
                           'the ncollpyde package: pip3 install ncollpyde')
 
     # Copy SWC
@@ -211,7 +211,7 @@ def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
 
     """
     if not ncollpyde:
-        raise ImportError('skeletor.collapse_line_of_sight_twigs() requires '
+        raise ImportError('skeletor.drop_line_of_sight_twigs() requires '
                           'the ncollpyde package: pip3 install ncollpyde')
 
     # Make a copy of the SWC
