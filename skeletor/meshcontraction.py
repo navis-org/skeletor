@@ -122,8 +122,8 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
     goodvertices = [[]]
     timetracker = []
 
-    with tqdm(total=iterations, desc='Contracting', disable=progress is False) as pbar:
-        for i in range(iterations):
+    with tqdm(total=iter_lim, desc='Contracting', disable=progress is False) as pbar:
+        for i in range(iter_lim):
             start = time.time()
             vpos = getMeshVPos(dm)
             A = sp.sparse.vstack([L.dot(WL), WH])
@@ -167,7 +167,7 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
 
             timetracker.append(full_end - full_start)
             full_start = time.time()
-            pbar.set_postfix({'facearea': round(area_ratios[-1], 3)})
+            pbar.set_postfix({'contr_rate': round(area_ratios[-1], 3)})
 
         logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
         return dm
