@@ -131,7 +131,14 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
             cpts = np.zeros((n, 3))
 
             for j in range(3):
-                cpts[:, j] = lsqr(A, b[:, j], atol=precision, btol=precision)[0]
+                # Solve A*x = b
+                # Note that we force scipy's lsqr to use current vertex
+                # positions as start points - this speeds things up and
+                # without we get suboptimal solutions that lead to early
+                # termination
+                cpts[:, j] = lsqr(A, b[:, j],
+                                  atol=precision, btol=precision,
+                                  x0=dm.vertices[:, j])[0]
 
             dm.vertices = cpts
 
