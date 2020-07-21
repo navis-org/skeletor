@@ -23,22 +23,21 @@ import scipy.spatial as spspat
 
 
 def make_trimesh(mesh, validate=True):
-    """Construct trimesh.Trimesh from input data.
+    """Construct ``trimesh.Trimesh`` from input data.
 
     Parameters
     ----------
-    meshdata :  tuple | dict | mesh-like object
-                Tuple: (vertices, faces)
-                dict: {'vertices': [], 'faces': []}
-                mesh-like object: mesh.vertices, mesh.faces
-    validate :  bool
-                If True, will try to fix potential issues with the mesh
-                (e.g. infinite values, duplicate vertices, degenerate faces).
+    meshdata :      tuple | dict | mesh-like object
+                    Tuple: (vertices, faces)
+                    dict: {'vertices': [], 'faces': []}
+                    mesh-like object: mesh.vertices, mesh.faces
+    validate :      bool
+                    If True, will try to fix potential issues with the mesh
+                    (e.g. infinite values, duplicate vertices, degenerate faces).
 
     Returns
     -------
-    vertices
-    faces
+    trimesh.Trimesh
 
     """
     if isinstance(mesh, trimesh.Trimesh):
@@ -60,6 +59,7 @@ def make_trimesh(mesh, validate=True):
     if validate:
         mesh.remove_infinite_values()
         mesh.merge_vertices()
+        mesh.remove_duplicate_faces()
         mesh.remove_degenerate_faces()
         mesh.fix_normals()
         mesh.remove_unreferenced_vertices()
