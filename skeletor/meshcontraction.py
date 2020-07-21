@@ -43,15 +43,14 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
-             validate=True):
+def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
+             progress=True, validate=True):
     """Contract mesh.
 
     In a nutshell: this function contracts the mesh by applying rounds of
-    constraint Laplacian smoothing. The process stops if max ``iterations``
-    is reached or the sum of face areas increases instead of decreases from one
-    round to the next.
-
+    constraint Laplacian smoothing. This function can be fairly expensive
+    and I highly recommend you play around with ``epsilon`` and ``precision``:
+    the contraction doesn't have to be perfect for good skeletonization results.
 
     Parameters
     ----------
@@ -61,10 +60,18 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
                     properties or a tuple ``(vertices, faces)`` or a dictionary
                     ``{'vertices': vertices, 'faces': faces}``.
                     Vertices and faces must be (N, 3) numpy arrays.
-    iterations :    int, optional
-                    Max rounds of contractions. Note that the algorithm might
-                    stop early if the sum of the face areas increases from one
-                    iteration to the next instead of decreasing.
+    epsilon :       float (0-1), optional
+                    Target contraction rate as measured by the sum of all face
+                    areas in the contracted versus the original mesh. Algorithm
+                    will stop once mesh is contracted below this threshold.
+                    Depending on your mesh (number of faces, shape) reaching a
+                    strong contraction can be extremely costly with comparatively
+                    little benefit for the subsequent skeletonization. Note that
+                    the algorithm might stop short of this target if ``iter_lim``
+                    is reached first or if the sum of face areas is increasing
+                    from one iteration to the next instead of decreasing.
+    iter_lim :      int (>1), optional
+                    Maximum rounds of contractions.
     precision :     float, optional
                     Sets the precision for finding the least-square solution.
                     This is the main determinant for speed vs quality: lower
@@ -73,16 +80,17 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
                     the iterative contractions might stop early.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied for
-                    each iteration. Lower values are more likely to get you
-                    an optimal contraction at the cost of needing more
+                    each iteration. In theory, lower values are more likely to
+                    get you an optimal contraction at the cost of needing more
                     iterations.
-    WC :            float, optional
-                    Weight factor that affects the attraction constraint.
+    WH0 :           float, optional
+                    Weight factor that affects the attraction constraints.
+                    Increase this value if you're experiencing
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
                     before collapsing. Degenerate meshes can lead to effectively
-                    infinite runtime for this function.
+                    infinite runtime for this function!
 
     Returns
     -------
@@ -94,21 +102,22 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
     m = make_trimesh(mesh, validate=validate)
 
     n = len(m.vertices)
-    initialFaceWeight = 1.0 / (10.0 * np.sqrt(averageFaceArea(m)))
+    WL0 = 10.0**-3 * np.sqrt(averageFaceArea(m))
+    #initialFaceWeight = 1.0 / (10.0 * np.sqrt(averageFaceArea(m)))
     originalOneRing = getOneRingAreas(m)
     zeros = np.zeros((n, 3))
 
     full_start = time.time()
 
     WH0_diag = np.zeros(n)
-    WH0_diag.fill(WC)
+    WH0_diag.fill(WH0)
     WH0 = sp.sparse.spdiags(WH0_diag, 0, WH0_diag.size, WH0_diag.size)
 
     # Make a copy but keep original values
     WH = sp.sparse.dia_matrix(WH0)
 
     WL_diag = np.zeros(n)
-    WL_diag.fill(initialFaceWeight)
+    WL_diag.fill(WL0)
     WL = sp.sparse.spdiags(WL_diag, 0, WL_diag.size, WL_diag.size)
 
     # Copy mesh
@@ -149,17 +158,15 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
             area_ratios.append(np.sum(newringareas) / originalFaceAreaSum)
             pbar.update()
 
-            if(area_ratios[-1] > area_ratios[-2]):
+            if (area_ratios[-1] > area_ratios[-2]):
                 logger.debug('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
                 logger.debug('ITERATION TERMINATED AT: {}'.format(i))
                 logger.debug('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
-
-                cpts = goodvertices[0]
-                dm.vertices = cpts
+                dm.vertices = goodvertices[0]
                 break
 
             goodvertices[0] = cpts
-            logger.debug('RATIO OF CHANGE IN FACE AREA: {:.4f}'.format(area_ratios[-1]))
+            logger.debug('RATIO OF CHANGE IN FACE AREA: {:.2g}'.format(area_ratios[-1]))
             WL = sp.sparse.dia_matrix(WL.multiply(SL))
             WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
             L = -meanCurvatureLaplaceWeights(dm, normalized=True)
@@ -168,6 +175,9 @@ def contract(mesh, iterations=10, precision=1e-07, SL=10, WC=2, progress=True,
             timetracker.append(full_end - full_start)
             full_start = time.time()
             pbar.set_postfix({'contr_rate': round(area_ratios[-1], 3)})
+
+            if (area_ratios[-1] <= epsilon):
+                break
 
         logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
         return dm
