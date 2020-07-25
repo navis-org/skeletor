@@ -35,12 +35,12 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
-             progress=True, validate=True):
+def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
+             WL0='auto', progress=True, validate=True):
     """Contract mesh.
 
     In a nutshell: this function contracts the mesh by applying rounds of
-    constraint Laplacian smoothing. This function can be fairly expensive
+    _constraint_ Laplacian smoothing. This function can be fairly expensive
     and I highly recommend you play around with ``epsilon`` and ``precision``:
     the contraction doesn't have to be perfect for good skeletonization results.
 
@@ -76,8 +76,17 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
                     get you an optimal contraction at the cost of needing more
                     iterations.
     WH0 :           float, optional
-                    Weight factor that affects the attraction constraints.
-                    Increase this value if you're experiencing
+                    Initial weight factor for the attraction constraints.
+                    The ratio of the initial weights ``WL0`` and ``WH0``
+                    controls the smoothness and the degree of contraction of the
+                    first iteration result, thus it determines the amount of
+                    details retained in subsequent and final contracted meshes:
+                    higher ``WH0`` = more details retained.
+    WL0 :           "auto" | float
+                    Initial weight factor for the contraction constraints. By
+                    default ("auto"), this will be set to ``1e-3 * sqrt(A)``
+                    with ``A`` being the average face area. This ensures that
+                    contraction forces scale with the coarseness of the mesh.
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
@@ -92,22 +101,20 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
     """
     # Force into trimesh
     m = make_trimesh(mesh, validate=validate)
-
     n = len(m.vertices)
-    WL0 = 10.0**-3 * np.sqrt(averageFaceArea(m))
-    #initialFaceWeight = 1.0 / (10.0 * np.sqrt(averageFaceArea(m)))
-    originalOneRing = getOneRingAreas(m)
+
+    # Initialize attraction weights
     zeros = np.zeros((n, 3))
-
-    full_start = time.time()
-
     WH0_diag = np.zeros(n)
     WH0_diag.fill(WH0)
     WH0 = sp.sparse.spdiags(WH0_diag, 0, WH0_diag.size, WH0_diag.size)
-
     # Make a copy but keep original values
     WH = sp.sparse.dia_matrix(WH0)
 
+    # Initialize contraction weights
+    if WL0 == 'auto':
+        WL0 = 10.0**-3 * np.sqrt(averageFaceArea(m))
+        # WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))
     WL_diag = np.zeros(n)
     WL_diag.fill(WL0)
     WL = sp.sparse.spdiags(WL_diag, 0, WL_diag.size, WL_diag.size)
@@ -115,61 +122,54 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
     # Copy mesh
     dm = m.copy()
 
-    L = -meanCurvatureLaplaceWeights(dm, normalized=True)
-
-    area_ratios = []
-    area_ratios.append(1.0)
-    originalFaceAreaSum = np.sum(originalOneRing)
-    goodvertices = [[]]
-    timetracker = []
-
+    area_ratios = [1.0]
+    originalRingAreas = getOneRingAreas(dm)
+    goodvertices = dm.vertices
     with tqdm(total=iter_lim, desc='Contracting', disable=progress is False) as pbar:
         for i in range(iter_lim):
-            start = time.time()
-            vpos = getMeshVPos(dm)
-            A = sp.sparse.vstack([L.dot(WL), WH])
-            b = np.vstack((zeros, WH.dot(vpos)))
-            cpts = np.zeros((n, 3))
+            # Get Laplace weights
+            L = meanCurvatureLaplaceWeights(dm, normalized=True)
 
+            V = getMeshVPos(dm)
+            A = sp.sparse.vstack([WL.dot(L), WH])
+            b = np.vstack((zeros, WH.dot(V)))
+
+            cpts = np.zeros((n, 3))
             for j in range(3):
                 # Solve A*x = b
-                # Note that we force scipy's lsqr to use current vertex
+                # Note that we force scipy's lsqr() to use current vertex
                 # positions as start points - this speeds things up and
-                # without we get suboptimal solutions that lead to early
+                # without it we get suboptimal solutions that lead to early
                 # termination
                 cpts[:, j] = lsqr(A, b[:, j],
                                   atol=precision, btol=precision,
                                   x0=dm.vertices[:, j])[0]
-
+            # Update mesh with new vertex position
             dm.vertices = cpts
 
-            end = time.time()
-            logger.debug('TOTAL TIME FOR SOLVING LEAST SQUARES: {:.3f}s'.format(end - start))
-            newringareas = getOneRingAreas(dm)
-            changeinarea = np.power(newringareas, -0.5)
-            area_ratios.append(np.sum(newringareas) / originalFaceAreaSum)
+            # Update progress bar
             pbar.update()
 
+            # Break if face area has increased compared to the last iteration
+            area_ratios.append(dm.area / m.area)
             if (area_ratios[-1] > area_ratios[-2]):
-                logger.debug('FACE AREA INCREASED FROM PREVIOUS: {:.4f} {:.4f}'.format(area_ratios[-1], area_ratios[-2]))
-                logger.debug('ITERATION TERMINATED AT: {}'.format(i))
-                logger.debug('RESTORE TO PREVIOUS GOOD POSITIONS FROM ITERATION: {}'.format(i - 1))
-                dm.vertices = goodvertices[0]
+                dm.vertices = goodvertices
                 break
+            pbar.set_postfix({'contr_rate': f'{area_ratios[-1]:.2g}'})
 
-            goodvertices[0] = cpts
-            logger.debug('RATIO OF CHANGE IN FACE AREA: {:.2g}'.format(area_ratios[-1]))
+            goodvertices = cpts
+
+            # Update contraction weights -> at each iteration the contraction
+            # forces increase to counteract the increased attraction forces
             WL = sp.sparse.dia_matrix(WL.multiply(SL))
+
+            # Update attraction weights -> the smaller the one ring areas
+            # the higher the attraction forces
+            changeinarea = np.sqrt(originalRingAreas / getOneRingAreas(dm))
             WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
-            L = -meanCurvatureLaplaceWeights(dm, normalized=True)
-            full_end = time.time()
 
-            timetracker.append(full_end - full_start)
-            full_start = time.time()
-            pbar.set_postfix({'contr_rate': round(area_ratios[-1], 3)})
-
+            # Stop if we reached our target contraction rate
             if (area_ratios[-1] <= epsilon):
                 break
 
-        logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
         return dm
