@@ -21,6 +21,8 @@ import numpy as np
 import scipy.sparse as spsp
 import scipy.spatial as spspat
 
+from .preprocessing import fix_mesh
+
 
 def make_trimesh(mesh, validate=True):
     """Construct ``trimesh.Trimesh`` from input data.
@@ -57,12 +59,7 @@ def make_trimesh(mesh, validate=True):
                         f'type "{type(mesh)}"')
 
     if validate:
-        mesh.remove_infinite_values()
-        mesh.merge_vertices()
-        mesh.remove_duplicate_faces()
-        mesh.remove_degenerate_faces()
-        mesh.fix_normals()
-        mesh.remove_unreferenced_vertices()
+        mesh = fix_mesh(mesh, inplace=True)
 
     return mesh
 

@@ -19,7 +19,6 @@
 import logging
 import time
 
-import networkx as nx
 import numpy as np
 import scipy as sp
 import trimesh as tm
@@ -29,13 +28,6 @@ from tqdm.auto import tqdm
 
 from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
                         averageFaceArea, getOneRingAreas, make_trimesh)
-
-try:
-    import fastremap
-except ImportError:
-    fastremap = None
-except BaseException:
-    raise
 
 logger = logging.getLogger('skeletor')
 
@@ -181,60 +173,3 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=10, WH0=1,
 
         logger.debug('TOTAL TIME FOR MESH CONTRACTION ::: {:.2f}s FOR VERTEX COUNT ::: #{}'.format(np.sum(timetracker), n))
         return dm
-
-
-def merge_vertices(mesh, dist='auto', inplace=False):
-    """Merge vertices closer than a given distance.
-
-    Parameters
-    ----------
-    mesh :      trimesh.Trimesh
-                Mesh to merge vertices on.
-    dist :      "auto" | number
-                Distance at which to merge vertices. If "auto" will use
-                ``mesh.edges_unique_length.mean() / 100``.
-    inplace :   bool
-                If True will modify the original mesh.
-
-    Returns
-    -------
-    trimesh.Trimesh
-
-    """
-    assert isinstance(mesh, tm.Trimesh)
-
-    if not inplace:
-        mesh = mesh.copy()
-
-    # Generate KDTree
-    tree = sp.spatial.cKDTree(mesh.vertices)
-
-    if dist == 'auto':
-        dist = mesh.edges_unique_length.mean() / 100
-
-    # Query tree
-    pairs = tree.query_pairs(dist)
-
-    # Facilitate remapping by removing extra steps: A->B->C to A->C, B->C
-    G = nx.Graph()
-    G.add_edges_from(pairs)
-    mapping = {n: list(c)[0] for c in nx.connected_components(G) for n in list(c)[1:]}
-
-    with mesh._cache:
-        # Update faces
-        if fastremap:
-            mesh.faces = fastremap.remap(mesh.faces, mapping,
-                                         preserve_missing_labels=True,
-                                         in_place=True)
-        else:
-            for k, v in mapping.items():
-                mesh.faces[mesh.faces == k] = v
-
-    # Remove dropped vertices
-    remove = np.isin(np.arange(mesh.vertices.shape[0]), list(mapping.keys()))
-    mesh.update_vertices(~remove)
-
-    # Remove degenerate faces
-    mesh.remove_degenerate_faces()
-
-    return mesh
