@@ -15,6 +15,8 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
+import os
+
 import networkx as nx
 import numpy as np
 import scipy as sp
@@ -140,3 +142,61 @@ def merge_vertices(mesh, dist='auto', inplace=False):
     mesh.fix_normals()
 
     return mesh
+
+
+def simplify(mesh, ratio):
+    """Simplify mesh using Blender 3D.
+
+    Uses Blender's "decimate" modifier in "collapse" mode.
+
+    Parameters
+    ----------
+    mesh :  trimesh.Trimesh
+            Mesh to simplify.
+    ratio : float
+            Factor to which to reduce faces. For example, a ratio of 0.5 will
+            reduce the number of faces to 50%.
+
+    Returns
+    -------
+    trimesh.Trimesh
+            Simplified mesh.
+
+    """
+    if not tm.interfaces.blender.exists:
+        raise ImportError('No Blender available (executable not found).')
+    _blender_executable = tm.interfaces.blender._blender_executable
+
+    assert ratio < 1 and ratio > 0, 'ratio must be between 0 and 1'
+    assert isinstance(mesh, tm.Trimesh)
+
+    # Load the template
+    temp_name = 'blender_decimate.py.template'
+    if temp_name in _cache:
+        template = _cache[temp_name]
+    else:
+        with open(os.path.join(_pwd, 'templates', temp_name), 'r') as f:
+            template = f.read()
+        _cache[temp_name] = template
+
+    # Replace placeholder with actual ratio
+    script = template.replace('$RATIO', str(ratio))
+
+    # Let trimesh's MeshScript take care of exectution and clean-up
+    with tm.interfaces.generic.MeshScript(meshes=[mesh],
+                                          script=script,
+                                          debug=False) as blend:
+        result = blend.run(_blender_executable
+                           + ' --background --python $SCRIPT')
+
+    # Blender apparently returns actively incorrect face normals
+    result.face_normals = None
+
+    return result
+
+
+# find the current absolute path to this directory
+_pwd = os.path.expanduser(os.path.abspath(os.path.dirname(__file__)))
+
+# Use to cache templates
+_cache = {}

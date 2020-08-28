@@ -1,0 +1,41 @@
+import bpy
+import os
+
+
+if __name__ == '__main__':
+    # clear scene of default box
+    bpy.ops.wm.read_homefile()
+    try:
+        bpy.ops.object.mode_set(mode='OBJECT')
+    except BaseException:
+        pass
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=True)
+
+    # get temporary files from templated locations
+    mesh_pre = $MESH_PRE
+    mesh_post = os.path.abspath(r'$MESH_POST')
+
+    for filename in mesh_pre:  # use data.objects instead of context.scene.objects
+        bpy.ops.import_mesh.stl(filepath=os.path.abspath(filename))
+
+    mesh = bpy.data.objects[0]
+    # Make sure mesh is the active object
+    try:
+        # earlier than blender <2.8
+        bpy.context.scene.objects.active = mesh
+    except AttributeError:
+        # blender 2.8 changed this
+        bpy.context.view_layer.objects.active = mesh
+
+    # add decimate modifier
+    mod = mesh.modifiers.new('decimate', 'DECIMATE')
+    mod.decimate_type = 'COLLAPSE'
+    mod.ratio = $RATIO
+    mod.use_collapse_triangulate = True
+
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    bpy.ops.export_mesh.stl(
+        filepath=mesh_post,
+        use_mesh_modifiers=True)

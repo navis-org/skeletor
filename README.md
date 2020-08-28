@@ -9,6 +9,9 @@ The pipeline looks like this:
  3. `skeletor.clean()` to clean up some potential issues with the skeleton
  4. `skeletor.radii()` to extract radii either by k-nearest neighbours or ray-casting
 
+ Optional:
+ - `skeletor.simplify` to simplify overly detailed meshes 
+
 ## Install
 
 `pip3 install git+git://github.com/schlegelp/skeletor@master`
