@@ -180,6 +180,10 @@ def simplify(mesh, ratio):
     _blender_executable = tm.interfaces.blender._blender_executable
 
     assert ratio < 1 and ratio > 0, 'ratio must be between 0 and 1'
+
+    # We need to import here to avoid circular imports
+    from .utilities import make_trimesh
+    mesh = make_trimesh(mesh, validate=False)
     assert isinstance(mesh, tm.Trimesh)
 
     # Load the template
