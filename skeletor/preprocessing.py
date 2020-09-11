@@ -30,7 +30,10 @@ except BaseException:
     raise
 
 
-def fix_mesh(mesh, remove_fragments=False, inplace=False):
+def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
+             remove_degenerate_faces=True, fix_normals=True,
+             remove_unreferenced_verts=True, remove_disconnected=False,
+             inplace=False):
     """Try to fix some common problems with mesh.
 
      1. Remove infinite values
@@ -42,16 +45,16 @@ def fix_mesh(mesh, remove_fragments=False, inplace=False):
 
     Parameters
     ----------
-    meshdata :          trimesh.Trimesh
-    remove_fragments :  False | int
-                        If a number is given, will iterate over the mesh's
-                        connected components and remove those consisting of less
-                        than the given number of vertices. For example,
-                        ``remove_fragments=5`` will drop parts of the mesh
-                        that consist of five or less connected vertices.
-    inplace :           bool
-                        If True, will perform fixes on the input mesh. If False,
-                        will make a copy first.
+    meshdata :              trimesh.Trimesh
+    remove_disconnected :   False | int
+                            If a number is given, will iterate over the mesh's
+                            connected components and remove those consisting of less
+                            than the given number of vertices. For example,
+                            ``remove_fragments=5`` will drop parts of the mesh
+                            that consist of five or less connected vertices.
+    inplace :               bool
+                            If True, will perform fixes on the input mesh. If False,
+                            will make a copy first.
 
     Returns
     -------
@@ -63,22 +66,31 @@ def fix_mesh(mesh, remove_fragments=False, inplace=False):
     if not inplace:
         mesh = mesh.copy()
 
-    if remove_fragments:
+    if remove_disconnected:
         to_drop = []
         for c in nx.connected_components(mesh.vertex_adjacency_graph):
-            if len(c) <= remove_fragments:
+            if len(c) <= remove_disconnected:
                 to_drop += list(c)
 
         # Remove dropped vertices
         remove = np.isin(np.arange(mesh.vertices.shape[0]), to_drop)
         mesh.update_vertices(~remove)
 
-    mesh.remove_infinite_values()
-    mesh.merge_vertices()
-    mesh.remove_duplicate_faces()
-    mesh.remove_degenerate_faces()
-    mesh.fix_normals()
-    mesh.remove_unreferenced_vertices()
+    if remote_infinite:
+        mesh.remove_infinite_values()
+
+    if merge_duplicate_verts:
+        mesh.merge_vertices()
+
+    if remove_degenerate_faces:
+        mesh.remove_duplicate_faces()
+        mesh.remove_degenerate_faces()
+
+    if remove_unreferenced_verts:
+        mesh.remove_unreferenced_vertices()
+
+    if fix_normals:
+        mesh.fix_normals()
 
     return mesh
 
