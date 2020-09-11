@@ -45,5 +45,6 @@ setup(
     ],
     install_requires=requirements,
     python_requires='>=3.6',
+    package_data={'skeletor': ['templates/*template*']},
     zip_safe=False
 )
