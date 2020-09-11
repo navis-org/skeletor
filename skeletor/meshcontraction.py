@@ -136,6 +136,7 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
 
             cpts = np.zeros((n, 3))
             for j in range(3):
+                """
                 # Solve A*x = b
                 # Note that we force scipy's lsqr() to use current vertex
                 # positions as start points - this speeds things up and
@@ -143,7 +144,24 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
                 # termination
                 cpts[:, j] = lsqr(A, b[:, j],
                                   atol=precision, btol=precision,
+                                  damp=1,
                                   x0=dm.vertices[:, j])[0]
+                """
+                # The solution below is recommended in scipy's lsqr docstring
+                # for when we have an initial estimate
+                # Gives use the same results as above but is slightly faster
+
+                # Initial estimate (i.e. our current positions)
+                x0 = dm.vertices[:, j]
+                # Compute residual vector
+                r0 = b[:, j] - A * x0
+                # Use LSQR to solve the system
+                dx = lsqr(A, r0,
+                          atol=precision, btol=precision,
+                          damp=1)[0]
+                # Add the correction dx to obtain a final solution
+                cpts[:, j] = x0 + dx
+
             # Update mesh with new vertex position
             dm.vertices = cpts
 
