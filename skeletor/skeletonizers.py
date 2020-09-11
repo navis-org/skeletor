@@ -180,7 +180,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     """
     assert output in ['swc', 'graph', 'both']
 
-    mesh = make_trimesh(mesh)
+    mesh = make_trimesh(mesh, validate=False)
 
     # Shorthand faces and edges
     # We convert to arrays to (a) make a copy and (b) remove potential overhead
@@ -612,7 +612,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
     assert output in ['swc', 'graph', 'both']
     assert cluster_pos in ['center', 'median']
 
-    mesh = make_trimesh(mesh)
+    mesh = make_trimesh(mesh, validate=False)
 
     # Produce weighted edges
     edges = np.concatenate((mesh.edges_unique,
