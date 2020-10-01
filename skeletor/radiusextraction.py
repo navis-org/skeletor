@@ -42,7 +42,7 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
                 SWC table.
     mesh :      trimesh.Trimesh
                 Mesh to use for radius extraction.
-    method :    "knn" | "ray" (TODO)
+    method :    "knn" | "ray"
                 Whether and how to add radius information to each node::
 
                     - "knn" uses k-nearest-neighbors to get radii: fast but potential for being very wrong
@@ -55,7 +55,6 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
                 before skeletonization.
-
     **kwargs
                 Keyword arguments are passed to the respective method:
 
@@ -76,7 +75,6 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
                     the raycasting will return nonesense results. We can either
                     ignore those cases (``None``), assign a arbitrary number or
                     we can fall back to radii from k-nearest-neighbors (``knn``).
-
 
     Returns
     -------
