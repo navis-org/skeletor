@@ -10,7 +10,7 @@ The pipeline looks like this:
  4. `skeletor.radii()` to extract radii either by k-nearest neighbours or ray-casting
 
  Optional:
- - `skeletor.simplify` to simplify overly detailed meshes 
+ - `skeletor.simplify` to simplify overly detailed meshes (requires [Blender3d](https://www.blender.org) to be installed)
 
 ## Install
 
@@ -46,7 +46,7 @@ Mesh(vertices<79947>, faces<149224>, normals<0>, segid=None, encoding_type=<drac
 Generate the skeleton
 ```Python
 >>> import skeletor as sk
-# Contract the mesh
+# Contract the mesh -> doesn't have to be perfect but you should aim for <10%
 >>> cont = sk.contract(mesh, iter_lim=4)
 # Extract the skeleton from the contracted mesh
 >>> swc = sk.skeletonize(cont, method='vertex_clusters', sampling_dist=50, output='swc')
