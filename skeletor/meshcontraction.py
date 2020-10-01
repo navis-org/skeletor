@@ -17,11 +17,11 @@
 #    along with this program.
 
 import logging
+import numbers
 import time
 
 import numpy as np
 import scipy as sp
-import trimesh as tm
 
 from scipy.sparse.linalg import lsqr
 from tqdm.auto import tqdm
@@ -35,8 +35,8 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
-             WL0='auto', progress=True, validate=True):
+def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
+             SL=2, WH0=1, WL0='auto', progress=True, validate=True):
     """Contract mesh.
 
     In a nutshell: this function contracts the mesh by applying rounds of
@@ -60,10 +60,15 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
                     strong contraction can be extremely costly with comparatively
                     little benefit for the subsequent skeletonization. Note that
                     the algorithm might stop short of this target if ``iter_lim``
-                    is reached first or if the sum of face areas is increasing
-                    from one iteration to the next instead of decreasing.
+                    or ``time_lim`` is reached first or if the sum of face areas
+                    is increasing from one iteration to the next instead of
+                    decreasing.
     iter_lim :      int (>1), optional
                     Maximum rounds of contractions.
+    time_lim :      int, optional
+                    Maximum run time in seconds. Note that this limit is not
+                    checked during but after each round of contraction. Hence,
+                    the actual total time will likely overshoot ``time_lim``.
     precision :     float, optional
                     Sets the precision for finding the least-square solution.
                     This is the main determinant for speed vs quality: lower
@@ -98,7 +103,14 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
     trimesh.Trimesh
                     Contracted copy of original mesh.
 
+    References
+    ----------
+    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
     """
+    start = time.time()
+
     # Force into trimesh
     m = make_trimesh(mesh, validate=validate)
     n = len(m.vertices)
@@ -113,8 +125,8 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
 
     # Initialize contraction weights
     if WL0 == 'auto':
-        WL0 = 10.0**-3 * np.sqrt(averageFaceArea(m))
-        # WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))
+        WL0 = 1e-03 * np.sqrt(averageFaceArea(m))
+        #WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))
     WL_diag = np.zeros(n)
     WL_diag.fill(WL0)
     WL = sp.sparse.spdiags(WL_diag, 0, WL_diag.size, WL_diag.size)
@@ -189,5 +201,10 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, precision=1e-07, SL=2, WH0=1,
             # Stop if we reached our target contraction rate
             if (area_ratios[-1] <= epsilon):
                 break
+
+            # Stop if time limit is reached
+            if not isinstance(time_lim, (bool, type(None))):
+                if (time.time() - start) >= time_lim:
+                    break
 
         return dm
