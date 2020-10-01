@@ -70,12 +70,12 @@ def clean(swc, mesh, validate=True, copy=True, **kwargs):
 
     For `skeletor.postprocessing.drop_parallel_twigs`:
 
-    epislon :   float (default 0.01)
+    theta :     float (default 0.01)
                 For each twig we generate the dotproduct between the tangent
                 vectors of it and its parents. If these line up perfectly the
-                dotproduct will equal 1. ``epsilon`` determines how much that
+                dotproduct will equal 1. ``theta`` determines how much that
                 value can differ from 1 for us to still prune the twig: higher
-                epsilon = more pruning.
+                theta = more pruning.
 
     Returns
     -------
@@ -311,7 +311,7 @@ def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
     return swc
 
 
-def drop_parallel_twigs(swc, epsilon=0.01, copy=True):
+def drop_parallel_twigs(swc, theta=0.01, copy=True):
     """Remove 1-node twigs that run parallel to their parent branch.
 
     This happens e.g. for vertex clustering skeletonization.
@@ -319,12 +319,12 @@ def drop_parallel_twigs(swc, epsilon=0.01, copy=True):
     Parameters
     ----------
     swc :       pandas.DataFrame
-    epislon :   float
+    theta :     float
                 For each twig we generate the dotproduct between the tangent
                 vectors of it and its parents. If these line up perfectly the
-                dotproduct will equal 1. ``epsilon`` determines how much that
-                value can differ from 1 for us to still prune the twig: higher
-                epsilon = more pruning.
+                dotproduct will equal 1. ``theta`` determines how much that
+                value can DIFFER from 1 for us to still prune the twig: higher
+                theta = more pruning.
     copy :      bool
                 If True will make and return a copy of the SWC table.
 
@@ -334,8 +334,8 @@ def drop_parallel_twigs(swc, epsilon=0.01, copy=True):
                 SWC with parallel twigs removed.
 
     """
-    assert isinstance(epsilon, numbers.Number), "epsilon must be a number"
-    assert 0 <= epsilon <= 1, "epsilon must be between 0 and 1"
+    assert isinstance(theta, numbers.Number), "theta must be a number"
+    assert 0 <= theta <= 1, "theta must be between 0 and 1"
 
     # Work on a copy of the SWC table
     if copy:
@@ -386,8 +386,8 @@ def drop_parallel_twigs(swc, epsilon=0.01, copy=True):
 
     # Basically we want to drop any twig for which the dotproduct is close to 1
     dot_diff = 1 - np.fabs(dot)
-    # Remove twigs where the dotproduct is within `epsilon` to 1
-    to_remove = twigs.loc[dot_diff <= epsilon]
+    # Remove twigs where the dotproduct is within `theta` to 1
+    to_remove = twigs.loc[dot_diff <= theta]
     swc = swc[~swc.node_id.isin(to_remove.node_id)]
 
     # Drop the tangent columns we made
