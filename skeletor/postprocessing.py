@@ -91,7 +91,7 @@ def clean(swc, mesh, validate=True, copy=True, **kwargs):
         swc = swc.copy()
 
     # Drop parallel twigs
-    swc = drop_parallel_twigs(swc, epsilon=kwargs.get('epsilon', 0.01), copy=False)
+    swc = drop_parallel_twigs(swc, theta=kwargs.get('theta', 0.01), copy=False)
 
     # Recenter vertices
     swc = recenter_vertices(swc, mesh, copy=False)
