@@ -153,7 +153,12 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
     area_ratios = [1.0]
     originalRingAreas = getOneRingAreas(dm)
     goodvertices = dm.vertices
-    with tqdm(total=iter_lim, desc='Contracting', disable=progress is False) as pbar:
+    bar_format = ("{l_bar}{bar}| [{elapsed}<{remaining}, {rate_fmt}, "
+                  "it {postfix[0]}/{postfix[1]}, epsilon {postfix[2]:.2g}")
+    with tqdm(total=100,
+              bar_format=bar_format,
+              disable=progress is False,
+              postfix=[1, iter_lim, 1]) as pbar:
         for i in range(iter_lim):
             # Get Laplace weights
             if operator == 'cotangent':
@@ -196,15 +201,23 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
             # Update mesh with new vertex position
             dm.vertices = cpts
 
-            # Update progress bar
-            pbar.update()
+            # Update iteration in progress bar
+            pbar.postfix[0] = i + 1
 
             # Break if face area has increased compared to the last iteration
             area_ratios.append(dm.area / m.area)
             if (area_ratios[-1] > area_ratios[-2]):
                 dm.vertices = goodvertices
+                if progress:
+                    tqdm.write("Total face area increased from last iteration."
+                               f" Contraction stopped prematurely after {i} "
+                               f"iterations at epsilon {area_ratios[-2]:.2g}.")
                 break
-            pbar.set_postfix({'contr_rate': f'{area_ratios[-1]:.2g}'})
+
+            # Update progress bar
+            pbar.postfix[2] = area_ratios[-1]
+            prog = round((area_ratios[-2] - area_ratios[-1]) / (1 - epsilon) * 100)
+            pbar.update(min(prog, 100-pbar.n))
 
             goodvertices = cpts
 
