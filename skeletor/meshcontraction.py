@@ -202,7 +202,8 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
             dm.vertices = cpts
 
             # Update iteration in progress bar
-            pbar.postfix[0] = i + 1
+            if progress:
+                pbar.postfix[0] = i + 1
 
             # Break if face area has increased compared to the last iteration
             area_ratios.append(dm.area / m.area)
@@ -215,9 +216,10 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
                 break
 
             # Update progress bar
-            pbar.postfix[2] = area_ratios[-1]
-            prog = round((area_ratios[-2] - area_ratios[-1]) / (1 - epsilon) * 100)
-            pbar.update(min(prog, 100-pbar.n))
+            if progress:
+                pbar.postfix[2] = area_ratios[-1]
+                prog = round((area_ratios[-2] - area_ratios[-1]) / (1 - epsilon) * 100)
+                pbar.update(min(prog, 100-pbar.n))
 
             goodvertices = cpts
 
