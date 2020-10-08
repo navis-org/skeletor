@@ -15,11 +15,12 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
-import trimesh
+import warnings
 
 import numpy as np
 import scipy.sparse as spsp
 import scipy.spatial as spspat
+import trimesh as tm
 
 from .preprocessing import fix_mesh
 
@@ -42,18 +43,18 @@ def make_trimesh(mesh, validate=True):
     trimesh.Trimesh
 
     """
-    if isinstance(mesh, trimesh.Trimesh):
+    if isinstance(mesh, tm.Trimesh):
         pass
     elif isinstance(mesh, (tuple, list)):
         if len(mesh) == 2:
-            mesh = trimesh.Trimesh(vertices=mesh[0],
-                                   faces=mesh[1])
+            mesh = tm.Trimesh(vertices=mesh[0],
+                              faces=mesh[1])
     elif isinstance(mesh, dict):
-        mesh = trimesh.Trimesh(vertices=mesh['vertices'],
-                               faces=mesh['faces'])
+        mesh = tm.Trimesh(vertices=mesh['vertices'],
+                          faces=mesh['faces'])
     elif hasattr(mesh, 'vertices') and hasattr(mesh, 'faces'):
-        mesh = trimesh.Trimesh(vertices=mesh.vertices,
-                               faces=mesh.faces)
+        mesh = tm.Trimesh(vertices=mesh.vertices,
+                          faces=mesh.faces)
     else:
         raise TypeError('Unable to construct a trimesh.Trimesh from object of '
                         f'type "{type(mesh)}"')
@@ -72,7 +73,135 @@ def getBBox(verts):
     return min_coords, max_coords, diameter
 
 
-def meanCurvatureLaplaceWeights(mesh, symmetric=False, normalized=False):
+def laplacian_umbrella(mesh):
+    """Compute Laplace weights using the uniform weighting.
+
+    Uniform weighting (aka "umbrella operator") only describes the topological
+    properties of the mesh but not the geometrical ones. This also makes it
+    more robust if the mesh is imperfect.
+
+
+    Parameters
+    ----------
+    mesh :          trimesh.Trimesh
+
+    Returns
+    -------
+    CSR sparse matrix
+
+    References
+    ----------
+    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
+    """
+    # We're piggy backing off trimesh's laplace operator
+    L = tm.smoothing.laplacian_calculation(mesh, equal_weight=False)
+
+    # At this point, rows/cols in L sum up to 1 and the diagonal is zero
+    # We have to set the diagonal to -1 to set the weights properly
+    L.setdiag(-1)
+
+    return L.tocsr()
+
+
+def laplacian_cotangent(mesh, normalized=False):
+    """Compute Laplace weights from cotangents.
+
+    This produces a n x n curvature-flow Laplace operator with elements::
+
+        L_ij =      w_ij = cot(a_ij) + cot(b_ij)        if (i,j) in edges,
+                    -sum(w_ik)                          if i = j
+                    0                                   otherwise,
+
+    With a and b being the opposite angles in the faces that share the edge ij.
+
+
+    Parameters
+    ----------
+    mesh :          trimesh.Trimesh
+    normalized :    bool
+                    If True will (sort of) normalize the weights. This requires
+                    ``scikit-learn`` to be installed.
+
+    Returns
+    -------
+    CSR sparse matrix
+
+    References
+    ----------
+    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
+    """
+    # Get pairs of faces that share an edge
+    face_pairs = mesh.face_adjacency
+
+    # Find out which vertices of each face pair are opposite
+    # (i.e. not part of the shared edge)
+    opposite_verts = mesh.face_adjacency_unshared
+    a_ix = np.where(mesh.faces[face_pairs[:, 0]] == opposite_verts[:, [0]])[1]
+    b_ix = np.where(mesh.faces[face_pairs[:, 1]] == opposite_verts[:, [1]])[1]
+
+    # Get the angles of these opposite vertices within the shared faces
+    a = mesh.face_angles[face_pairs[:, 0], a_ix]
+    b = mesh.face_angles[face_pairs[:, 1], b_ix]
+
+    # Clip angles to prevent extreme weights
+    #a_min, a_max = np.deg2rad(1), np.deg2rad(179)
+    #a = np.clip(a, a_min=a_min, a_max=a_max)
+    #b = np.clip(b, a_min=a_min, a_max=a_max)
+
+    # Produce the cotangents
+    # The warning filter is for catching division by 0 warnings (see below)
+    with warnings.catch_warnings():
+        # Sharp angles give high weights:
+        # 1 / np.tan(np.deg2rad(1)) = 57
+        # Flat angles give low weights:
+        # 1 / np.tan(np.deg2rad(179)) = -57
+        warnings.simplefilter("ignore")
+        cota = 1 / np.tan(a)
+        cotb = 1 / np.tan(b)
+        data = cota + cotb
+
+        # If a face is fully collapsed angles a or b can be 0 -> in this case
+        # we have to make sure not to introduces infinite values
+        # -8165619676597685 is the value of 1 / np.tan(180) -> so the opposite
+        # of collapsed face
+        data[data == np.inf] = 8165619676597685
+
+    # Generate rows and cols
+    i = mesh.face_adjacency_edges[:, 0]
+    j = mesh.face_adjacency_edges[:, 1]
+
+    # Stack so that we cover i->j and i<-j
+    data = np.concatenate((data, data))
+    rows = np.concatenate((i, j))
+    cols = np.concatenate((j, i))
+
+    # Generate sparse matrix
+    n = len(mesh.vertices)
+    W = spsp.csr_matrix((data, (rows, cols)), shape=(n, n))
+
+    # Catch some scipy runtime warnings about changing sparse matrix structure
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        W.setdiag(0)
+
+        # Set diagonal to -w(k)
+        diag = - np.array(W.sum(axis=0))
+        W.setdiag(diag.flatten())
+
+    if normalized:
+        from sklearn.preprocessing import normalize
+        W = normalize(W)
+
+    return W
+
+
+def _laplacian_cotangent_legacy(mesh, symmetric=False, normalized=False):
+    """Original implemenation (kept for reference)."""
     n = len(mesh.vertices)
 
     v1v2 = mesh.triangles[:, 0] - mesh.triangles[:, 1]
@@ -118,10 +247,14 @@ def meanCurvatureLaplaceWeights(mesh, symmetric=False, normalized=False):
         L = eye - d * W * d
     elif (not symmetric and normalized):
         sum_vector = W.sum(axis=0)
-        sum_vector_powered = np.power(sum_vector, -1.0)
-        d = spsp.dia_matrix((sum_vector_powered, [0]), shape=(n, n))
-        eye = spsp.identity(n)
+        sum_vector_powered = np.power(sum_vector, -1.0) # this is the same as 1 / sum_vector
+        d = spsp.dia_matrix((sum_vector_powered, [0]), shape=(n, n))  # this is a matrix with sum_vector_powered as diagonal
+        eye = spsp.identity(n)  # this is a matrix with ones (1) as diagonal
         L = eye - d * W
+
+        # I think what this basically does is:
+        # 1. Normalize by each column by its sum
+        # 2. Set the diagonal to 1
     else:
         L = W
 

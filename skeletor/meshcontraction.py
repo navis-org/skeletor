@@ -17,16 +17,16 @@
 #    along with this program.
 
 import logging
-import numbers
 import time
 
 import numpy as np
 import scipy as sp
+import trimesh as tm
 
 from scipy.sparse.linalg import lsqr
 from tqdm.auto import tqdm
 
-from .utilities import (meanCurvatureLaplaceWeights, getMeshVPos,
+from .utilities import (laplacian_cotangent, getMeshVPos, laplacian_umbrella,
                         averageFaceArea, getOneRingAreas, make_trimesh)
 
 logger = logging.getLogger('skeletor')
@@ -36,13 +36,15 @@ if not logger.handlers:
 
 
 def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
-             SL=2, WH0=1, WL0='auto', progress=True, validate=True):
+             SL=2, WH0=1, WL0='auto', operator='cotangent', progress=True,
+             validate=True):
     """Contract mesh.
 
     In a nutshell: this function contracts the mesh by applying rounds of
     _constraint_ Laplacian smoothing. This function can be fairly expensive
-    and I highly recommend you play around with ``epsilon`` and ``precision``:
-    the contraction doesn't have to be perfect for good skeletonization results.
+    and I highly recommend you play around with ``SL`` to contract the
+    mesh in as few steps as possible. The contraction doesn't have to be perfect
+    for good skeletonization results (<10%, i.e. `epsilon<0.1`).
 
     Parameters
     ----------
@@ -77,9 +79,8 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
                     the iterative contractions might stop early.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied for
-                    each iteration. In theory, lower values are more likely to
-                    get you an optimal contraction at the cost of needing more
-                    iterations.
+                    each iteration. Higher values = quicker contraction, lower
+                    values = more likely to get you an optimal contraction.
     WH0 :           float, optional
                     Initial weight factor for the attraction constraints.
                     The ratio of the initial weights ``WL0`` and ``WH0``
@@ -92,6 +93,20 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
                     default ("auto"), this will be set to ``1e-3 * sqrt(A)``
                     with ``A`` being the average face area. This ensures that
                     contraction forces scale with the coarseness of the mesh.
+    operator :      "cotangent" | "umbrella"
+                    Which Laplacian operator to use:
+
+                      - The "cotangent" operator (default) takes both topology
+                        and geometry of the mesh into account and is hence a
+                        better descriptor of the curvature flow. This is the
+                        operator used in the original paper.
+                      - The "umbrella" operator (aka "uniform weighting") uses
+                        only topological features of the mesh. This also makes
+                        it more robust against flaws in the mesh! Use it when
+                        the cotangent operator produces oddly contracted meshes.
+
+    progress :      bool
+                    Whether or not to show a progress bar.
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
@@ -109,6 +124,7 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
         contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
 
     """
+    assert operator in ('cotangent', 'umbrella')
     start = time.time()
 
     # Force into trimesh
@@ -140,7 +156,10 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
     with tqdm(total=iter_lim, desc='Contracting', disable=progress is False) as pbar:
         for i in range(iter_lim):
             # Get Laplace weights
-            L = meanCurvatureLaplaceWeights(dm, normalized=True)
+            if operator == 'cotangent':
+                L = laplacian_cotangent(dm, normalized=True)
+            else:
+                L = laplacian_umbrella(dm)
 
             V = getMeshVPos(dm)
             A = sp.sparse.vstack([WL.dot(L), WH])
