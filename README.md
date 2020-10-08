@@ -5,12 +5,16 @@ library does not (yet) seek to conquer Eternia but to turn meshes into skeletons
 The pipeline looks like this:
 
  1. `skeletor.contract()` to contract the mesh [1]
- 2. `skeletor.skeletonize()` to generate a skeleton either by _edge collapse_ [1] (slow) or by _vertex clustering_ (very fast)
+ 2. `skeletor.skeletonize()` to generate a skeleton either by _edge collapse_
+    [1] (slow) or by _vertex clustering_ (very fast)
  3. `skeletor.clean()` to clean up some potential issues with the skeleton
  4. `skeletor.radii()` to extract radii either by k-nearest neighbours or ray-casting
 
  Optional:
- - `skeletor.simplify` to simplify overly detailed meshes (requires [Blender3d](https://www.blender.org) to be installed)
+ - `skeletor.simplify()` to simplify overly detailed meshes before contracting
+   them (requires [Blender3d](https://www.blender.org) to be installed)
+
+ Check out the Gotchas below!
 
 ## Install
 
@@ -22,6 +26,7 @@ Automatically installed with `pip`:
 - `numpy`
 - `pandas`
 - `scipy`
+- `scikit-learn`
 - `trimesh`
 - `tqdm`
 
@@ -66,9 +71,9 @@ For visualisation check out [navis](https://navis.readthedocs.io/en/latest/index
 
 ```Python
 >>> import navis
->>> neuron = navis.TreeNeuron(swc.copy(), units='8nm', soma=None)
->>> mneuron = navis.MeshNeuron(mesh, units='8nm')
->>> navis.plot3d([neuron, mneuron], color=[(1, 0, 0), (1, 1, 1, .1)])
+>>> skeleton = navis.TreeNeuron(swc.copy(), units='8nm', soma=None)
+>>> meshneuron = navis.MeshNeuron(mesh, units='8nm')
+>>> navis.plot3d([skeleton, meshneuron], color=[(1, 0, 0), (1, 1, 1, .1)])
 ```
 
 ![skeletor_examples](https://user-images.githubusercontent.com/7161148/87663989-6eea7800-c75c-11ea-985d-058d22300b62.png)
@@ -83,7 +88,17 @@ depends on the shape of the mesh - thin meshes like the neurons used here
 take fewer steps. Likewise skeletonization using vertex clustering is very
 dependant on the `sampling_dist` parameter.
 
-## Notes
+## Gotchas
+- the mesh contraction is the linchpin: insufficient/bad contraction will result
+  in a sub-optimal skeleton
+- to save time you should try to contract the mesh in as few steps as possible:
+  try playing around with increasing the `SL` parameter - I've occasionally gone
+  up as far a 1000 (from the default 10)
+- if the contracted mesh looks funny (e.g. large spikes sticking out) try using
+  the more robust "umbrella" Laplacian operator:
+  `contract(mesh, operator='umbrella')`
+
+### Additional Notes
 - while this is a general purpose library, my personal focus is on neurons and
   this has certainly influenced things like default parameter values and certain
   post-processing steps
