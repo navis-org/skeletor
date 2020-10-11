@@ -22,6 +22,7 @@ import numbers
 import random
 
 import numpy as np
+import pandas as pd
 import scipy.spatial
 
 from .utilities import make_trimesh
