@@ -31,16 +31,17 @@ except BaseException:
 
 
 def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
-             remove_degenerate_faces=True, fix_normals=True,
-             remove_unreferenced_verts=True, remove_disconnected=False,
+             remove_degenerate_faces=True, remove_unreferenced_verts=True,
+             drop_winglets=True, fix_normals=False, remove_disconnected=False,
              inplace=False):
     """Try to fix some common problems with mesh.
 
      1. Remove infinite values
      2. Merge duplicate vertices
      3. Remove duplicate and degenerate faces
-     4. Fix normals
-     5. Remove unreference vertices
+     4. Remove unreference vertices
+     5. Drop winglets (faces that have only one adjacent face)
+     5. Fix normals (Optional)
      6. Remove disconnected fragments (Optional)
 
     Parameters
@@ -48,8 +49,8 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
     meshdata :              trimesh.Trimesh
     remove_disconnected :   False | int
                             If a number is given, will iterate over the mesh's
-                            connected components and remove those consisting of less
-                            than the given number of vertices. For example,
+                            connected components and remove those consisting of
+                            less than the given number of vertices. For example,
                             ``remove_fragments=5`` will drop parts of the mesh
                             that consist of five or less connected vertices.
     inplace :               bool
@@ -89,6 +90,10 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
     if remove_unreferenced_verts:
         mesh.remove_unreferenced_vertices()
 
+    if drop_winglets:
+        mesh = remove_winglets(mesh)
+
+    # This should be done after all clean-up operations
     if fix_normals:
         mesh.fix_normals()
 
@@ -154,6 +159,26 @@ def merge_vertices(mesh, dist='auto', inplace=False):
     mesh.fix_normals()
 
     return mesh
+
+
+def remove_winglets(mesh):
+    """Remove faces that have only one neighbor."""
+    assert isinstance(mesh, tm.Trimesh)
+
+    # Remove vertices that connected to only 2 or less other vertices
+    vrem = np.arange(mesh.vertices.shape[0])[mesh.vertex_degree <= 2]
+
+    if vrem.shape[0] == 0:
+        return mesh
+
+    # Get faces associated with these vertices
+    frem = mesh.vertex_faces[vrem]
+
+    # Faces that can be kept
+    fkeep = np.arange(mesh.faces.shape[0])
+    fkeep = fkeep[~np.isin(fkeep, frem)]
+
+    return mesh.submesh([fkeep])[0]
 
 
 def simplify(mesh, ratio):
