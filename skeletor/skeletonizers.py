@@ -36,7 +36,7 @@ from .utilities import make_trimesh
 
 
 def skeletonize(mesh, method, output='swc', progress=True, validate=True,
-                **kwargs):
+                drop_disconnected=False, **kwargs):
     """Skeletonize a (contracted) mesh.
 
     Parameters
@@ -68,6 +68,9 @@ def skeletonize(mesh, method, output='swc', progress=True, validate=True,
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
                     before skeletonization.
+    drop_disconnected : bool
+                    If True, will drop disconnected nodes from the skeleton.
+                    Note that this might result in empty skeletons.
 
     **kwargs
                     Keyword arguments are passed to the above mentioned
@@ -123,14 +126,16 @@ def skeletonize(mesh, method, output='swc', progress=True, validate=True,
             raise ValueError(f'Method "{method}" requires parameter "{kw}" - see help(skeletor.skeletonize)')
 
     if method == 'vertex_clusters':
-        return by_vertex_clusters(mesh, output=output, progress=progress, **kwargs)
+        return by_vertex_clusters(mesh, output=output, progress=progress,
+                                  drop_disconnected=drop_disconnected, **kwargs)
 
     if method == 'edge_collapse':
-        return by_edge_collapse(mesh, output=output, progress=progress, **kwargs)
+        return by_edge_collapse(mesh, output=output, progress=progress,
+                                drop_disconnected=drop_disconnected, **kwargs)
 
 
 def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
-                     progress=True):
+                     drop_disconnected=False, progress=True):
     """Skeletonize a (contracted) mesh by collapsing edges.
 
     Notes
@@ -160,6 +165,9 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
                     would generate prohibitively long edges.
     output :        "swc" | "graph" | "both"
                     Determines the function's output. See ``Returns``.
+    drop_disconnected : bool
+                    If True, will drop disconnected nodes from the skeleton.
+                    Note that this might result in empty skeletons.
     progress :      bool
                     If True, will show progress bar.
 
@@ -219,7 +227,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     a = (edge_co1 - edge_co0) / edge_lengths.reshape(edges.shape[0], 1)
     # Note: It's a bit unclear to me whether the normalised edge vector should
     # be allowed to have negative values but I seem to be getting better
-    # results if this I use absolut values
+    # results if I use absolute values
     a = np.fabs(a)
     b = a * edge_co0
 
@@ -462,7 +470,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     if output == 'graph':
         return G
 
-    swc = make_swc(G, mesh)
+    swc = make_swc(G, mesh, drop_disconnected=drop_disconnected)
 
     if output == 'both':
         return (G, swc)
@@ -558,7 +566,8 @@ def mst_over_mesh(mesh, verts, limit='auto'):
 
 
 def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
-                       output='swc', progress=True):
+                       output='swc', cluster_map=False,
+                       drop_disconnected=False, progress=True):
     """Skeletonize a contracted mesh by clustering vertices.
 
     Notes
@@ -593,9 +602,14 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                         mass.
                       - "center": Use the center of mass. This makes for smoother
                         skeletons but can lead to nodes outside the mesh.
-
+    cluster_map :   bool
+                    If True, will also return a dictionary mapping the original
+                    vertex IDs to the SWC node IDs.
     output :        "swc" | "graph" | "both"
                     Determines the function's output. See ``Returns``.
+    drop_disconnected : bool
+                    If True, will drop disconnected nodes from the skeleton.
+                    Note that this might result in empty skeletons.
     progress :      bool
                     If True, will show progress bar.
 
@@ -607,6 +621,9 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                     Graph representation of the skeleton.
     "both" :        tuple
                     Both of the above: ``(swc, graph)``.
+    cluster_map :   dict
+                    If ``cluster_map=True`` will the last item returned will be
+                    a dictionary mapping vertex ID to node ID.
 
     """
     assert output in ['swc', 'graph', 'both']
@@ -645,8 +662,8 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
             pbar.update(to_visit - len(not_visited))
             to_visit = len(not_visited)
 
-    # Turn clusters into array of arrays
-    clusters = np.array([np.array(list(c)).astype(int) for c in clusters])
+    # `clusters` is a list of sets -> let's turn it into list of arrays
+    clusters = [np.array(list(c)).astype(int) for c in clusters]
 
     # Get positions of clusters
     if cluster_pos == 'center':
@@ -683,9 +700,10 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
     cl_edge_lengths = np.sqrt(np.sum((co1 - co2)**2, axis=1))
 
     # Produce adjacency matrix from edges and edge lengths
+    n_clusters = len(clusters)
     adj = scipy.sparse.coo_matrix((cl_edge_lengths,
                                    (cl_edges[:, 0], cl_edges[:, 1])),
-                                  shape=(clusters.shape[0], clusters.shape[0]))
+                                  shape=(n_clusters, n_clusters))
 
     # The cluster graph likely still contain cycles, let's get rid of them using
     # a minimum spanning tree
@@ -699,17 +717,24 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
     edges = np.array([coo.row, coo.col]).T
 
     # Produce final graph - this also takes care of some fixing
-    G = edges_to_graph(edges, None, fix_tree=True)
+    G = edges_to_graph(edges, nodes=np.unique(cl_edges.flatten()),
+                       drop_disconnected=drop_disconnected, fix_tree=True)
 
     if output == 'graph':
+        if cluster_map:
+            return G, mapping
         return G
 
     # Generate SWC
     swc = make_swc(G, cl_coords)
 
     if output == 'both':
+        if cluster_map:
+            return swc, G, mapping
         return swc, G
 
+    if cluster_map:
+        return swc, mapping
     return swc
 
 
@@ -766,8 +791,12 @@ def make_swc(x, coords, reindex=False, validate=True):
     # Make sure edges are unique
     edges = np.unique(edges, axis=0)
 
-    # Generate node table
-    swc = pd.DataFrame(edges, columns=['node_id', 'parent_id'])
+    # Need to convert to None if empty - otherwise DataFrame creation acts up
+    if len(edges) == 0:
+        edges = None
+
+    # Generate node table (do NOT remove the explicit dtype)
+    swc = pd.DataFrame(edges, columns=['node_id', 'parent_id'], dtype=int)
 
     # See if we need to add manually add rows for root node(s)
     miss = swc.parent_id.unique()
@@ -777,13 +806,23 @@ def make_swc(x, coords, reindex=False, validate=True):
         roots = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
         swc = pd.concat([swc, roots], axis=0)
 
+    # See if we need to add any disconnected nodes
+    if isinstance(x, (nx.Graph, nx.DiGraph)):
+        miss = set(x.nodes) - set(swc.node_id.values)
+        if miss:
+            disc = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
+            swc = pd.concat([swc, disc], axis=0)
+
     if isinstance(coords, tm.Trimesh):
         coords = coords.vertices
 
-    # Map x/y/z coordinates
-    swc['x'] = coords[swc.node_id, 0]
-    swc['y'] = coords[swc.node_id, 1]
-    swc['z'] = coords[swc.node_id, 2]
+    if not swc.empty:
+        # Map x/y/z coordinates
+        swc['x'] = coords[swc.node_id, 0]
+        swc['y'] = coords[swc.node_id, 1]
+        swc['z'] = coords[swc.node_id, 2]
+    else:
+        swc['x'] = swc['y'] = swc['z'] = None
 
     # Placeholder radius
     swc['radius'] = None
@@ -812,8 +851,8 @@ def make_swc(x, coords, reindex=False, validate=True):
     return swc.sort_values('parent_id').reset_index(drop=True)
 
 
-def edges_to_graph(edges, vertices=None, fix_tree=True,
-                   drop_disconnected=True, weight=True):
+def edges_to_graph(edges, nodes=None, vertices=None, fix_tree=True,
+                   drop_disconnected=False, weight=True):
     """Create networkx Graph from edge list."""
     # Drop self-loops
     edges = edges[edges[:, 0] != edges[:, 1]]
@@ -823,10 +862,17 @@ def edges_to_graph(edges, vertices=None, fix_tree=True,
 
     G = nx.Graph()
 
-    nodes = np.unique(edges.flatten())
+    # Extract nodes from edges if not explicitly provided
+    if isinstance(nodes, type(None)):
+        nodes = np.unique(edges.flatten())
+
     if isinstance(vertices, np.ndarray):
         coords = vertices[nodes]
-        G.add_nodes_from([(e, {'x': co[0], 'y': co[1], 'z': co[2]}) for e, co in zip(nodes, coords)])
+        add = [(n, {'x': co[0], 'y': co[1], 'z': co[2]}) for n, co in zip(nodes, coords)]
+    else:
+        add = nodes
+    G.add_nodes_from(add)
+
     G.add_edges_from([(e[0], e[1]) for e in edges])
 
     if fix_tree:
@@ -861,8 +907,10 @@ def edges_to_graph(edges, vertices=None, fix_tree=True,
 
         # We need a directed Graph for this as otherwise the child -> parent
         # order in the edges might get lost
-        G = nx.DiGraph()
-        G.add_edges_from(new_edges)
+        G2 = nx.DiGraph()
+        G2.add_nodes_from(G.nodes)
+        G2.add_edges_from(new_edges)
+        G = G2
 
     if drop_disconnected:
         # Array of degrees [[node_id, degree], [....], ...]
