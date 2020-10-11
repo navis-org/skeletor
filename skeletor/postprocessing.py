@@ -24,6 +24,7 @@ except BaseException:
     raise
 
 import numbers
+import warnings
 
 import networkx as nx
 import numpy as np
@@ -84,6 +85,9 @@ def clean(swc, mesh, validate=True, copy=True, **kwargs):
 
     """
     assert isinstance(swc, pd.DataFrame)
+
+    if swc.empty:
+        raise ValueError('SWC table is empty')
 
     mesh = make_trimesh(mesh, validate=validate)
 
@@ -367,7 +371,11 @@ def drop_parallel_twigs(swc, theta=0.01, copy=True):
     # Combine into a final vector and normalize again
     comb_tangent = swc[['tangent_x', 'tangent_y', 'tangent_y']].fillna(0).values \
         + child_tangent.reindex(swc.node_id).fillna(0).values
-    comb_tangent /= np.sqrt(np.sum(comb_tangent**2, axis=1)).reshape(comb_tangent.shape[0], 1)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        comb_tangent /= np.sqrt(np.sum(comb_tangent**2, axis=1)).reshape(comb_tangent.shape[0], 1)
+
     # Replace tangent vectors in SWC dataframe
     swc['tangent_x'] = comb_tangent[:, 0]
     swc['tangent_y'] = comb_tangent[:, 1]

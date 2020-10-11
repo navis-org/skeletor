@@ -1,3 +1,4 @@
+
 #    This script is part of skeletor (http://www.github.com/schlegelp/skeletor).
 #    Copyright (C) 2018 Philipp Schlegel
 #    Modified from https://github.com/aalavandhaann/Py_BL_MeshSkeletonization
@@ -82,6 +83,11 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
                 Radii associated with each node in the input SWC table.
 
     """
+    assert isinstance(swc, pd.DataFrame)
+
+    if swc.empty:
+        raise ValueError('SWC table is empty')
+
     mesh = make_trimesh(mesh, validate=True)
 
     if method == 'knn':
