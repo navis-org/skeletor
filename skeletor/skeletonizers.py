@@ -464,13 +464,13 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())
 
     # Generate graph
-    G = edges_to_graph(corrected_edges, mesh.vertices, fix_tree=True, weight=False,
+    G = edges_to_graph(corrected_edges, vertices=mesh.vertices, fix_tree=True, weight=False,
                        drop_disconnected=True)
 
     if output == 'graph':
         return G
 
-    swc = make_swc(G, mesh, drop_disconnected=drop_disconnected)
+    swc = make_swc(G, mesh)
 
     if output == 'both':
         return (G, swc)
