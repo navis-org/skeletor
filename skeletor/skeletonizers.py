@@ -801,6 +801,8 @@ def make_swc(x, coords, reindex=False, validate=True):
     # See if we need to add manually add rows for root node(s)
     miss = swc.parent_id.unique()
     miss = miss[~np.isin(miss, swc.node_id.values)]
+    miss = miss[miss > -1]
+
     # Must not use any() here because we might get miss=[0]
     if len(miss):
         roots = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
@@ -808,7 +810,7 @@ def make_swc(x, coords, reindex=False, validate=True):
 
     # See if we need to add any disconnected nodes
     if isinstance(x, (nx.Graph, nx.DiGraph)):
-        miss = set(x.nodes) - set(swc.node_id.values)
+        miss = set(x.nodes) - set(swc.node_id.values) - set([-1])
         if miss:
             disc = pd.DataFrame([[n, -1] for n in miss], columns=swc.columns)
             swc = pd.concat([swc, disc], axis=0)
