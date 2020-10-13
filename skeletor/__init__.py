@@ -16,8 +16,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-__version__ = "0.2.8"
-__version_vector__ = (0, 2, 8)
+__version__ = "0.2.9"
+__version_vector__ = (0, 2, 9)
 
 from .meshcontraction import contract
 from .skeletonizers import skeletonize
