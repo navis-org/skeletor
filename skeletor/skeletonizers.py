@@ -567,7 +567,7 @@ def mst_over_mesh(mesh, verts, limit='auto'):
 
 
 def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
-                       output='swc', cluster_map=False,
+                       output='swc', vertex_map=False,
                        drop_disconnected=False, progress=True):
     """Skeletonize a contracted mesh by clustering vertices.
 
@@ -603,9 +603,10 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                         mass.
                       - "center": Use the center of mass. This makes for smoother
                         skeletons but can lead to nodes outside the mesh.
-    cluster_map :   bool
-                    If True, will also return a dictionary mapping the original
-                    vertex IDs to the SWC node IDs.
+    vertex_map :    bool
+                    If True, we will add a "vertex_id" property to the graph and
+                    column to the SWC table that maps the cluster ID its first
+                    vertex in the original mesh.
     output :        "swc" | "graph" | "both"
                     Determines the function's output. See ``Returns``.
     drop_disconnected : bool
@@ -622,9 +623,6 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                     Graph representation of the skeleton.
     "both" :        tuple
                     Both of the above: ``(swc, graph)``.
-    cluster_map :   dict
-                    If ``cluster_map=True`` will the last item returned will be
-                    a dictionary mapping vertex ID to node ID.
 
     """
     assert output in ['swc', 'graph', 'both']
@@ -721,21 +719,26 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
     G = edges_to_graph(edges, nodes=np.unique(cl_edges.flatten()),
                        drop_disconnected=drop_disconnected, fix_tree=True)
 
+    # At this point nodes are labeled by index of the cluster
+    # Let's give them a "vertex_id" property mapping back to the
+    # first vertex in that cluster
+    if vertex_map:
+        mapping = {i: l[0] for i, l in enumerate(clusters)}
+        nx.set_node_attributes(G, mapping, name="vertex_id")
+
     if output == 'graph':
-        if cluster_map:
-            return G, mapping
         return G
 
     # Generate SWC
     swc = make_swc(G, cl_coords)
 
+    # Add vertex ID column if requested
+    if vertex_map:
+        swc['vertex_id'] = swc.node_id.map(mapping)
+
     if output == 'both':
-        if cluster_map:
-            return swc, G, mapping
         return swc, G
 
-    if cluster_map:
-        return swc, mapping
     return swc
 
 
