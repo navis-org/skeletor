@@ -35,7 +35,7 @@ except BaseException:
     raise
 
 
-def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
+def radii(swc, mesh, method='knn', aggregate='mean', validate=False, **kwargs):
     """Extract radii for given skeleton table.
 
     Parameters
@@ -56,7 +56,8 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=True, **kwargs):
     validate :  bool
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
-                before skeletonization.
+                before skeletonization. Note that this might make changes to
+                your mesh inplace!
     **kwargs
                 Keyword arguments are passed to the respective method:
 

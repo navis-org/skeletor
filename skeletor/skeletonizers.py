@@ -35,7 +35,7 @@ from tqdm.auto import tqdm
 from .utilities import make_trimesh
 
 
-def skeletonize(mesh, method, output='swc', progress=True, validate=True,
+def skeletonize(mesh, method, output='swc', progress=True, validate=False,
                 drop_disconnected=False, **kwargs):
     """Skeletonize a (contracted) mesh.
 
@@ -67,7 +67,8 @@ def skeletonize(mesh, method, output='swc', progress=True, validate=True,
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces)
-                    before skeletonization.
+                    before skeletonization. Note that this might change your
+                    mesh inplace!
     drop_disconnected : bool
                     If True, will drop disconnected nodes from the skeleton.
                     Note that this might result in empty skeletons.

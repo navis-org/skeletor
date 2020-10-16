@@ -34,7 +34,7 @@ import scipy.spatial
 from .utilities import make_trimesh
 
 
-def clean(swc, mesh, validate=True, copy=True, **kwargs):
+def clean(swc, mesh, validate=False, copy=True, **kwargs):
     """Clean up the skeleton.
 
     This function bundles a bunch of procedures to clean up the skeleton:
@@ -55,7 +55,8 @@ def clean(swc, mesh, validate=True, copy=True, **kwargs):
     validate :  bool
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
-                before cleaning up.
+                before cleaning up. Note that this might change your mesh
+                inplace!
     copy :      bool
                 If True will make and return a copy of the SWC table.
 
