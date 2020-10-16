@@ -153,8 +153,9 @@ def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
     area_ratios = [1.0]
     originalRingAreas = getOneRingAreas(dm)
     goodvertices = dm.vertices
-    bar_format = ("{l_bar}{bar}| [{elapsed}<{remaining}, {rate_fmt}, "
-                  "it {postfix[0]}/{postfix[1]}, epsilon {postfix[2]:.2g}")
+    bar_format = ("{l_bar}{bar}| [{elapsed}<{remaining}, "
+                  "{postfix[0]}/{postfix[1]}it, "
+                  "{rate_fmt}, epsilon {postfix[2]:.2g}")
     with tqdm(total=100,
               bar_format=bar_format,
               disable=progress is False,
