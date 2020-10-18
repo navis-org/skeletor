@@ -236,6 +236,64 @@ def simplify(mesh, ratio):
     return result
 
 
+def remesh(mesh, voxel_size=50, adaptivity=5):
+    """Remesh mesh using Blender 3D.
+
+    Uses Blender's "remesh" modifier in "voxel" mode.
+
+    Parameters
+    ----------
+    mesh :  trimesh.Trimesh
+            Mesh to remesh.
+    voxel_size : float
+            Size of individual voxels (edge length).
+    adaptivity: float
+            Reduces final face count where detail is not important.
+
+    Returns
+    -------
+    trimesh.Trimesh
+            Remeshed mesh.
+
+    """
+    if not tm.interfaces.blender.exists:
+        raise ImportError('No Blender available (executable not found).')
+    _blender_executable = tm.interfaces.blender._blender_executable
+
+    assert voxel_size > 0, 'voxel_size must be a positive number'
+    assert adaptivity > 0, 'adaptivity must be a positive number'
+
+    # We need to import here to avoid circular imports
+    from .utilities import make_trimesh
+    mesh = make_trimesh(mesh, validate=False)
+    assert isinstance(mesh, tm.Trimesh)
+
+    # Load the template
+    temp_name = 'blender_remesh.py.template'
+    if temp_name in _cache:
+        template = _cache[temp_name]
+    else:
+        with open(os.path.join(_pwd, 'templates', temp_name), 'r') as f:
+            template = f.read()
+        _cache[temp_name] = template
+
+    # Replace placeholder with actual ratio
+    script = template.replace('$VOXEL_SIZE', str(voxel_size)) \
+                .replace('$ADAPTIVITY', str(adaptivity))
+
+    # Let trimesh's MeshScript take care of exectution and clean-up
+    with tm.interfaces.generic.MeshScript(meshes=[mesh],
+                                          script=script,
+                                          debug=False) as blend:
+        result = blend.run(_blender_executable
+                           + ' --background --python $SCRIPT')
+
+    # Blender apparently returns actively incorrect face normals
+    result.face_normals = None
+
+    return result
+
+
 # find the current absolute path to this directory
 _pwd = os.path.expanduser(os.path.abspath(os.path.dirname(__file__)))
 
