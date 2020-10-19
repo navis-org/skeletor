@@ -22,5 +22,5 @@ __version_vector__ = (0, 2, 10)
 from .meshcontraction import contract
 from .skeletonizers import skeletonize
 from .radiusextraction import radii
-from .preprocessing import simplify
+from .preprocessing import simplify, remesh
 from .postprocessing import clean
