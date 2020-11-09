@@ -24,7 +24,7 @@ pip3 install skeletor
 
 For the dev version:
 ```bash
-`pip3 install git+git://github.com/schlegelp/skeletor@master`
+pip3 install git+git://github.com/schlegelp/skeletor@master
 ```
 
 #### Dependencies
