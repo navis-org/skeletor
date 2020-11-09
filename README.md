@@ -18,7 +18,14 @@ The pipeline looks like this:
 
 ## Install
 
+```bash
+pip3 install skeletor
+```
+
+For the dev version:
+```bash
 `pip3 install git+git://github.com/schlegelp/skeletor@master`
+```
 
 #### Dependencies
 Automatically installed with `pip`:
