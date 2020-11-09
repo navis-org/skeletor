@@ -26,6 +26,7 @@ setup(
     license='GNU GPL V3',
     description='Python 3 implementation of Skeleton Extraction by Mesh contraction algorithm',
     long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     url='https://github.com/schlegelp/skeletor',
     author='Philipp Schlegel',
     author_email='pms70@cam.ac.uk',
