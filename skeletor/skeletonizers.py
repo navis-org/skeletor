@@ -244,7 +244,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     # Q for vertex i is then the sum of the products of (kT,k) for ALL edges
     # connected to vertex i:
     # Initialize matrix of correct shape
-    Q_array = np.zeros((4, 4, verts.shape[0]), dtype=np.float128)
+    Q_array = np.zeros((4, 4, verts.shape[0]), dtype=np.float64)
 
     # Generate (kT, K)
     kT = np.transpose(K, axes=(1, 0, 2))
