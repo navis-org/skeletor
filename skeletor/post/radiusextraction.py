@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import scipy.spatial
 
-from .utilities import make_trimesh
+from ..utilities import make_trimesh
 
 try:
     import ncollpyde

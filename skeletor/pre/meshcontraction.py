@@ -21,13 +21,13 @@ import time
 
 import numpy as np
 import scipy as sp
-import trimesh as tm
 
 from scipy.sparse.linalg import lsqr
 from tqdm.auto import tqdm
 
-from .utilities import (laplacian_cotangent, getMeshVPos, laplacian_umbrella,
-                        averageFaceArea, getOneRingAreas, make_trimesh)
+from ..utilities import make_trimesh
+from .utils import (laplacian_cotangent, getMeshVPos, laplacian_umbrella,
+                    averageFaceArea, getOneRingAreas)
 
 logger = logging.getLogger('skeletor')
 

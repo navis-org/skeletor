@@ -31,10 +31,10 @@ import numpy as np
 import pandas as pd
 import scipy.spatial
 
-from .utilities import make_trimesh
+from ..utilities import make_trimesh
 
 
-def clean(swc, mesh, validate=False, copy=True, **kwargs):
+def cleanup(swc, mesh, validate=False, copy=True, **kwargs):
     """Clean up the skeleton.
 
     This function bundles a bunch of procedures to clean up the skeleton:
@@ -118,6 +118,9 @@ def recenter_vertices(swc, mesh, copy=True):
     mesh's center. That second step is not guaranteed to work but at least you
     won't have any more nodes outside the mesh.
 
+    Please note that if connected (!) nodes end up on the same position (i.e
+    because they snapped to the same vertex), we will collapse them.
+
     Parameters
     ----------
     swc :       pandas.DataFrame
@@ -186,6 +189,43 @@ def recenter_vertices(swc, mesh, copy=True):
     swc.loc[outside, 'x'] = final_pos[:, 0]
     swc.loc[outside, 'y'] = final_pos[:, 1]
     swc.loc[outside, 'z'] = final_pos[:, 2]
+
+    # At this point we may have nodes that snapped to the same vertex and
+    # therefore end up at the same position. We will collapse those nodes
+    # - but only if they are actually connected!
+    # First find duplicate locations
+    dupl = swc.loc[swc.duplicated(['x', 'y', 'z'], keep=False)]
+    # Iterate over nodes that have the same coordinates:
+    co_tuple = dupl[['x', 'y', 'z']].apply(tuple, axis=1)
+    dupl_co = np.unique(co_tuple)
+    rewire = {}
+    for co in dupl_co:
+        # Collect all nodes with these coordinates
+        this = dupl[co_tuple == co]
+        # We will work on the graph to collapse nodes sequentially A->B->C
+        G = nx.DiGraph()
+        G.add_edges_from(this[['node_id', 'parent_id']].values)
+        for cc in nx.connected_components(G.to_undirected()):
+            # Root is the node without any outdegree in this subgraph
+            root = [n for n in cc if G.out_degree[n] == 0][0]
+            # We don't want to collapse into `root` because it's not actually
+            # among the nodes with the same coordinates but rather the "last"
+            # nodes parent
+            clps_into = next(G.predecessors(root))
+            # Keep track of how we need to rewire
+            rewire.update({c: clps_into for c in cc if c not in {root, clps_into}})
+
+    # Only mess if there were duplicate coordinates
+    if rewire:
+        # Rewire
+        swc['parent_id'] = swc.parent_id.map(lambda x: rewire.get(x, x))
+
+        # Drop nodes
+        swc = swc.loc[~swc.node_id.isin(rewire)]
+
+        # This prevents future SettingsWithCopy Warnings:
+        if copy:
+            swc = swc.copy()
 
     return swc
 

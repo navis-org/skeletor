@@ -278,8 +278,8 @@ def remesh(mesh, voxel_size=50, adaptivity=5):
         _cache[temp_name] = template
 
     # Replace placeholder with actual ratio
-    script = template.replace('$VOXEL_SIZE', str(voxel_size)) \
-                .replace('$ADAPTIVITY', str(adaptivity))
+    script = template.replace('$VOXEL_SIZE', str(voxel_size)
+                              ).replace('$ADAPTIVITY', str(adaptivity))
 
     # Let trimesh's MeshScript take care of exectution and clean-up
     with tm.interfaces.generic.MeshScript(meshes=[mesh],

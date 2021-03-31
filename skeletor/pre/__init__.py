@@ -16,9 +16,5 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-__version__ = "1.0.0"
-__version_vector__ = (1, 0, 0)
-
-from . import skeletonize
-from . import pre
-from . import post
+from .meshcontraction import contract
+from .preprocessing import fix_mesh, simplify, remesh

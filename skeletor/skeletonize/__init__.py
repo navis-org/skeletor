@@ -16,9 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-__version__ = "1.0.0"
-__version_vector__ = (1, 0, 0)
-
-from . import skeletonize
-from . import pre
-from . import post
+from .edge_collapse import *
+from .vertex_cluster import *
+from .wave import *
