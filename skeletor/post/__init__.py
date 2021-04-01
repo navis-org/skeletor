@@ -17,4 +17,4 @@
 #    along with this program.
 
 from .radiusextraction import radii
-from .postprocessing import cleanup
+from .postprocessing import clean_up

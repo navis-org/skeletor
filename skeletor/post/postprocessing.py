@@ -34,7 +34,7 @@ import scipy.spatial
 from ..utilities import make_trimesh
 
 
-def cleanup(swc, mesh, validate=False, copy=True, **kwargs):
+def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     """Clean up the skeleton.
 
     This function bundles a bunch of procedures to clean up the skeleton:
