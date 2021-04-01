@@ -22,4 +22,6 @@ __version_vector__ = (1, 0, 0)
 from . import skeletonize
 from . import pre
 from . import post
+
+from .skeletonize.base import Skeleton
 from .data import example_mesh

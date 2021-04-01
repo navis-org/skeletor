@@ -16,141 +16,152 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+import numpy as np
+import trimesh as tm
 
 from ..utilities import make_trimesh
-
-from .edge_collapse import by_edge_collapse
-from .vertex_cluster import by_vertex_clusters
-from .wave import by_wavefront
-
-__all__ = ['skeletonize']
+from .utils import reindex_swc
 
 
 class Skeleton:
-    """Class representing a skeleton."""
-    def __init__(self, vertices, edges, mesh_map=None, radius=None):
-        self.vertices = vertices
-        self.edges = edges
-        self.mesh_map = mesh_map
-        self.radius = radius
+    """Class representing a skeleton.
 
+    Typically used to hold results from the skeletonization.
 
-def skeletonize(mesh, method, output='swc', progress=True, validate=False,
-                drop_disconnected=False, **kwargs):
-    """Skeletonize a (contracted) mesh.
-
-    Parameters
+    Attributes
     ----------
-    mesh :          mesh obj
-                    The mesh to be skeletonize. Can an object that has
-                    ``.vertices`` and ``.faces`` properties  (e.g. a
-                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
-                    dictionary ``{'vertices': vertices, 'faces': faces}``.
-    method :        "vertex_clusters" | "edge_collapse" | "wavefront"
-                    Skeletonization comes in two flavours with different Pros
-                    and Cons::
-
-                     - ``vertex_clusters`` groups and collapses vertices based
-                       on their geodesic distance along the mesh's surface. It's
-                       fast and scales well but can lead to oversimplification.
-                       Good for quick & dirty skeletonizations. See
-                       ``skeletor.skeletonizers.by_vertex_clusters`` for details.
-                     - ``edge_collapse`` implements skeleton extraction by edge
-                       collapse described in [1]. It's rather slow and doesn't
-                       scale well but is really good at preserving topology.
-                       See ``skeletor.skeletonizers.by_edge_collapse`` for
-                       details.
-    output :        "swc" | "graph" | "both"
-                    Determines the function's output. See ``Returns``.
-    progress :      bool
-                    If True, will show progress bar.
-    validate :      bool
-                    If True, will try to fix potential issues with the mesh
-                    (e.g. infinite values, duplicate vertices, degenerate faces)
-                    before skeletonization. Note that this might change your
-                    mesh inplace.
-    drop_disconnected : bool
-                    If True, will drop disconnected nodes from the skeleton.
-                    Note that this might result in empty skeletons.
-
-    **kwargs
-                    Keyword arguments are passed to the above mentioned
-                    functions:
-
-    For method "vertex_clusters":
-
-    sampling_dist : float | int, required
-                    Maximal distance at which vertices are clustered. This
-                    parameter should be tuned based on the resolution of your
-                    mesh.
-    cluster_pos :   "median" | "center"
-                    How to determine the x/y/z coordinates of the collapsed
-                    vertex clusters (i.e. the skeleton's nodes)::
-
-                      - "median": Use the vertex closest to cluster's center of
-                        mass.
-                      - "center": Use the center of mass. This makes for smoother
-                        skeletons but can lead to nodes outside the mesh.
-
-    For method "edge_collapse":
-
-    shape_weight :  float, default = 1
-                    Weight for shape costs which penalize collapsing edges that
-                    would drastically change the shape of the object.
-    sample_weight : float, default = 0.1
-                    Weight for sampling costs which penalize collapses that
-                    would generate prohibitively long edges.
-
-    For method "wavefront":
-
-    waves :         int, default = 1
-                    Number of waves to run across the mesh. Each wave is
-                    initialized at a different vertex which produces slightly
-                    different rings. The final skeleton is produced from a mean
-                    across all waves. More waves produce higher resolution
-                    skeletons but also introduce more noise.
-    step_size :     float, default = 1
-                    Values greater 1 effectively lead to binning of rings. For
-                    example a stepsize of 2 means that two adjacent vertex rings
-                    will be collapsed to the same center. This can help reduce
-                    noise in the skeleton (and as such counteracts a large
-                    number of waves).
-
-    Returns
-    -------
-    "swc" :         pandas.DataFrame
-                    SWC representation of the skeleton.
-    "graph" :       networkx.Graph
-                    Graph representation of the skeleton.
-    "both" :        tuple
-                    Both of the above: ``(swc, graph)``.
-
-    References
-    ----------
-    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
-        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+    swc :       pd.DataFrame, optional
+                SWC table.
+    vertices :  (N, 3) array
+                Vertex (node) positions.
+    edges :     (M, 2) array
+                Indices of connected vertex pairs.
+    radii :    (N, ) array, optional
+                Radii for each vertex (node) in the skeleton.
+    mesh :      Trimesh, optional
+                The original mesh.
+    mesh_map :  array, optional
+                Same length as ``mesh``. Maps mesh vertices to vertices (nodes)
+                in the skeleton.
 
     """
-    mesh = make_trimesh(mesh, validate=validate)
 
-    assert method in ['vertex_clusters', 'edge_collapse', 'wavefront']
-    required_param = {'vertex_clusters': ['sampling_dist'],
-                      'edge_collapse': [],
-                      'wavefront': []}
+    def __init__(self, swc, mesh=None, mesh_map=None):
+        self.mesh = mesh
+        self.mesh_map = mesh_map
+        self.swc = swc
 
-    for kw in required_param[method]:
-        if kw not in kwargs:
-            raise ValueError(f'Method "{method}" requires parameter "{kw}"'
-                             ' - see help(skeletor.skeletonize)')
+    def __str__(self):
+        """Summary."""
+        return self.__repr__()
 
-    if method == 'vertex_clusters':
-        return by_vertex_clusters(mesh, output=output, progress=progress,
-                                  drop_disconnected=drop_disconnected, **kwargs)
+    def __repr__(self):
+        """Return quick summary of the skeleton's geometry."""
+        elements = []
+        if hasattr(self, 'vertices'):
+            # for Trimesh and PointCloud
+            elements.append(f'vertices={self.vertices.shape}')
+        if hasattr(self, 'edges'):
+            # for Trimesh
+            elements.append(f'edges={self.edges.shape}')
+        return f'<Skeleton({", ".join(elements)})>'
 
-    if method == 'edge_collapse':
-        return by_edge_collapse(mesh, output=output, progress=progress,
-                                drop_disconnected=drop_disconnected, **kwargs)
+    @property
+    def edges(self):
+        """Return skeleton edges."""
+        return self.swc.loc[self.swc.parent_id >= 0,
+                            ['node_id', 'parent_id']].values
 
-    if method == 'wavefront':
-        return by_wavefront(mesh, output=output, progress=progress,
-                            drop_disconnected=drop_disconnected, **kwargs)
+    @property
+    def vertices(self):
+        """Return skeleton vertices (nodes)."""
+        return self.swc[['x', 'y', 'z']].values
+
+    @property
+    def radius(self):
+        """Return radii."""
+        if 'radius' not in self.swc.columns:
+            raise ValueError('No radius info found. Run `skeletor.post.radii()`'
+                             ' to get them.')
+        return self.swc['radius'].values,
+
+    @property
+    def skeleton(self):
+        """Skeleton as trimesh Path3D."""
+        if not hasattr(self, '_skeleton'):
+            lines = [tm.path.entities.Line(e) for e in self.edges]
+
+            self._skeleton = tm.path.Path3D(entities=lines,
+                                            vertices=self.vertices,
+                                            process=False)
+        return self._skeleton
+
+    def reindex(self, inplace=False):
+        """Clean up skeleton."""
+        x = self
+        if not inplace:
+            x = x.copy()
+
+        # Re-index to make node IDs continous again
+        x.swc, new_ids = reindex_swc(x.swc)
+
+        # Update mesh map
+        if not isinstance(x.mesh_map, type(None)):
+            x.mesh_map = np.array([new_ids.get(i, i) for i in x.mesh_map])
+
+        if not inplace:
+            return x
+
+    def copy(self):
+        """Return copy of the skeleton."""
+        return Skeleton(swc=self.swc.copy() if not isinstance(self.swc, type(None)) else None,
+                        mesh=self.mesh.copy() if not isinstance(self.mesh, type(None)) else None,
+                        mesh_map=self.mesh_map.copy() if not isinstance(self.mesh_map, type(None)) else None)
+
+    def scene(self, mesh=False, **kwargs):
+        """Return a Scene object containing the skeleton.
+
+        Returns
+        -------
+        scene :     trimesh.scene.scene.Scene
+                    Contains the skeleton and optionally the mesh.
+
+        """
+        if mesh:
+            if isinstance(self.mesh, type(None)):
+                raise ValueError('Skeleton has no mesh.')
+
+            self.mesh.visual.face_colors = [100, 100, 100, 100]
+
+            # Note the copy(): without it the transform in show() changes
+            # the original meshes
+            sc = tm.Scene([self.mesh.copy(), self.skeleton.copy()], **kwargs)
+        else:
+            sc = tm.Scene(self.skeleton, **kwargs)
+
+        return sc
+
+    def show(self, mesh=False, **kwargs):
+        """Render the skeleton in an opengl window. Requires pyglet.
+
+        Parameters
+        ----------
+        mesh :      bool
+                    If True, will render transparent mesh on top of the
+                    skeleton.
+
+        Returns
+        --------
+        scene :     trimesh.scene.Scene
+                    Scene with skeleton in it.
+
+        """
+        scene = self.scene(mesh=mesh)
+
+        # I encountered some issues if object space is big and the easiest
+        # way to work around this is to apply a transform such that the
+        # coordinates have -5 to +5 bounds
+        fac = 5 / self.skeleton.bounds[1].max()
+        scene.apply_transform(np.diag([fac, fac, fac, 1]))
+
+        return scene.show(**kwargs)

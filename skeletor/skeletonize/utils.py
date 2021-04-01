@@ -134,7 +134,7 @@ def dfs(G, n, dist_traveled, max_dist, seen):
     return visited, seen
 
 
-def make_swc(x, coords, reindex=False, validate=True):
+def make_swc(x, coords, reindex=True, validate=True):
     """Generate SWC table.
 
     Parameters
@@ -146,17 +146,22 @@ def make_swc(x, coords, reindex=False, validate=True):
                     - networkX graph
 
     coords :    trimesh.Trimesh | np.ndarray of vertices
-                Used to get coordinates for nodes in ``x``.
+                Coordinates of nodes in ``x``.
     reindex :   bool
-                If True, will re-number node IDs, if False will keep original
-                vertex IDs.
+                If True, will re-index node IDs such that parent nodes always
+                have a lower node ID than their childs. This is a requirement
+                for the SWC format. Will also return a dictionary mapping
+                original to re-indexed node IDs.
     validate :  bool
                 If True, will check check if SWC table is valid and raise an
                 exception if issues are found.
 
     Returns
     -------
-    SWC table : pandas.DataFrame
+    swc :       pandas.DataFrame
+    new_ids :   dict
+                If ``reindex=True`` will also return a map for original to
+                re-indexed node IDs.
 
     """
     assert isinstance(coords, (tm.Trimesh, np.ndarray))
@@ -210,27 +215,43 @@ def make_swc(x, coords, reindex=False, validate=True):
     swc['radius'] = None
 
     if reindex:
-        # Sort such that the parent is always before the child
-        swc.sort_values('parent_id', ascending=True, inplace=True)
-
-        # Reset index
-        swc.reset_index(drop=True, inplace=True)
-
-        # Generate mapping
-        new_ids = dict(zip(swc.node_id.values, swc.index.values))
-
-        # -1 (root's parent) stays -1
-        new_ids[-1] = -1
-
-        swc['node_id'] = swc.node_id.map(new_ids)
-        swc['parent_id'] = swc.parent_id.map(new_ids)
+        _, new_ids = reindex_swc(swc, inplace=True)
+    else:
+        swc = swc.sort_values('parent_id').reset_index(drop=True)
 
     if validate:
         # Check if any node has multiple parents
         if any(swc.node_id.duplicated()):
             raise ValueError('Nodes with multiple parents found.')
 
-    return swc.sort_values('parent_id').reset_index(drop=True)
+    if reindex:
+        return swc, new_ids
+
+    return swc
+
+
+def reindex_swc(swc, inplace=False):
+    """Reindex SWC such that parents always have a lower ID than their childs."""
+    if not inplace:
+        swc = swc.copy()
+
+    # Sort such that the parent is always before the child
+    swc.sort_values('parent_id', ascending=True, inplace=True)
+
+    # Reset index
+    swc.reset_index(drop=True, inplace=True)
+
+    # Generate mapping
+    new_ids = dict(zip(swc.node_id.values, swc.index.values))
+
+    # -1 (root's parent) stays -1
+    new_ids[-1] = -1
+
+    swc['node_id'] = swc.node_id.map(new_ids)
+    # Lambda prevents potential issue with missing parents
+    swc['parent_id'] = swc.parent_id.map(lambda x: new_ids.get(x, -1))
+
+    return swc, new_ids
 
 
 def edges_to_graph(edges, nodes=None, vertices=None, fix_tree=True,

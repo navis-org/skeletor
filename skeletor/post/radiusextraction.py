@@ -22,7 +22,6 @@ import numbers
 import random
 
 import numpy as np
-import pandas as pd
 import scipy.spatial
 
 from ..utilities import make_trimesh
@@ -35,13 +34,16 @@ except BaseException:
     raise
 
 
-def radii(swc, mesh, method='knn', aggregate='mean', validate=False, **kwargs):
+def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs):
     """Extract radii for given skeleton table.
 
     Parameters
     ----------
-    swc :       pandas.DataFrame
-                SWC table.
+    s :         skeletor.Skeleton
+                Skeleton to clean up.
+    mesh :      trimesh.Trimesh, optional
+                Original mesh (e.g. before contraction). If not provided will
+                use the mesh associated with ``s``.
     mesh :      trimesh.Trimesh
                 Mesh to use for radius extraction.
     method :    "knn" | "ray"
@@ -81,26 +83,29 @@ def radii(swc, mesh, method='knn', aggregate='mean', validate=False, **kwargs):
 
     Returns
     -------
-    radii :     numpy.ndarray (N, )
-                Radii associated with each node in the input SWC table.
+    None
+                    But attaches `radius` to the skeleton's SWC table. Existing
+                    values are replaced!
 
     """
-    assert isinstance(swc, pd.DataFrame)
-
-    if swc.empty:
-        raise ValueError('SWC table is empty')
+    if isinstance(mesh, type(None)):
+        mesh = s.mesh
 
     mesh = make_trimesh(mesh, validate=True)
 
     if method == 'knn':
-        return get_radius_kkn(swc[['x', 'y', 'z']].values,
-                              mesh=mesh, **kwargs)
+        radius = get_radius_kkn(s.swc[['x', 'y', 'z']].values,
+                                mesh=mesh, **kwargs)
     elif method == 'ray':
         if not ncollpyde:
             raise ImportError('Method "ray" requires the ncollpyde package.')
-        return get_radius_ray(swc, mesh=mesh, **kwargs)
+        radius = get_radius_ray(s.swc, mesh=mesh, **kwargs)
     else:
         raise ValueError(f'Unknown method "{method}"')
+
+    s.swc['radius'] = radius
+
+    return
 
 
 def get_radius_kkn(coords, mesh, n=5, aggregate='mean'):

@@ -30,17 +30,16 @@ import scipy.spatial
 from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh
+from .base import Skeleton
 from .utils import mst_over_mesh, edges_to_graph, make_swc
 
 __all__ = ['by_edge_collapse']
 
 
-def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
+def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
                      drop_disconnected=False, progress=True):
     """Skeletonize a (contracted) mesh by collapsing edges.
 
-    Notes
-    -----
     This algorithm (described in [1]) iteratively collapses edges that are part
     of a face until no more faces are left. Edges are chosen based on a cost
     function that penalizes collapses that would change the shape of the object
@@ -64,8 +63,6 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     sample_weight : float, optional
                     Weight for sampling costs which penalize collapses that
                     would generate prohibitively long edges.
-    output :        "swc" | "graph" | "both"
-                    Determines the function's output. See ``Returns``.
     drop_disconnected : bool
                     If True, will drop disconnected nodes from the skeleton.
                     Note that this might result in empty skeletons.
@@ -74,12 +71,9 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
 
     Returns
     -------
-    "swc" :         pandas.DataFrame
-                    SWC representation of the skeleton.
-    "graph" :       networkx.Graph
-                    Graph representation of the skeleton.
-    "both" :        tuple
-                    Both of the above: ``(swc, graph)``.
+    skeletor.Skeleton
+                    Holds results of the skeletonization and enables quick
+                    visualization.
 
     References
     ----------
@@ -87,8 +81,6 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
         contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
 
     """
-    assert output in ['swc', 'graph', 'both']
-
     mesh = make_trimesh(mesh, validate=False)
 
     # Shorthand faces and edges
@@ -365,15 +357,10 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, output='swc',
     corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())
 
     # Generate graph
-    G = edges_to_graph(corrected_edges, vertices=mesh.vertices, fix_tree=True, weight=False,
+    G = edges_to_graph(corrected_edges, vertices=mesh.vertices, fix_tree=True,
+                       weight=False,
                        drop_disconnected=True)
 
-    if output == 'graph':
-        return G
+    swc, new_ids = make_swc(G, mesh, reindex=True)
 
-    swc = make_swc(G, mesh)
-
-    if output == 'both':
-        return (G, swc)
-
-    return swc
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=None)

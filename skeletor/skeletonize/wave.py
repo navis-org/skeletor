@@ -19,19 +19,22 @@
 import igraph as ig
 import numpy as np
 
+from scipy.spatial.distance import cdist
+
 from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh
-from .utils import make_swc, edges_to_graph
+from .base import Skeleton
+from .utils import make_swc, reindex_swc, edges_to_graph
 
 __all__ = ['by_wavefront']
 
 
-def by_wavefront(mesh, waves=1, step_size=1, output='swc',
-                 drop_disconnected=False, progress=True):
+def by_wavefront(mesh, waves=1, step_size=1, drop_disconnected=False,
+                 progress=True):
     """Skeletonize a mesh using wave fronts.
 
-    In a nutshell this tries to find rings of vertices and collapse them to
+    The algorithm tries to find rings of vertices and collapse them to
     their center. This is done by propagating a wave across the mesh starting at
     a single seed vertex. As the wave travels across the mesh we keep track of
     which vertices are are encountered at each step. Groups of connected
@@ -57,8 +60,6 @@ def by_wavefront(mesh, waves=1, step_size=1, output='swc',
                     will be collapsed to the same center. This can help reduce
                     noise in the skeleton (and as such counteracts a large
                     number of waves).
-    output :        "swc" | "graph" | "both"
-                    Determines the function's output. See ``Returns``.
     drop_disconnected : bool
                     If True, will drop disconnected nodes from the skeleton.
                     Note that this might result in empty skeletons.
@@ -67,15 +68,11 @@ def by_wavefront(mesh, waves=1, step_size=1, output='swc',
 
     Returns
     -------
-    "swc" :         pandas.DataFrame
-                    SWC representation of the skeleton.
-    "graph" :       networkx.Graph
-                    Graph representation of the skeleton.
-    "both" :        tuple
-                    Both of the above: ``(swc, graph)``.
+    skeletor.Skeleton
+                    Holds results of the skeletonization and enables quick
+                    visualization.
 
     """
-    assert output in ['swc', 'graph', 'both']
     mesh = make_trimesh(mesh, validate=False)
 
     # Generate Graph (must be undirected)
@@ -84,6 +81,7 @@ def by_wavefront(mesh, waves=1, step_size=1, output='swc',
 
     # Prepare empty array to fill with centers
     centers = np.full((mesh.vertices.shape[0], 3, waves), fill_value=np.nan)
+    radii = np.full((mesh.vertices.shape[0], waves), fill_value=np.nan)
 
     # Go over each connected component
     with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress) as pbar:
@@ -116,21 +114,30 @@ def by_wavefront(mesh, waves=1, step_size=1, output='swc',
                     for cc2 in SG2.clusters():
                         this_verts = cc[ix[cc2]]
                         this_center = mesh.vertices[this_verts].mean(axis=0)
+                        this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts]).min()
                         centers[this_verts, :, w] = this_center
+                        radii[this_verts, w] = this_radius
 
             pbar.update(len(cc))
 
+    # Get mean centers and radii over all the waves we casted
     centers_final = np.nanmean(centers, axis=2)
+    radii_final = np.nanmean(radii, axis=1)
 
+    # Collapse vertices into nodes
     (node_centers,
      vertex_to_node_map) = np.unique(centers_final,
                                      return_inverse=True, axis=0)
+
+    # Map radii for individual vertices to the collapsed nodes
+    node_radii = [radii_final[vertex_to_node_map == i].mean() for i in range(vertex_to_node_map.max() + 1)]
+    node_radii = np.array(node_radii)
 
     # Contract vertices
     G.contract_vertices(vertex_to_node_map)
 
     # Remove self loops and duplicate edges
-    G.simplify()
+    G = G.simplify()
 
     # Generate weights
     el = np.array(G.get_edgelist())
@@ -140,16 +147,17 @@ def by_wavefront(mesh, waves=1, step_size=1, output='swc',
     tree = G.spanning_tree(weights=weights)
 
     # Create a directed acyclic and hierarchical graph
-    G_nx = edges_to_graph(np.array(tree.get_edgelist()), fix_tree=True,
+    G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
+                          nodes=np.arange(0, len(G.vs)),
+                          fix_tree=True,
                           drop_disconnected=drop_disconnected)
 
-    # Make the SWC table
-    if output == 'graph':
-        return G_nx
+    # Generate the SWC table
+    swc = make_swc(G_nx, coords=node_centers, reindex=False)
+    swc['radius'] = node_radii[swc.node_id.values]
+    _, new_ids = reindex_swc(swc, inplace=True)
 
-    swc = make_swc(G_nx, coords=node_centers)
+    # Update vertex to node ID map
+    vertex_to_node_map = np.array([new_ids[n] for n in vertex_to_node_map])
 
-    if output == 'swc':
-        return swc
-
-    return swc, G_nx
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map)

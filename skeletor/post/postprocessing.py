@@ -28,7 +28,6 @@ import warnings
 
 import networkx as nx
 import numpy as np
-import pandas as pd
 import scipy.spatial
 
 from ..utilities import make_trimesh
@@ -49,16 +48,19 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
 
     Parameters
     ----------
-    swc :       pandas.DataFrame
-    mesh :      trimesh.Trimesh
-                Original mesh.
+    s :         skeletor.Skeleton
+                Skeleton to clean up.
+    mesh :      trimesh.Trimesh, optional
+                Original mesh (e.g. before contraction). If not provided will
+                use the mesh associated with ``s``.
     validate :  bool
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
                 before cleaning up. Note that this might change your mesh
                 inplace!
-    copy :      bool
-                If True will make and return a copy of the SWC table.
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
 
     **kwargs
                 Keyword arguments are passed to the bundled function:
@@ -85,30 +87,28 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
                 Hopefully improved SWC.
 
     """
-    assert isinstance(swc, pd.DataFrame)
-
-    if swc.empty:
-        raise ValueError('SWC table is empty')
+    if isinstance(mesh, type(None)):
+        mesh = s.mesh
 
     mesh = make_trimesh(mesh, validate=validate)
 
-    if copy:
-        swc = swc.copy()
+    if not inplace:
+        s = s.copy()
 
     # Drop parallel twigs
-    swc = drop_parallel_twigs(swc, theta=kwargs.get('theta', 0.01), copy=False)
+    _ = drop_parallel_twigs(s, theta=kwargs.get('theta', 0.01), inplace=True)
 
     # Recenter vertices
-    swc = recenter_vertices(swc, mesh, copy=False)
+    _ = recenter_vertices(s, mesh, inplace=True)
 
     # Collapse twigs that in line of sight to one another
-    swc = drop_line_of_sight_twigs(swc, mesh, copy=False,
-                                   max_dist=kwargs.get('max_dist', 'auto'))
+    _ = drop_line_of_sight_twigs(s, mesh, inplace=True,
+                                 max_dist=kwargs.get('max_dist', 'auto'))
 
-    return swc
+    return s
 
 
-def recenter_vertices(swc, mesh, copy=True):
+def recenter_vertices(s, mesh, inplace=False):
     """Move nodes that ended up outside the mesh back inside.
 
     Nodes can end up outside the original mesh e.g. if the mesh contraction
@@ -123,11 +123,12 @@ def recenter_vertices(swc, mesh, copy=True):
 
     Parameters
     ----------
-    swc :       pandas.DataFrame
+    s :         skeletor.Skeleton
     mesh :      trimesh.Trimesh
                 Original mesh.
-    copy :      bool
-                If True will make and return a copy of the SWC table.
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
 
     Returns
     -------
@@ -139,19 +140,19 @@ def recenter_vertices(swc, mesh, copy=True):
         raise ImportError('skeletor.recenter_vertices() requires '
                           'the ncollpyde package: pip3 install ncollpyde')
 
-    # Copy SWC
-    if copy:
-        swc = swc.copy()
+    # Copy skeleton
+    if not inplace:
+        s = s.copy()
 
     # Find nodes that are outside the mesh
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
-    outside = ~coll.contains(swc[['x', 'y', 'z']].values)
+    outside = ~coll.contains(s.vertices)
 
     # For each outside find the closest vertex
     tree = scipy.spatial.cKDTree(mesh.vertices)
 
     # Find nodes that are right on top of original vertices
-    dist, ix = tree.query(swc.loc[outside, ['x', 'y', 'z']].values)
+    dist, ix = tree.query(s.vertices[outside])
 
     # We don't want to just snap them back to the closest vertex but try to find
     # the center. For this we will:
@@ -186,51 +187,66 @@ def recenter_vertices(swc, mesh, copy=True):
     final_pos[~now_inside] = closest_vertex[~now_inside]
 
     # Replace coordinates
-    swc.loc[outside, 'x'] = final_pos[:, 0]
-    swc.loc[outside, 'y'] = final_pos[:, 1]
-    swc.loc[outside, 'z'] = final_pos[:, 2]
+    s.swc.loc[outside, 'x'] = final_pos[:, 0]
+    s.swc.loc[outside, 'y'] = final_pos[:, 1]
+    s.swc.loc[outside, 'z'] = final_pos[:, 2]
 
     # At this point we may have nodes that snapped to the same vertex and
     # therefore end up at the same position. We will collapse those nodes
     # - but only if they are actually connected!
     # First find duplicate locations
-    dupl = swc.loc[swc.duplicated(['x', 'y', 'z'], keep=False)]
-    # Iterate over nodes that have the same coordinates:
-    co_tuple = dupl[['x', 'y', 'z']].apply(tuple, axis=1)
-    dupl_co = np.unique(co_tuple)
-    rewire = {}
-    for co in dupl_co:
-        # Collect all nodes with these coordinates
-        this = dupl[co_tuple == co]
-        # We will work on the graph to collapse nodes sequentially A->B->C
-        G = nx.DiGraph()
-        G.add_edges_from(this[['node_id', 'parent_id']].values)
-        for cc in nx.connected_components(G.to_undirected()):
-            # Root is the node without any outdegree in this subgraph
-            root = [n for n in cc if G.out_degree[n] == 0][0]
-            # We don't want to collapse into `root` because it's not actually
-            # among the nodes with the same coordinates but rather the "last"
-            # nodes parent
-            clps_into = next(G.predecessors(root))
-            # Keep track of how we need to rewire
-            rewire.update({c: clps_into for c in cc if c not in {root, clps_into}})
+    u, i, c = np.unique(s.vertices, return_counts=True, return_inverse=True, axis=0)
 
-    # Only mess if there were duplicate coordinates
-    if rewire:
-        # Rewire
-        swc['parent_id'] = swc.parent_id.map(lambda x: rewire.get(x, x))
+    # If any coordinates have counter higher 1
+    if c.max() > 1:
+        rewire = {}
+        # Find out which unique coordinates are duplicated
+        dupl = np.where(c > 1)[0]
 
-        # Drop nodes
-        swc = swc.loc[~swc.node_id.isin(rewire)]
+        # Go over each duplicated coordinate
+        for ix in dupl:
+            # Find the nodes on this duplicate coordinate
+            node_ix = np.where(i == ix)[0]
 
-        # This prevents future SettingsWithCopy Warnings:
-        if copy:
-            swc = swc.copy()
+            # Get their edges
+            edges = s.edges[np.all(np.isin(s.edges, node_ix), axis=1)]
 
-    return swc
+            # We will work on the graph to collapse nodes sequentially A->B->C
+            G = nx.DiGraph()
+            G.add_edges_from(edges)
+            for cc in nx.connected_components(G.to_undirected()):
+                # Root is the node without any outdegree in this subgraph
+                root = [n for n in cc if G.out_degree[n] == 0][0]
+                # We don't want to collapse into `root` because it's not actually
+                # among the nodes with the same coordinates but rather the "last"
+                # nodes parent
+                clps_into = next(G.predecessors(root))
+                # Keep track of how we need to rewire
+                rewire.update({c: clps_into for c in cc if c not in {root, clps_into}})
+
+        # Only mess with the skeleton if there were nodes to be merged
+        if rewire:
+            # Rewire
+            s.swc['parent_id'] = s.swc.parent_id.map(lambda x: rewire.get(x, x))
+
+            # Drop nodes that were collapsed
+            s.swc = s.swc.loc[~s.swc.node_id.isin(rewire)]
+
+            # Update mesh map
+            if not isinstance(s.mesh_map, type(None)):
+                s.mesh_map = [rewire.get(x, x) for x in s.mesh_map]
+
+            # Reindex to make vertex IDs continous again
+            s.reindex(inplace=True)
+
+            # This prevents future SettingsWithCopy Warnings:
+            if not inplace:
+                s.swc = s.swc.copy()
+
+    return s
 
 
-def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
+def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
     """Collapse twigs that are in line of sight to each other.
 
     Note that this only removes 1 layer of twigs (i.e. only the actual leaf
@@ -239,15 +255,18 @@ def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
 
     Parameters
     ----------
-    swc :       pandas.DataFrame
-    mesh :      trimesh.Trimesh
-                Original mesh.
+    s :         skeletor.Skeleton
+                Skeleton to clean up.
+    mesh :      trimesh.Trimesh, optional
+                Original mesh (e.g. before contraction). If not provided will
+                use the mesh associated with ``s``.
     max_dist :  "auto" | int | float
                 Maximum Eucledian distance allowed between leaf nodes for them
                 to be considered for collapsing. If "auto", will use the length
                 of the longest edge in skeleton as limit.
-    copy :      bool
-                If True will make and return a copy of the SWC table.
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
 
     Returns
     -------
@@ -260,27 +279,27 @@ def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
                           'the ncollpyde package: pip3 install ncollpyde')
 
     # Make a copy of the SWC
-    if copy:
-        swc = swc.copy()
+    if not inplace:
+        s = s.copy()
 
     # Add distance to parents
-    swc['parent_dist'] = 0
-    not_root = swc.parent_id >= 0
-    co1 = swc.loc[not_root, ['x', 'y', 'z']].values
-    co2 = swc.set_index('node_id').loc[swc.loc[not_root, 'parent_id'],
-                                       ['x', 'y', 'z']].values
-    swc.loc[not_root, 'parent_dist'] = np.sqrt(np.sum((co1 - co2)**2, axis=1))
+    s.swc['parent_dist'] = 0
+    not_root = s.swc.parent_id >= 0
+    co1 = s.swc.loc[not_root, ['x', 'y', 'z']].values
+    co2 = s.swc.set_index('node_id').loc[s.swc.loc[not_root, 'parent_id'],
+                                         ['x', 'y', 'z']].values
+    s.swc.loc[not_root, 'parent_dist'] = np.sqrt(np.sum((co1 - co2)**2, axis=1))
 
     # If max dist is 'auto', we will use the longest child->parent edge in the
     # skeleton as limit
     if max_dist == 'auto':
-        max_dist = swc.parent_dist.max()
+        max_dist = s.swc.parent_dist.max()
 
     # Initialize ncollpyde Volume
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
     # Find twigs
-    twigs = swc[~swc.node_id.isin(swc.parent_id)]
+    twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id)]
 
     # Remove twigs that aren't inside the volume
     twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
@@ -351,27 +370,32 @@ def drop_line_of_sight_twigs(swc, mesh, max_dist='auto', copy=True):
             to_remove += loosers
 
     # Drop the tips we flagged for removal and the new column we added
-    swc = swc[~swc.node_id.isin(to_remove)].drop('parent_dist', axis=1)
+    s.swc = s.swc[~s.swc.node_id.isin(to_remove)].drop('parent_dist', axis=1)
 
-    return swc
+    # Clean up node/vertex order
+    s.reindex(inplace=True)
+
+    return s
 
 
-def drop_parallel_twigs(swc, theta=0.01, copy=True):
+def drop_parallel_twigs(s, theta=0.01, inplace=False):
     """Remove 1-node twigs that run parallel to their parent branch.
 
     This happens e.g. for vertex clustering skeletonization.
 
     Parameters
     ----------
-    swc :       pandas.DataFrame
+    s :         skeletor.Skeleton
+                Skeleton to clean up.
     theta :     float
                 For each twig we generate the dotproduct between the tangent
                 vectors of it and its parents. If these line up perfectly the
                 dotproduct will equal 1. ``theta`` determines how much that
                 value can DIFFER from 1 for us to still prune the twig: higher
                 theta = more pruning.
-    copy :      bool
-                If True will make and return a copy of the SWC table.
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
 
     Returns
     -------
@@ -383,52 +407,54 @@ def drop_parallel_twigs(swc, theta=0.01, copy=True):
     assert 0 <= theta <= 1, "theta must be between 0 and 1"
 
     # Work on a copy of the SWC table
-    if copy:
-        swc = swc.copy()
+    if not inplace:
+        s = s.copy()
 
     # Find roots
-    roots = swc[swc.parent_id < 0].node_id
+    roots = s.swc[s.swc.parent_id < 0].node_id
 
     # Find branch points - we ignore roots that are also branch points because
     # that would cause headaches with tangent vectors further down
-    cnt = swc.groupby('parent_id').node_id.count()
-    bp = swc[swc.node_id.isin((cnt >= 2).index) & ~swc.node_id.isin(roots)]
+    cnt = s.swc.groupby('parent_id').node_id.count()
+    bp = s.swc[s.swc.node_id.isin((cnt >= 2).index) & ~s.swc.node_id.isin(roots)]
     # Find 1-node twigs
-    twigs = swc[~swc.node_id.isin(swc.parent_id) & swc.parent_id.isin(bp.node_id)]
+    twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id) & s.swc.parent_id.isin(bp.node_id)]
 
     # Produce parent -> child tangent vectors for each node
     # Note that root nodes will have a NaN parent tangent vector
-    coords = swc.set_index('node_id')[['x', 'y', 'z']]
-    tangents = (swc[['x', 'y', 'z']].values - coords.reindex(swc.parent_id).values)
+    coords = s.swc.set_index('node_id')[['x', 'y', 'z']]
+    tangents = (s.swc[['x', 'y', 'z']].values - coords.reindex(s.swc.parent_id).values)
     tangents /= np.sqrt(np.sum(tangents**2, axis=1)).reshape(tangents.shape[0], 1)
-    swc['tangent_x'] = tangents[:, 0]
-    swc['tangent_y'] = tangents[:, 1]
-    swc['tangent_z'] = tangents[:, 2]
+    s.swc['tangent_x'] = tangents[:, 0]
+    s.swc['tangent_y'] = tangents[:, 1]
+    s.swc['tangent_z'] = tangents[:, 2]
 
     # For each node calculate a child vector
-    child_tangent = swc[swc.parent_id >= 0].groupby('parent_id')
+    child_tangent = s.swc[s.swc.parent_id >= 0].groupby('parent_id')
     child_tangent = child_tangent[['tangent_x', 'tangent_y', 'tangent_z']].sum()
 
     # Combine into a final vector and normalize again
-    comb_tangent = swc[['tangent_x', 'tangent_y', 'tangent_y']].fillna(0).values \
-        + child_tangent.reindex(swc.node_id).fillna(0).values
+    comb_tangent = s.swc[['tangent_x', 'tangent_y', 'tangent_y']].fillna(0).values \
+        + child_tangent.reindex(s.swc.node_id).fillna(0).values
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         comb_tangent /= np.sqrt(np.sum(comb_tangent**2, axis=1)).reshape(comb_tangent.shape[0], 1)
 
     # Replace tangent vectors in SWC dataframe
-    swc['tangent_x'] = comb_tangent[:, 0]
-    swc['tangent_y'] = comb_tangent[:, 1]
-    swc['tangent_z'] = comb_tangent[:, 2]
+    s.swc['tangent_x'] = comb_tangent[:, 0]
+    s.swc['tangent_y'] = comb_tangent[:, 1]
+    s.swc['tangent_z'] = comb_tangent[:, 2]
 
     # Now get the dotproducts of the twigs' and their parent's tangent vectors
-    twig_tangents = swc.set_index('node_id').loc[twigs.node_id, ['tangent_x',
-                                                                 'tangent_y',
-                                                                 'tangent_z']].values
-    parent_tangents = swc.set_index('node_id').loc[twigs.parent_id, ['tangent_x',
-                                                                     'tangent_y',
-                                                                     'tangent_z']].values
+    twig_tangents = s.swc.set_index('node_id').loc[twigs.node_id,
+                                                   ['tangent_x',
+                                                    'tangent_y',
+                                                    'tangent_z']].values
+    parent_tangents = s.swc.set_index('node_id').loc[twigs.parent_id,
+                                                     ['tangent_x',
+                                                      'tangent_y',
+                                                      'tangent_z']].values
 
     # Generate dotproducts
     dot = np.einsum('ij,ij->i', twig_tangents, parent_tangents)
@@ -437,7 +463,12 @@ def drop_parallel_twigs(swc, theta=0.01, copy=True):
     dot_diff = 1 - np.fabs(dot)
     # Remove twigs where the dotproduct is within `theta` to 1
     to_remove = twigs.loc[dot_diff <= theta]
-    swc = swc[~swc.node_id.isin(to_remove.node_id)]
+    s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)]
 
     # Drop the tangent columns we made
-    return swc.drop(['tangent_x', 'tangent_y', 'tangent_z'], axis=1)
+    s.swc.drop(['tangent_x', 'tangent_y', 'tangent_z'], axis=1, inplace=True)
+
+    # Reindex nodes
+    s.reindex(inplace=True)
+
+    return s
