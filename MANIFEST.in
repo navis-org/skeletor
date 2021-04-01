@@ -1,0 +1,3 @@
+include skeletor/data/*.md
+include skeletor/data/*.obj
+include skeletor/pre/templates/*template*

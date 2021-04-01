@@ -16,10 +16,30 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-__version__ = "1.0.0"
-__version_vector__ = (1, 0, 0)
+import os
 
-from . import skeletonize
-from . import pre
-from . import post
-from .data import example_mesh
+import trimesh as tm
+
+# Load the example mesh (a neuron)
+fp = os.path.dirname(__file__)
+obj_path = os.path.join(fp, '722817260.obj')
+
+
+def example_mesh():
+    """Load and return example mesh.
+
+    The example mesh is a fruit fly neuron (an olfactory projection neuron of
+    the DA1 glomerulus) segmented from an EM image data set. It is part of the
+    Janelia hemibrain data set (see [here](https://neuprint.janelia.org)) [1].
+
+    References
+    ----------
+    [1] Louis K. Scheffer et al., eLife. 2020. doi: 10.7554/eLife.57443
+    A connectome and analysis of the adult Drosophila central brain
+
+    Returns
+    -------
+    trimesh.Trimesh
+
+    """
+    return tm.load_mesh(obj_path)
