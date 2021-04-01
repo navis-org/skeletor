@@ -35,7 +35,7 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, epsilon=1e-06, iter_lim=10, time_lim=None, precision=1e-07,
+def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
              SL=2, WH0=1, WL0='auto', operator='cotangent', progress=True,
              validate=True):
     """Contract mesh.
