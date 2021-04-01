@@ -40,12 +40,12 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     install_requires=requirements,
-    python_requires='>=3.6',
-    package_data={'skeletor': ['templates/*template*']},
+    python_requires='>=3.7',
+    include_package_data=True,
     zip_safe=False
 )
