@@ -46,6 +46,10 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
     mesh in as few steps as possible. The contraction doesn't have to be perfect
     for good skeletonization results (<10%, i.e. `epsilon<0.1`).
 
+    Also: parameterization matters a lot! Default parameters will get you there
+    but playing around with `SL` and `WH0` might speed things up by an order of
+    magnitude.
+
     Parameters
     ----------
     mesh :          mesh obj
@@ -116,7 +120,8 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
     Returns
     -------
     trimesh.Trimesh
-                    Contracted copy of original mesh.
+                    Contracted copy of original mesh. The final contraction rate
+                    is attached to the mesh as ``.epsilon`` property.
 
     References
     ----------
@@ -207,14 +212,15 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
                 pbar.postfix[0] = i + 1
 
             # Break if face area has increased compared to the last iteration
-            area_ratios.append(dm.area / m.area)
-            if (area_ratios[-1] > area_ratios[-2]):
+            new_eps = dm.area / m.area
+            if (new_eps > area_ratios[-1]):
                 dm.vertices = goodvertices
                 if progress:
                     tqdm.write("Total face area increased from last iteration."
                                f" Contraction stopped prematurely after {i} "
-                               f"iterations at epsilon {area_ratios[-2]:.2g}.")
+                               f"iterations at epsilon {area_ratios[-1]:.2g}.")
                 break
+            area_ratios.append(new_eps)
 
             # Update progress bar
             if progress:
@@ -241,5 +247,8 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
             if not isinstance(time_lim, (bool, type(None))):
                 if (time.time() - start) >= time_lim:
                     break
+
+        # Keep track of final epsilon
+        dm.epsilon = area_ratios[-1]
 
         return dm
