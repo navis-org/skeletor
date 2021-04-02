@@ -137,7 +137,7 @@ capabilities to inspect the results:
 
 ![skeletor_example](https://github.com/schlegelp/skeletor/raw/master/_static/example1.png)
 
-That already looks pretty but let's run some postprocessing.
+That looks pretty good already but let's run some pro forma postprocessing.
 
 ```Python
 >>> sk.post.clean_up(skel, inplace=True)
