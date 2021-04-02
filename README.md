@@ -84,7 +84,7 @@ First load the example mesh (a fruit fly neuron):
 <trimesh.Trimesh(vertices.shape=(6582, 3), faces.shape=(13772, 3))>
 ```
 
-Next see if we there is stuff to fix in the mesh (degenerate faces, duplicate
+Next see if there is stuff to fix in the mesh (degenerate faces, duplicate
 vertices, etc.):
 
 ```Python
