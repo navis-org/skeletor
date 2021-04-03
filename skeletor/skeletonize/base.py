@@ -43,13 +43,16 @@ class Skeleton:
     mesh_map :  array, optional
                 Same length as ``mesh``. Maps mesh vertices to vertices (nodes)
                 in the skeleton.
+    method :    str, optional
+                Which method was used to generate the skeleton.
 
     """
 
-    def __init__(self, swc, mesh=None, mesh_map=None):
+    def __init__(self, swc, mesh=None, mesh_map=None, method=None):
+        self.swc = swc
         self.mesh = mesh
         self.mesh_map = mesh_map
-        self.swc = swc
+        self.method = method
 
     def __str__(self):
         """Summary."""

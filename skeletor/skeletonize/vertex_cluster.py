@@ -72,6 +72,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                         mass.
                       - "center": Use the center of mass. This makes for smoother
                         skeletons but can lead to nodes outside the mesh.
+
     drop_disconnected : bool
                     If True, will drop disconnected nodes from the skeleton.
                     Note that this might result in empty skeletons.
@@ -188,4 +189,5 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
     # Update mesh map
     vertex_to_node_map = {k: new_ids[v] for k, v in vertex_to_node_map.items()}
 
-    return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map)
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
+                    method='vertex_clusters')

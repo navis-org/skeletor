@@ -16,33 +16,33 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-try:
-    import fastremap
-except ImportError:
-    fastremap = None
-except BaseException:
-    raise
-
+import igraph as ig
 import networkx as nx
 import numpy as np
-import scipy.sparse
-import scipy.spatial
 
+from scipy.sparse.csgraph import dijkstra
 from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh
-from .utils import edges_to_graph, make_swc
+from .base import Skeleton
+from .utils import make_swc, edges_to_graph
+
+__all__ = ['by_teasar']
 
 
-def by_teasar(mesh, inv_dist, smooth_verts=False, progress=True):
+def by_teasar(mesh, inv_dist, root=None, progress=True):
     """Skeletonize using mesh TEASAR.
+
+    This algorithm finds the longest path from a root vertex, invalidates all
+    vertices that are within `inv_dist`. Then picks the second longest (and
+    still valid) path and does the same. Rinse & repeat until all vertices have
+    been invalidated. It's fast + works very well with tubular meshes, and with
+    `inv_dist` you have control over the level of detail. By its nature a TEASAR
+    skeleton follows the surface of the mesh (i.e. not centered) which makes
+    extracting radii tricky (read: currently not possible).
 
     Based on the implementation by Sven Dorkenwald, Casey Schneider-Mizell and
     Forrest Collman in `meshparty`.
-
-    Notes
-    -----
-
 
     Parameters
     ----------
@@ -54,52 +54,104 @@ def by_teasar(mesh, inv_dist, smooth_verts=False, progress=True):
     inv_dist :      int | float
                     Distance along the mesh used for invalidation of vertices.
                     This controls how detailed (or noisy) the skeleton will be.
-    smooth_verts :  bool
-                    Whether to smooth skeleton vertices.
+    root :          int, optional
+                    Vertex ID of a root. If not provided will use ``0``.
     progress :      bool
                     If True, will show progress bar.
 
     Returns
     -------
-    "swc" :         pandas.DataFrame
-                    SWC representation of the skeleton.
-    "graph" :       networkx.Graph
-                    Graph representation of the skeleton.
-    "both" :        tuple
-                    Both of the above: ``(swc, graph)``.
+    skeletor.Skeleton
+                    Holds results of the skeletonization and enables quick
+                    visualization.
 
     """
-    pass
-
-
-def paths_on_mesh(mesh, inv_d):
-    """Calculate all paths along the mesh."""
-
-    # Turn mesh into graph
     mesh = make_trimesh(mesh, validate=False)
 
-    # Produce weighted edges
-    edges = np.concatenate((mesh.edges_unique,
-                            mesh.edges_unique_length.reshape(mesh.edges_unique.shape[0], 1)),
-                           axis=1)
-
     # Generate Graph (must be undirected)
-    G = nx.Graph()
-    G.add_weighted_edges_from(edges)
+    G = ig.Graph(edges=mesh.edges_unique, directed=False)
+    G.es['weight'] = mesh.edges_unique_length
 
-    # Go over all connected components
-    for cc in nx.connected_components(G):
-        # Get a subgraph
-        SG = nx.subgraph(G, cc)
+    if not root:
+        root = 0
 
-        # Find a root for this subgraph using a far point heuristic
-        root = find_far_points(SG)[0]
+    edges = []
+    mesh_map = np.full(mesh.vertices.shape[0], fill_value=-1)
 
-        # Setup
-        valid = np.ones(len(mesh.vertices), np.bool)
-        mesh_to_skeleton_map = np.full(len(mesh.vertices), np.nan)
+    with tqdm(desc='Invalidating', total=len(G.vs),
+              disable=not progress, leave=False) as pbar:
+        for cc in G.clusters():
+            # Make a subgraph for this connected component
+            SG = G.subgraph(cc)
+            cc = np.array(cc)
 
-        total_to_visit = np.sum(valid)
+            # Find a root in this subgraph
+            if root in cc:
+                this_root = root
+            else:
+                root = cc[0]
+
+            # Get the sparse adjacency matrix of the subgraph
+            sp = SG.get_adjacency_sparse('weight')
+
+            # Get lengths of paths to all nodes from root
+            paths = SG.shortest_paths(this_root, target=None, weights='weight', mode='ALL')[0]
+            paths = np.array(paths)
+
+            # Prep array for invalidation
+            valid = ~np.zeros(paths.shape).astype(bool)
+            invalidated = 0
+
+            while np.any(valid):
+                # Find the farthest point
+                farthest = np.argmax(paths)
+
+                # Get path from root to farthest point
+                path = SG.get_shortest_paths(this_root, farthest, weights='weight', mode='ALL')[0]
+
+                # Add these new edges
+                new_edges = np.vstack((cc[path[:-1]], cc[path[1:]])).T
+                edges = np.append(edges, new_edges).reshape(-1, 2)
+
+                # Invalidate points in the path
+                valid[path] = False
+                paths[path] = 0
+
+                # Must set weights along path to 0 so that this path is
+                # taken again in future iterations
+                eids = SG.get_eids(path=path, directed=False)
+                SG.es[eids]['weight'] = 0
+
+                # Get all nodes within `inv_dist` to this path
+                dist, _, sources = dijkstra(sp, directed=False, indices=path,
+                                            limit=inv_dist, min_only=True,
+                                            return_predecessors=True)
+
+                # Invalidate
+                in_dist = dist <= inv_dist
+                to_invalidate = np.where(in_dist)[0]
+                valid[to_invalidate] = False
+                paths[to_invalidate] = 0
+
+                # Update mesh vertex to skeleton node map
+                mesh_map[cc[in_dist]] = sources[in_dist]
+
+                pbar.update((~valid).sum() - invalidated)
+                invalidated = (~valid).sum()
+
+    # Make unique edges (paths will have overlapped!)
+    edges = np.unique(edges, axis=0)
+
+    # Create a directed acyclic and hierarchical graph
+    G_nx = edges_to_graph(edges=edges,
+                          nodes=np.arange(0, len(G.vs)),
+                          fix_tree=True)
+
+    # Generate the SWC table
+    swc, new_ids = make_swc(G_nx, coords=mesh.vertices, reindex=True)
+
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map, method='teasar')
+
 
 def find_far_points(G):
     """Find the most distal points in the graph."""

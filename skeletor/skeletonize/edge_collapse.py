@@ -363,4 +363,4 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
 
     swc, new_ids = make_swc(G, mesh, reindex=True)
 
-    return Skeleton(swc=swc, mesh=mesh, mesh_map=None)
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=None, method='edge_collapse')

@@ -19,3 +19,4 @@
 from .edge_collapse import *
 from .vertex_cluster import *
 from .wave import *
+from .teasar import *

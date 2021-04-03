@@ -160,4 +160,5 @@ def by_wavefront(mesh, waves=1, step_size=1, drop_disconnected=False,
     # Update vertex to node ID map
     vertex_to_node_map = np.array([new_ids[n] for n in vertex_to_node_map])
 
-    return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map)
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
+                    method='wavefront')
