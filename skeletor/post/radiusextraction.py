@@ -20,6 +20,7 @@
 import math
 import numbers
 import random
+import warnings
 
 import numpy as np
 import scipy.spatial
@@ -88,6 +89,12 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
                     values are replaced!
 
     """
+    if getattr(s, 'method', None) == 'teasar':
+        warnings.warn('Skeleton appears to have been generated using mesh '
+                      'TEASAR. This method does not center the skeleton inside '
+                      'the mesh. Hence results from radii extraction will be '
+                      'garbage.')
+
     if isinstance(mesh, type(None)):
         mesh = s.mesh
 
