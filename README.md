@@ -43,7 +43,7 @@ skeletonization and (optional) postprocessing of the skeleton.
 | `skeletor.pre.simplify()` | reduce mesh complexity (uses Blender 3D)           |
 | `skeletor.pre.contract()` | contract mesh to facilitate skeletonization [1]    |
 
-| skeletonization         | description                                                                     |
+| skeletonization                             | description                                                 |
 | --------------------------------------------| ----------------------------------------------------------- |
 | `skeletor.skeletonize.by_wavefront()`       | very fast, works well for tubular meshes (like neurons)     |
 | `skeletor.skeletonize.by_vertex_clusters()` | very fast but needs mesh to be contracted (see above)       |
@@ -67,7 +67,7 @@ A full pipeline might look like this:
  5. `skeletor.post.clean_up()` to clean up some potential issues with the skeleton
  6. `skeletor.post.radii()` to extract radii either by k-nearest neighbours or ray-casting
 
-In my experience there is no one size fits all. You will have to play around to
+In my experience there is no one-size-fits-all. You will have to play around to
 find the right approach and parameters to get nice skeletons for your meshes.
 If you need help just open an [issue](https://github.com/schlegelp/skeletor/issues).
 
