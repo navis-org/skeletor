@@ -43,4 +43,4 @@ jobs:
         # Stage the file, commit and push
         git add ./docs
         git commit -m "build docs"
-        git push origin main
+        git push origin master
