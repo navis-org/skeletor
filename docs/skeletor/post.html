@@ -221,7 +221,7 @@ other methods, you might want to run <code><a href="#radii">skeletor.post.radii<
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;Method &quot;ray&quot; requires the ncollpyde package.&#39;</span><span class="p">)</span>
         <span class="n">radius</span> <span class="o">=</span> <span class="n">get_radius_ray</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown method &quot;</span><span class="si">{method}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown method &quot;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
 
     <span class="n">s</span><span class="o">.</span><span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
 

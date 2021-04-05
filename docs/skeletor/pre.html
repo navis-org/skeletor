@@ -653,8 +653,8 @@ Reduces final face count where detail is not important.</li>
                 <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">goodvertices</span>
                 <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
                     <span class="n">tqdm</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Total face area increased from last iteration.&quot;</span>
-                               <span class="sa">f</span><span class="s2">&quot; Contraction stopped prematurely after </span><span class="si">{i}</span><span class="s2"> &quot;</span>
-                               <span class="sa">f</span><span class="s2">&quot;iterations at epsilon </span><span class="si">{area_ratios[-1]:.2g}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                               <span class="sa">f</span><span class="s2">&quot; Contraction stopped prematurely after </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;iterations at epsilon </span><span class="si">{</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
                 <span class="k">break</span>
             <span class="n">area_ratios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_eps</span><span class="p">)</span>
 
