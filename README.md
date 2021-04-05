@@ -28,7 +28,7 @@ Automatically installed with `pip`:
 
 Optional because not strictly required for the core functions but highly recommended:
 - [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`
-- [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups: `pip3 install fastremap`
+- [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
 - [ncollpyde](https://github.com/clbarnes/ncollpyde) for ray-casting (radii, clean-up): `pip3 install ncollpyde`
 
 ## Usage
@@ -169,7 +169,8 @@ you try out mesh contraction + vertex clustering first:
   this has certainly influenced things like default parameter values and certain
   post-processing steps
 - meshes need to be triangular (we are using `trimesh`)
-- use `sk.pre.simplify` if your mesh is very complex (>1e5 vertices)
+- use `sk.pre.simplify` if your mesh is very complex (half a million vertices is
+  where things start getting sluggish)
 - a good mesh contraction is often half the battle  
 - if the mesh consists of multiple disconnected pieces the skeleton will
   likewise be fragmented (i.e. will have multiple roots)
