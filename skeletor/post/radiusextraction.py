@@ -20,7 +20,6 @@
 import math
 import numbers
 import random
-import warnings
 
 import numpy as np
 import scipy.spatial
@@ -38,6 +37,13 @@ except BaseException:
 def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs):
     """Extract radii for given skeleton table.
 
+    Important
+    ---------
+    This function really only produces useful radii if the skeleton is centered
+    inside the mesh. `by_wavefront` does that by default whereas all other
+    skeletonization methods don't. Your best bet to get centered skeletons is
+    to contract the mesh first (`sk.pre.contract`).
+
     Parameters
     ----------
     s :         skeletor.Skeleton
@@ -45,17 +51,17 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
     mesh :      trimesh.Trimesh, optional
                 Original mesh (e.g. before contraction). If not provided will
                 use the mesh associated with ``s``.
-    mesh :      trimesh.Trimesh
-                Mesh to use for radius extraction.
     method :    "knn" | "ray"
                 Whether and how to add radius information to each node::
 
-                    - "knn" uses k-nearest-neighbors to get radii: fast but potential for being very wrong
-                    - "ray" uses ray-casting to get radii: slower but sometimes less wrong
+                    - "knn" uses k-nearest-neighbors to get radii: fast but
+                      potential for being very wrong
+                    - "ray" uses ray-casting to get radii: slower but sometimes
+                      less wrong
 
     aggregate : "mean" | "median" | "max" | "min" | "percentile75"
-                Function used to aggregate radii over sample (i.e.
-                across k nearest-neighbors or ray intersections)
+                Function used to aggregate radii over sample (i.e. across
+                k nearest-neighbors or ray intersections)
     validate :  bool
                 If True, will try to fix potential issues with the mesh
                 (e.g. infinite values, duplicate vertices, degenerate faces)
@@ -89,12 +95,6 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
                     values are replaced!
 
     """
-    if getattr(s, 'method', None) == 'teasar':
-        warnings.warn('Skeleton appears to have been generated using mesh '
-                      'TEASAR. This method does not center the skeleton inside '
-                      'the mesh. Hence results from radii extraction will be '
-                      'garbage.')
-
     if isinstance(mesh, type(None)):
         mesh = s.mesh
 
