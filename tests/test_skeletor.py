@@ -32,6 +32,9 @@ class TestSkeletonization:
     def test_edge_collapse(self):
         s = sk.skeletonize.by_edge_collapse(sk.example_mesh())
 
+    def test_teasar(self):
+        s = sk.skeletonize.by_teasar(sk.example_mesh(), 500)
+
 
 class TestPostprocessing:
     def test_cleanup(self):
