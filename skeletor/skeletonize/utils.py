@@ -18,8 +18,10 @@
 
 try:
     import fastremap
+    from fastremap import unique
 except ImportError:
     fastremap = None
+    from numpy import unique
 except BaseException:
     raise
 
@@ -59,7 +61,7 @@ def mst_over_mesh(mesh, verts, limit='auto'):
 
     """
     # Make sure vertices to keep are unique
-    keep = np.unique(verts)
+    keep = unique(verts)
 
     # Get some shorthands
     verts = mesh.vertices
@@ -174,7 +176,7 @@ def make_swc(x, coords, reindex=True, validate=True):
         raise TypeError(f'Expected array or Graph, got "{type(x)}"')
 
     # Make sure edges are unique
-    edges = np.unique(edges, axis=0)
+    edges = unique(edges, axis=0)
 
     # Need to convert to None if empty - otherwise DataFrame creation acts up
     if len(edges) == 0:
@@ -254,20 +256,26 @@ def reindex_swc(swc, inplace=False):
     return swc, new_ids
 
 
-def edges_to_graph(edges, nodes=None, vertices=None, fix_tree=True,
-                   drop_disconnected=False, weight=True):
+def edges_to_graph(edges, nodes=None, vertices=None, fix_edges=True,
+                   fix_tree=True, drop_disconnected=False, weight=True):
     """Create networkx Graph from edge list."""
-    # Drop self-loops
-    edges = edges[edges[:, 0] != edges[:, 1]]
+    if not fix_tree and not fix_edges:
+        # If no fixing required, we need to go for a directed graph straight
+        # away
+        G = nx.DiGraph()
+    else:
+        G = nx.Graph()
 
-    # Make sure we don't have a->b and b<-a edges
-    edges = np.unique(np.sort(edges, axis=1), axis=0)
+    if fix_edges:
+        # Drop self-loops
+        edges = edges[edges[:, 0] != edges[:, 1]]
 
-    G = nx.Graph()
+        # Make sure we don't have a->b and b<-a edges
+        edges = unique(np.sort(edges, axis=1), axis=0)
 
     # Extract nodes from edges if not explicitly provided
     if isinstance(nodes, type(None)):
-        nodes = np.unique(edges.flatten())
+        nodes = unique(edges.flatten())
 
     if isinstance(vertices, np.ndarray):
         coords = vertices[nodes]

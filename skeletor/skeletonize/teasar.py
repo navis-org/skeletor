@@ -27,6 +27,13 @@ from ..utilities import make_trimesh
 from .base import Skeleton
 from .utils import make_swc, edges_to_graph
 
+try:
+    from fastremap import unique
+except ImportError:
+    from numpy import unique
+except BaseException:
+    raise
+
 __all__ = ['by_teasar']
 
 
@@ -37,9 +44,8 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     vertices that are within `inv_dist`. Then picks the second longest (and
     still valid) path and does the same. Rinse & repeat until all vertices have
     been invalidated. It's fast + works very well with tubular meshes, and with
-    `inv_dist` you have control over the level of detail. By its nature a TEASAR
-    skeleton follows the surface of the mesh (i.e. not centered) which makes
-    extracting radii tricky (read: currently not possible).
+    `inv_dist` you have control over the level of detail. Note that by its
+    nature the skeleton will be exactly on the surface of the mesh.
 
     Based on the implementation by Sven Dorkenwald, Casey Schneider-Mizell and
     Forrest Collman in `meshparty`.
@@ -51,6 +57,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                     ``.vertices`` and ``.faces`` properties  (e.g. a
                     trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
                     dictionary ``{'vertices': vertices, 'faces': faces}``.
+
     inv_dist :      int | float
                     Distance along the mesh used for invalidation of vertices.
                     This controls how detailed (or noisy) the skeleton will be.
@@ -75,7 +82,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     if not root:
         root = 0
 
-    edges = []
+    edges = np.array([], dtype=np.int64)
     mesh_map = np.full(mesh.vertices.shape[0], fill_value=-1)
 
     with tqdm(desc='Invalidating', total=len(G.vs),
@@ -95,7 +102,8 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
             sp = SG.get_adjacency_sparse('weight')
 
             # Get lengths of paths to all nodes from root
-            paths = SG.shortest_paths(this_root, target=None, weights='weight', mode='ALL')[0]
+            paths = SG.shortest_paths(this_root, target=None, weights='weight',
+                                      mode='ALL')[0]
             paths = np.array(paths)
 
             # Prep array for invalidation
@@ -107,7 +115,8 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                 farthest = np.argmax(paths)
 
                 # Get path from root to farthest point
-                path = SG.get_shortest_paths(this_root, farthest, weights='weight', mode='ALL')[0]
+                path = SG.get_shortest_paths(this_root, farthest,
+                                             weights='weight', mode='ALL')[0]
 
                 # Add these new edges
                 new_edges = np.vstack((cc[path[:-1]], cc[path[1:]])).T
@@ -123,6 +132,8 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                 SG.es[eids]['weight'] = 0
 
                 # Get all nodes within `inv_dist` to this path
+                # Note: can we somehow only include still valid nodes to speed
+                # things up?
                 dist, _, sources = dijkstra(sp, directed=False, indices=path,
                                             limit=inv_dist, min_only=True,
                                             return_predecessors=True)
@@ -140,12 +151,12 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                 invalidated = (~valid).sum()
 
     # Make unique edges (paths will have overlapped!)
-    edges = np.unique(edges, axis=0)
+    edges = unique(edges, axis=0)
 
     # Create a directed acyclic and hierarchical graph
-    G_nx = edges_to_graph(edges=edges,
-                          nodes=np.arange(0, len(G.vs)),
-                          fix_tree=True)
+    G_nx = edges_to_graph(edges=edges[:, [1, 0]],
+                          fix_tree=False, fix_edges=False,
+                          weight=False)
 
     # Generate the SWC table
     swc, new_ids = make_swc(G_nx, coords=mesh.vertices, reindex=True)
