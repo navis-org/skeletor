@@ -1,4 +1,4 @@
-[![Generic badge](https://img.shields.io/badge/GH Pages-OK-GREEN.svg)](https://schlegelp.github.io/skeletor/)
+[![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://schlegelp.github.io/skeletor/)
 
 # Skeletor
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
