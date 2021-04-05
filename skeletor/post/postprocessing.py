@@ -63,23 +63,23 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
                 will modify the `s` inplace.
 
     **kwargs
-                Keyword arguments are passed to the bundled function:
+                Keyword arguments are passed to the bundled function.
 
-    For `skeletor.postprocessing.drop_line_of_sight_twigs`:
+                For `skeletor.postprocessing.drop_line_of_sight_twigs`::
 
-    max_dist :  "auto" (default) | int | float
-                Maximum Eucledian distance allowed between leaf nodes for them
-                to be considered for collapsing. If "auto", will use the length
-                of the longest edge in skeleton as limit.
+                 max_dist :  "auto" (default) | int | float
+                             Maximum Eucledian distance allowed between leaf nodes for them
+                             to be considered for collapsing. If "auto", will use the length
+                             of the longest edge in skeleton as limit.
 
-    For `skeletor.postprocessing.drop_parallel_twigs`:
+                For `skeletor.postprocessing.drop_parallel_twigs`::
 
-    theta :     float (default 0.01)
-                For each twig we generate the dotproduct between the tangent
-                vectors of it and its parents. If these line up perfectly the
-                dotproduct will equal 1. ``theta`` determines how much that
-                value can differ from 1 for us to still prune the twig: higher
-                theta = more pruning.
+                 theta :     float (default 0.01)
+                             For each twig we generate the dotproduct between the tangent
+                             vectors of it and its parents. If these line up perfectly the
+                             dotproduct will equal 1. ``theta`` determines how much that
+                             value can differ from 1 for us to still prune the twig: higher
+                             theta = more pruning.
 
     Returns
     -------

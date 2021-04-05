@@ -16,6 +16,20 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+r"""
+Example data
+------------
+At this point skeletor ships with a single example mesh: a neuron reconstructed
+from the brain of a fruit fly. It was segmented from an EM image data set and is
+part of the Janelia hemibrain data set ([link](https://neuprint.janelia.org)) [1].
+
+References
+----------
+
+[1] Louis K. Scheffer et al., eLife. 2020. doi: 10.7554/eLife.57443
+A connectome and analysis of the adult Drosophila central brain
+"""
+
 import os
 
 import trimesh as tm
@@ -23,6 +37,8 @@ import trimesh as tm
 # Load the example mesh (a neuron)
 fp = os.path.dirname(__file__)
 obj_path = os.path.join(fp, '722817260.obj')
+
+__docformat__ = "numpy"
 
 
 def example_mesh():
@@ -40,6 +56,12 @@ def example_mesh():
     Returns
     -------
     trimesh.Trimesh
+
+    Examples
+    --------
+    >>> import skeletor as sk
+    >>> # Load this example mesh
+    >>> mesh = sk.example_mesh()
 
     """
     return tm.load_mesh(obj_path)

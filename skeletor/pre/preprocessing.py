@@ -15,6 +15,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
+
 import os
 
 import networkx as nx
@@ -28,6 +29,8 @@ except ImportError:
     fastremap = None
 except BaseException:
     raise
+
+__all__ = ['fix_mesh', 'simplify', 'remesh']
 
 
 def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
@@ -46,7 +49,7 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
 
     Parameters
     ----------
-    meshdata :              trimesh.Trimesh
+    mesh :                  trimesh.Trimesh
     remove_disconnected :   False | int
                             If a number is given, will iterate over the mesh's
                             connected components and remove those consisting of

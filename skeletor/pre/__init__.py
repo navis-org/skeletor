@@ -16,5 +16,31 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+"""
+The `skeletor.pre` module contains functions to pre-process meshes before
+skeletonization.
+
+#### Fixing faulty meshes
+
+Some skeletonization methods are susceptible to faulty meshes (degenerate faces,
+wrong normals, etc.). If your skeleton looks off, it might be worth a shot
+trying to fix the mesh using `skeletor.pre.fix_mesh()`.
+
+#### Mesh contraction
+
+As a rule of thumb: the more your mesh looks like a skeleton, the easier it is
+to extract one (duh). Mesh contraction using `skeletor.pre.contract()` [1] can
+help you to get your mesh "in shape".
+
+References
+----------
+[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
+    contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
+
+"""
+
 from .meshcontraction import contract
 from .preprocessing import fix_mesh, simplify, remesh
+
+__docformat__ = "numpy"
+__all__ = ['fix_mesh', 'simplify', 'remesh', 'contract']

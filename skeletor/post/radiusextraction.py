@@ -70,23 +70,23 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
     **kwargs
                 Keyword arguments are passed to the respective method:
 
-    For method "knn":
+                For method "knn"::
 
-    n :         int (default 5)
-                Radius will be the mean over n nearest-neighbors.
+                    n :             int (default 5)
+                                    Radius will be the mean over n nearest-neighbors.
 
-    For method "ray":
+                For method "ray"::
 
-    n_rays :        int (default 20)
-                    Number of rays to cast for each node.
-    projection :    "sphere" (default) | "tangents"
-                    Whether to cast rays in a sphere around each node or in a
-                    circle orthogonally to the node's tangent vector.
-    fallback :      "knn" (default) | None | number
-                    If a point is outside or right on the surface of the mesh
-                    the raycasting will return nonesense results. We can either
-                    ignore those cases (``None``), assign a arbitrary number or
-                    we can fall back to radii from k-nearest-neighbors (``knn``).
+                    n_rays :        int (default 20)
+                                    Number of rays to cast for each node.
+                    projection :    "sphere" (default) | "tangents"
+                                    Whether to cast rays in a sphere around each node or in a
+                                    circle orthogonally to the node's tangent vector.
+                    fallback :      "knn" (default) | None | number
+                                    If a point is outside or right on the surface of the mesh
+                                    the raycasting will return nonesense results. We can either
+                                    ignore those cases (``None``), assign a arbitrary number or
+                                    we can fall back to radii from k-nearest-neighbors (``knn``).
 
     Returns
     -------

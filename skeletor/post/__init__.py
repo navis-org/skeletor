@@ -16,5 +16,31 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+r"""
+The `skeletor.post` module contains functions to post-process skeletons after
+skeletonization.
+
+### Fixing issues with skeletons
+
+Depending on your mesh, pre-processing and the parameters you chose for
+skeletonization, chances are that your skeleton will not come out perfectly.
+
+`skeletor.post.clean_up` can help you solve some potential issues:
+
+- skeleton nodes (vertices) that outside or right on the surface instead of
+  centered inside the mesh
+- superfluous "hairs" on otherwise straight bits
+
+### Computing radius information
+
+Only `skeletor.skeletonize.by_wavefront()` provides radii off the bat. For all
+other methods, you might want to run `skeletor.post.radii` can help you
+(re-)generate radius information for the skeletons.
+
+"""
+
 from .radiusextraction import radii
 from .postprocessing import clean_up
+
+__docformat__ = "numpy"
+__all__ = ['radii', 'clean_up']

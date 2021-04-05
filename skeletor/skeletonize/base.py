@@ -22,6 +22,8 @@ import trimesh as tm
 from ..utilities import make_trimesh
 from .utils import reindex_swc
 
+__docformat__ = "numpy"
+
 
 class Skeleton:
     """Class representing a skeleton.
