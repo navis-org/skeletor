@@ -1,8 +1,4 @@
-try:
-    from setuptools import setup
-except BaseException:
-    print('Setuptools not found - falling back to distutils')
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 import re
 
@@ -22,7 +18,7 @@ with open('requirements.txt') as f:
 setup(
     name='skeletor',
     version=verstr,
-    packages=['skeletor', ],
+    packages=find_packages(),
     license='GNU GPL V3',
     description='Python 3 implementation of Skeleton Extraction by Mesh contraction algorithm',
     long_description=open('README.md').read(),
