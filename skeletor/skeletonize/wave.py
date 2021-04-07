@@ -75,6 +75,16 @@ def by_wavefront(mesh, waves=1, step_size=1, drop_disconnected=False,
     """
     mesh = make_trimesh(mesh, validate=False)
 
+    # Wave must be a positive integer >= 1
+    waves = int(waves)
+    if waves < 1:
+        raise ValueError('`waves` must be integer >= 1')
+
+    # Same for step size
+    step_size = int(step_size)
+    if step_size < 1:
+        raise ValueError('`step_size` must be integer >= 1')
+
     # Generate Graph (must be undirected)
     G = ig.Graph(edges=mesh.edges_unique, directed=False)
     #G.es['weight'] = mesh.edges_unique_length
