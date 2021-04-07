@@ -44,6 +44,9 @@
             <li>
                     <a class="function" href="#by_edge_collapse">by_edge_collapse</a>
             </li>
+            <li>
+                    <a class="function" href="#by_tangent_ball">by_tangent_ball</a>
+            </li>
     </ul>
 
 
@@ -101,6 +104,13 @@ is a quick summary:</p>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">no</td>
   <td>works on mesh surface</td>
+</tr>
+<tr>
+  <td><code><a href="#by_tangent_ball">skeletor.skeletonize.by_tangent_ball()</a></code></td>
+  <td style="text-align:center;">++</td>
+  <td style="text-align:center;">0</td>
+  <td style="text-align:center;">yes</td>
+  <td>works with mesh normals</td>
 </tr>
 <tr>
   <td><code><a href="#by_edge_collapse">skeletor.skeletonize.by_edge_collapse()</a></code></td>
@@ -171,6 +181,7 @@ is a quick summary:</p>
 <span class="sd">| `skeletor.skeletonize.by_wavefront()`       | +++   | ++     | yes        | works well for tubular meshes                      |</span>
 <span class="sd">| `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | best with contracted meshes [^1]                   |</span>
 <span class="sd">| `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | works on mesh surface                              |</span>
+<span class="sd">| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | works with mesh normals                            |</span>
 <span class="sd">| `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | published with [1] - never got this to work well   |</span>
 
 <span class="sd">[^1]: use `skeletor.pre.contract()`</span>
@@ -179,17 +190,18 @@ is a quick summary:</p>
 <span class="sd">## References</span>
 
 <span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
-<span class="sd"> </span>
+
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">.edge_collapse</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.vertex_cluster</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.wave</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.teasar</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.tangent_ball</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;by_teasar&#39;</span><span class="p">,</span> <span class="s1">&#39;by_wavefront&#39;</span><span class="p">,</span> <span class="s1">&#39;by_vertex_clusters&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;by_edge_collapse&#39;</span><span class="p">]</span>
+           <span class="s1">&#39;by_edge_collapse&#39;</span><span class="p">,</span> <span class="s1">&#39;by_tangent_ball&#39;</span><span class="p">]</span>
 </pre></div>
 
         </details>
@@ -206,7 +218,7 @@ is a quick summary:</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">by_teasar</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">inv_dist</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Skeletonize using mesh TEASAR.</span>
+    <span class="sd">&quot;&quot;&quot;Skeletonize a mesh mesh using the TEASAR algorithm [1].</span>
 
 <span class="sd">    This algorithm finds the longest path from a root vertex, invalidates all</span>
 <span class="sd">    vertices that are within `inv_dist`. Then picks the second longest (and</span>
@@ -216,7 +228,7 @@ is a quick summary:</p>
 <span class="sd">    nature the skeleton will be exactly on the surface of the mesh.</span>
 
 <span class="sd">    Based on the implementation by Sven Dorkenwald, Casey Schneider-Mizell and</span>
-<span class="sd">    Forrest Collman in `meshparty`.</span>
+<span class="sd">    Forrest Collman in `meshparty` (https://github.com/sdorkenw/MeshParty).</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -225,7 +237,6 @@ is a quick summary:</p>
 <span class="sd">                    ``.vertices`` and ``.faces`` properties  (e.g. a</span>
 <span class="sd">                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a</span>
 <span class="sd">                    dictionary ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
-
 <span class="sd">    inv_dist :      int | float</span>
 <span class="sd">                    Distance along the mesh used for invalidation of vertices.</span>
 <span class="sd">                    This controls how detailed (or noisy) the skeleton will be.</span>
@@ -239,6 +250,14 @@ is a quick summary:</p>
 <span class="sd">    skeletor.Skeleton</span>
 <span class="sd">                    Holds results of the skeletonization and enables quick</span>
 <span class="sd">                    visualization.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Sato, M., Bitter, I., Bender, M. A., Kaufman, A. E., &amp; Nakajima, M.</span>
+<span class="sd">        (n.d.). TEASAR: tree-structure extraction algorithm for accurate and</span>
+<span class="sd">        robust skeletons. In Proceedings the Eighth Pacific Conference on</span>
+<span class="sd">        Computer Graphics and Applications. IEEE Comput. Soc.</span>
+<span class="sd">        https://doi.org/10.1109/pccga.2000.883951</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -334,7 +353,7 @@ is a quick summary:</p>
 
         </details>
 
-            <div class="docstring"><p>Skeletonize using mesh TEASAR.</p>
+            <div class="docstring"><p>Skeletonize a mesh mesh using the TEASAR algorithm [1].</p>
 
 <p>This algorithm finds the longest path from a root vertex, invalidates all
 vertices that are within <code>inv_dist</code>. Then picks the second longest (and
@@ -344,7 +363,7 @@ been invalidated. It's fast + works very well with tubular meshes, and with
 nature the skeleton will be exactly on the surface of the mesh.</p>
 
 <p>Based on the implementation by Sven Dorkenwald, Casey Schneider-Mizell and
-Forrest Collman in <code>meshparty</code>.</p>
+Forrest Collman in <code>meshparty</code> (https://github.com/sdorkenw/MeshParty).</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -369,6 +388,14 @@ If True, will show progress bar.</li>
 <li><strong><a href="../skeletor.html#Skeleton">skeletor.Skeleton</a></strong>: Holds results of the skeletonization and enables quick
 visualization.</li>
 </ul>
+
+<h6 id="references">References</h6>
+
+<p>[1] Sato, M., Bitter, I., Bender, M. A., Kaufman, A. E., &amp; Nakajima, M.
+    (n.d.). TEASAR: tree-structure extraction algorithm for accurate and
+    robust skeletons. In Proceedings the Eighth Pacific Conference on
+    Computer Graphics and Applications. IEEE Comput. Soc.
+    https://doi.org/10.1109/pccga.2000.883951</p>
 </div>
 
 
@@ -427,6 +454,16 @@ visualization.</li>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Wave must be a positive integer &gt;= 1</span>
+    <span class="n">waves</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">waves</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">waves</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`waves` must be integer &gt;= 1&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Same for step size</span>
+    <span class="n">step_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">step_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step_size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`step_size` must be integer &gt;= 1&#39;</span><span class="p">)</span>
 
     <span class="c1"># Generate Graph (must be undirected)</span>
     <span class="n">G</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">edges_unique</span><span class="p">,</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -583,7 +620,7 @@ visualization.</li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">by_vertex_clusters</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">sampling_dist</span><span class="p">,</span> <span class="n">cluster_pos</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span>
                        <span class="n">drop_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Skeletonize a contracted mesh by clustering vertices.</span>
+    <span class="sd">&quot;&quot;&quot;Skeletonize a (contracted) mesh by clustering vertices.</span>
 
 <span class="sd">    The algorithm traverses the mesh graph and groups vertices together that</span>
 <span class="sd">    are within a given distance to each other. This uses the geodesic</span>
@@ -738,7 +775,7 @@ visualization.</li>
 
         </details>
 
-            <div class="docstring"><p>Skeletonize a contracted mesh by clustering vertices.</p>
+            <div class="docstring"><p>Skeletonize a (contracted) mesh by clustering vertices.</p>
 
 <p>The algorithm traverses the mesh graph and groups vertices together that
 are within a given distance to each other. This uses the geodesic
@@ -1182,6 +1219,234 @@ visualization.</li>
 
 <p>[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh
     contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</p>
+</div>
+
+
+                </section>
+                <section id="by_tangent_ball">
+                            <div class="attr function"><a class="headerlink" href="#by_tangent_ball">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">by_tangent_ball</span><span class="signature">(mesh, drop_disconnected=False)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">by_tangent_ball</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">drop_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Skeletonize a mesh by finding the maximal tangent ball.</span>
+
+<span class="sd">    This algorithm casts a ray from every mesh vertex along its inverse normals</span>
+<span class="sd">    (requires `ncollpyde`). It then creates a sphere that fits exactly between</span>
+<span class="sd">    the vertex and where the ray hit the inside of a face on the opposite side.</span>
+<span class="sd">    Next it drops spheres that overlap with another, larger sphere. Modified</span>
+<span class="sd">    from [1].</span>
+
+<span class="sd">    The method works best on smooth meshes and is rather sensitive to errors in</span>
+<span class="sd">    the mesh such as incorrect normals (see `skeletor.pre.fix_mesh`), internal</span>
+<span class="sd">    faces, noisy surface (try smoothing or downsampling) or holes in the mesh.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mesh :              mesh obj</span>
+<span class="sd">                        The mesh to be skeletonize. Can an object that has</span>
+<span class="sd">                        ``.vertices`` and ``.faces`` properties  (e.g. a</span>
+<span class="sd">                        trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a</span>
+<span class="sd">                        dictionary ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
+<span class="sd">    drop_disconnected : bool</span>
+<span class="sd">                        If True, will drop disconnected nodes from the skeleton.</span>
+<span class="sd">                        Note that this might result in empty skeletons.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    skeletor.Skeleton</span>
+<span class="sd">                        Holds results of the skeletonization and enables quick</span>
+<span class="sd">                        visualization.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import skeletor as sk</span>
+<span class="sd">    &gt;&gt;&gt; mesh = sk.example_mesh()</span>
+<span class="sd">    &gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, fix_normals=True, remove_disconnected=10)</span>
+<span class="sd">    &gt;&gt;&gt; skel = sk.skeletonize.by_tangent_ball(fixed)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Ma, J., Bae, S.W. &amp; Choi, S. 3D medial axis point approximation using</span>
+<span class="sd">        nearest neighbors and the normal field. Vis Comput 28, 7–19 (2012).</span>
+<span class="sd">        https://doi.org/10.1007/s00371-011-0594-7</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ncollpyde</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;Tangent ball skeletonization requires the &#39;</span>
+                          <span class="s1">&#39;`ncollpyde` package for ray-casting: &#39;</span>
+                          <span class="s1">&#39;pip install ncollpyde&#39;</span><span class="p">)</span>
+
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Generate the KD tree</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">coll</span> <span class="o">=</span> <span class="n">ncollpyde</span><span class="o">.</span><span class="n">Volume</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertex_normals</span> <span class="o">*</span> <span class="mf">0.01</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertex_normals</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">ix</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">is_backface</span> <span class="o">=</span> <span class="n">coll</span><span class="o">.</span><span class="n">intersections</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+
+    <span class="c1"># Now we need to invalidate centers</span>
+    <span class="n">intersects</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">intersects</span><span class="p">[</span><span class="n">ix</span><span class="p">[</span><span class="n">is_backface</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">centers</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">loc</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">ix</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">radii</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">loc</span> <span class="o">-</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">ix</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="c1"># Now we need to post processing</span>
+    <span class="n">inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="c1"># Invalidate vertices that didn&#39;t intersect</span>
+    <span class="n">inv</span><span class="p">[</span><span class="o">~</span><span class="n">intersects</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Now invalidate any ball that is outside the mesh</span>
+    <span class="n">inv</span><span class="p">[</span><span class="o">~</span><span class="n">coll</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">centers</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Find tangent balls that are fully contained in another tangent ball</span>
+    <span class="c1"># (those are not maximal inscribed)</span>
+    <span class="n">original_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">tree2</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span><span class="n">centers</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">])</span>
+        <span class="c1"># For any not-yet-invalidated center find the closest other center</span>
+        <span class="n">dist</span><span class="p">,</span> <span class="n">ix</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">centers</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Drop self-hits</span>
+        <span class="n">ix</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">ix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dist</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># In radius</span>
+        <span class="n">in_radius</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">radii</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">]</span>
+
+        <span class="c1"># Stop if no more overlapping pairs</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_radius</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">break</span>
+
+        <span class="c1"># Collect radii to determine which of the overlapping ball survives</span>
+        <span class="n">pair_rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">radii</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">][</span><span class="n">in_radius</span><span class="p">],</span>
+                              <span class="n">radii</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">][</span><span class="n">ix</span><span class="p">[</span><span class="n">in_radius</span><span class="p">]]))</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">pair_ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">original_ind</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">][</span><span class="n">in_radius</span><span class="p">],</span>
+                             <span class="n">original_ind</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">][</span><span class="n">ix</span><span class="p">[</span><span class="n">in_radius</span><span class="p">]]))</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="c1"># Invalidate the loosers</span>
+        <span class="n">looses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">pair_rad</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">looser_ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">pair_ix</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pair_ix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">looses</span><span class="p">])</span>
+        <span class="n">inv</span><span class="p">[</span><span class="n">looser_ix</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Now we need to collapse nodes into the remaining centers</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                 <span class="n">edges</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">edges_unique</span><span class="p">,</span>
+                 <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Make sure that every connected component has at least one valid target</span>
+    <span class="k">for</span> <span class="n">cc</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">clusters</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">original_ind</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">inv</span><span class="p">[</span><span class="n">cc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">centers</span><span class="p">[</span><span class="n">cc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="n">cc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="c1"># For each invalidated vertex, find the closest vertex that is still valid</span>
+    <span class="c1"># This works on unweighted edges but should be good enough - way faster</span>
+    <span class="c1"># than a proper path search for sure</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="n">find_closest</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">sources</span><span class="o">=</span><span class="n">original_ind</span><span class="p">[</span><span class="n">inv</span><span class="p">],</span>
+                         <span class="n">targets</span><span class="o">=</span><span class="n">original_ind</span><span class="p">[</span><span class="o">~</span><span class="n">inv</span><span class="p">])</span>
+
+    <span class="c1"># Generate a mesh vertex to skeleton node map</span>
+    <span class="n">mesh_map</span> <span class="o">=</span> <span class="n">original_ind</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">mesh_map</span><span class="p">[</span><span class="n">pairs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pairs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Renumber the vertices from 0 -&gt; N_vertices</span>
+    <span class="n">uni</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">mesh_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mesh_map</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Make sure centers and radii match the new order</span>
+    <span class="n">centers</span> <span class="o">=</span> <span class="n">centers</span><span class="p">[</span><span class="n">uni</span><span class="p">]</span>
+    <span class="n">radii</span> <span class="o">=</span> <span class="n">radii</span><span class="p">[</span><span class="n">uni</span><span class="p">]</span>
+
+    <span class="c1"># Contract vertices to nodes according to the mesh</span>
+    <span class="n">G</span><span class="o">.</span><span class="n">contract_vertices</span><span class="p">(</span><span class="n">mesh_map</span><span class="p">,</span> <span class="n">combine_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># This only drops duplicate and self-loop edges</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
+
+    <span class="c1"># Generate weights between remaining centers</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">())</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Generate hierarchical tree</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">spanning_tree</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+
+    <span class="c1"># Create a directed acyclic and hierarchical graph</span>
+    <span class="n">G_nx</span> <span class="o">=</span> <span class="n">edges_to_graph</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">()),</span>
+                          <span class="n">nodes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">vs</span><span class="p">)),</span>
+                          <span class="n">fix_tree</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">drop_disconnected</span><span class="o">=</span><span class="n">drop_disconnected</span><span class="p">)</span>
+
+    <span class="c1"># Generate the SWC table</span>
+    <span class="n">swc</span> <span class="o">=</span> <span class="n">make_swc</span><span class="p">(</span><span class="n">G_nx</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">centers</span><span class="p">,</span> <span class="n">reindex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radii</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">new_ids</span> <span class="o">=</span> <span class="n">reindex_swc</span><span class="p">(</span><span class="n">swc</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Update vertex to node ID map</span>
+    <span class="n">mesh_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">new_ids</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">mesh_map</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span> <span class="n">mesh_map</span><span class="o">=</span><span class="n">mesh_map</span><span class="p">,</span>
+                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;tangent_ball&#39;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Skeletonize a mesh by finding the maximal tangent ball.</p>
+
+<p>This algorithm casts a ray from every mesh vertex along its inverse normals
+(requires <code>ncollpyde</code>). It then creates a sphere that fits exactly between
+the vertex and where the ray hit the inside of a face on the opposite side.
+Next it drops spheres that overlap with another, larger sphere. Modified
+from [1].</p>
+
+<p>The method works best on smooth meshes and is rather sensitive to errors in
+the mesh such as incorrect normals (see <code><a href="pre.html#fix_mesh">skeletor.pre.fix_mesh</a></code>), internal
+faces, noisy surface (try smoothing or downsampling) or holes in the mesh.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>mesh</strong> (mesh obj):
+The mesh to be skeletonize. Can an object that has
+<code>.vertices</code> and <code>.faces</code> properties  (e.g. a
+trimesh.Trimesh) or a tuple <code>(vertices, faces)</code> or a
+dictionary <code>{'vertices': vertices, 'faces': faces}</code>.</li>
+<li><strong>drop_disconnected</strong> (bool):
+If True, will drop disconnected nodes from the skeleton.
+Note that this might result in empty skeletons.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong><a href="../skeletor.html#Skeleton">skeletor.Skeleton</a></strong>: Holds results of the skeletonization and enables quick
+visualization.</li>
+</ul>
+
+<h6 id="examples">Examples</h6>
+
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">fix_normals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_tangent_ball</span><span class="p">(</span><span class="n">fixed</span><span class="p">)</span>
+</code></pre></div>
+
+<h6 id="references">References</h6>
+
+<p>[1] Ma, J., Bae, S.W. &amp; Choi, S. 3D medial axis point approximation using
+    nearest neighbors and the normal field. Vis Comput 28, 7–19 (2012).
+    https://doi.org/10.1007/s00371-011-0594-7</p>
 </div>
 
 
