@@ -30,7 +30,7 @@ jobs:
         pdoc -o ./docs skeletor
     - name: Change index.html
       run: |
-        mv ./docs/skeletor.html ./docs/index.html
+        cp ./docs/skeletor.html ./docs/index.html
     # Configure Github
     - name: setup git config
       run: |
