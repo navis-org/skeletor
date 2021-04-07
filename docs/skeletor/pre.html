@@ -301,7 +301,7 @@ will make a copy first.</li>
     <span class="k">assert</span> <span class="n">ratio</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ratio must be between 0 and 1&#39;</span>
 
     <span class="c1"># We need to import here to avoid circular imports</span>
-    <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
+    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
 
@@ -389,11 +389,11 @@ reduce the number of faces to 50%.</li>
         <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;No Blender available (executable not found).&#39;</span><span class="p">)</span>
     <span class="n">_blender_executable</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">_blender_executable</span>
 
-    <span class="k">assert</span> <span class="n">voxel_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;voxel_size must be a positive number&#39;</span>
-    <span class="k">assert</span> <span class="n">adaptivity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;adaptivity must be a positive number&#39;</span>
+    <span class="k">assert</span> <span class="n">voxel_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`voxel_size` must be a positive number&#39;</span>
+    <span class="k">assert</span> <span class="n">adaptivity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`adaptivity` must be a positive number&#39;</span>
 
     <span class="c1"># We need to import here to avoid circular imports</span>
-    <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
+    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
 

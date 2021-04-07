@@ -808,7 +808,7 @@ visualization.</li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">by_edge_collapse</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">shape_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
                      <span class="n">drop_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Skeletonize a (contracted) mesh by collapsing edges.</span>
+    <span class="sd">&quot;&quot;&quot;Skeletonize a (contracted) mesh by iteratively collapsing edges.</span>
 
 <span class="sd">    This algorithm (described in [1]) iteratively collapses edges that are part</span>
 <span class="sd">    of a face until no more faces are left. Edges are chosen based on a cost</span>
@@ -1138,7 +1138,7 @@ visualization.</li>
 
         </details>
 
-            <div class="docstring"><p>Skeletonize a (contracted) mesh by collapsing edges.</p>
+            <div class="docstring"><p>Skeletonize a (contracted) mesh by iteratively collapsing edges.</p>
 
 <p>This algorithm (described in [1]) iteratively collapses edges that are part
 of a face until no more faces are left. Edges are chosen based on a cost
