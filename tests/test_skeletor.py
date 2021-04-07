@@ -40,9 +40,6 @@ class TestSkeletonization:
     def test_edge_collapse(self):
         s = sk.skeletonize.by_edge_collapse(sk.example_mesh())
 
-        assert len(s.mesh_map) == len(s.mesh.vertices)
-        assert all(np.isin(s.mesh_map, s.swc.node_id.values))
-
     def test_teasar(self):
         s = sk.skeletonize.by_teasar(sk.example_mesh(), 500)
 
