@@ -51,7 +51,7 @@ skeletonization and (optional) postprocessing of the skeleton.
 | `skeletor.skeletonize.by_vertex_clusters()` | very fast but needs mesh to be contracted (see above)       |
 | `skeletor.skeletonize.by_edge_collapse()`   | presented in [1] but never got this to work well            |
 | `skeletor.skeletonize.by_teasar()`          | very fast and robust, works on mesh surface                 |
-| `skeletor.skeletonize.by_tangent_ball()`    | coming soon                                                 |
+| `skeletor.skeletonize.by_tangent_ball()`    | very fast, best on smooth meshes                            |
 
 | postprocessing             | description                                        |
 | ---------------------------| -------------------------------------------------- |

@@ -134,8 +134,8 @@ def by_tangent_ball(mesh, drop_disconnected=False):
     """Skeletonize a mesh by finding the maximal tangent ball.
 
     This algorithm casts a ray from every mesh vertex along its inverse normals
-    (requires `ncollpyde`). It then creates a sphere that fits exactly between
-    the vertex and where the ray hit the inside of a face on the opposite side.
+    (requires `ncollpyde`). It then creates a sphere that is tangent to the
+    vertex and to where the ray hit the inside of a face on the opposite side.
     Next it drops spheres that overlap with another, larger sphere. Modified
     from [1].
 

@@ -82,6 +82,7 @@ Here is a complete list of available functions:
 | `skeletor.skeletonize.by_vertex_clusters()` | very fast but needs mesh to be contracted (see above)       |
 | `skeletor.skeletonize.by_edge_collapse()`   | presented in [1] but never got this to work well            |
 | `skeletor.skeletonize.by_teasar()`          | very fast and robust, works on mesh surface                 |
+| `skeletor.skeletonize.by_tangent_ball()`    | very fast, best on smooth meshes                            |
 | **postprocessing**                          |                                                             |
 | `skeletor.post.clean_up()`                  | fix some potential errors in the skeleton                   |
 | `skeletor.post.radii()`                     | add radius information using various method                 |
