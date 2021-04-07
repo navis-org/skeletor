@@ -210,7 +210,7 @@ def simplify(mesh, ratio):
     assert ratio < 1 and ratio > 0, 'ratio must be between 0 and 1'
 
     # We need to import here to avoid circular imports
-    from .utilities import make_trimesh
+    from ..utilities import make_trimesh
     mesh = make_trimesh(mesh, validate=False)
     assert isinstance(mesh, tm.Trimesh)
 
@@ -263,11 +263,11 @@ def remesh(mesh, voxel_size=50, adaptivity=5):
         raise ImportError('No Blender available (executable not found).')
     _blender_executable = tm.interfaces.blender._blender_executable
 
-    assert voxel_size > 0, 'voxel_size must be a positive number'
-    assert adaptivity > 0, 'adaptivity must be a positive number'
+    assert voxel_size > 0, '`voxel_size` must be a positive number'
+    assert adaptivity > 0, '`adaptivity` must be a positive number'
 
     # We need to import here to avoid circular imports
-    from .utilities import make_trimesh
+    from ..utilities import make_trimesh
     mesh = make_trimesh(mesh, validate=False)
     assert isinstance(mesh, tm.Trimesh)
 

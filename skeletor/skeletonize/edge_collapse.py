@@ -38,7 +38,7 @@ __all__ = ['by_edge_collapse']
 
 def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
                      drop_disconnected=False, progress=True):
-    """Skeletonize a (contracted) mesh by collapsing edges.
+    """Skeletonize a (contracted) mesh by iteratively collapsing edges.
 
     This algorithm (described in [1]) iteratively collapses edges that are part
     of a face until no more faces are left. Edges are chosen based on a cost
