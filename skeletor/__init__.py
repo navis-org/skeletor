@@ -70,7 +70,7 @@ Here is a complete list of available functions:
 
 | function                                    | description                                                 |
 | ------------------------------------------- | ----------------------------------------------------------- |
-| **example mesh**                            |                                                             |
+| **example data**                            |                                                             |
 | `skeletor.example_mesh()`                   | load an example mesh                                        |
 | **pre-processing**                          |                                                             |
 | `skeletor.pre.fix_mesh()`                   | fix some common errors found in meshes                      |
@@ -221,9 +221,9 @@ dependant on the `sampling_dist` parameter.
 
 # What about algorithm `X`?
 
-`skeletor` contains some of algorithms that I found easy enough to implement
+`skeletor` contains some algorithms that I found easy enough to implement
 and useful for my work with neurons. If you have some interesting paper/approach
-that could make a nice addition to skeletor, please get in touch on Github.
+that could make a nice addition to `skeletor`, please get in touch on Github.
 Pull requests are always welcome!
 
 # References
