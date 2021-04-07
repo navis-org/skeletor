@@ -181,13 +181,13 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
 
     # Generate a mesh vertex -> skeleton vertex map
     # Note that nodes are labeled by index of the cluster
-    vertex_to_node_map = {n: i for i, cl in enumerate(clusters) for n in cl}
+    vertex_to_node_map = [i for i, cl in enumerate(clusters) for n in cl]
 
     # Generate SWC
     swc, new_ids = make_swc(G, cl_coords, reindex=True, validate=False)
 
     # Update mesh map
-    vertex_to_node_map = {k: new_ids[v] for k, v in vertex_to_node_map.items()}
+    vertex_to_node_map = np.array([new_ids[n] for n in vertex_to_node_map])
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
                     method='vertex_clusters')
