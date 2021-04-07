@@ -19,7 +19,6 @@
 import numpy as np
 import trimesh as tm
 
-from ..utilities import make_trimesh
 from .utils import reindex_swc
 
 __docformat__ = "numpy"
@@ -64,11 +63,11 @@ class Skeleton:
         """Return quick summary of the skeleton's geometry."""
         elements = []
         if hasattr(self, 'vertices'):
-            # for Trimesh and PointCloud
             elements.append(f'vertices={self.vertices.shape}')
         if hasattr(self, 'edges'):
-            # for Trimesh
             elements.append(f'edges={self.edges.shape}')
+        if hasattr(self, 'method'):
+            elements.append(f'method={self.method}')
         return f'<Skeleton({", ".join(elements)})>'
 
     @property

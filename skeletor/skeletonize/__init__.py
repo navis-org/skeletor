@@ -33,6 +33,7 @@ is a quick summary:
 | `skeletor.skeletonize.by_wavefront()`       | +++   | ++     | yes        | works well for tubular meshes                      |
 | `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | best with contracted meshes [^1]                   |
 | `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | works on mesh surface                              |
+| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | works with mesh normals                            |
 | `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | published with [1] - never got this to work well   |
 
 [^1]: use `skeletor.pre.contract()`
@@ -41,14 +42,15 @@ is a quick summary:
 ## References
 
 `[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
- 
+
 """
 
 from .edge_collapse import *
 from .vertex_cluster import *
 from .wave import *
 from .teasar import *
+from .tangent_ball import *
 
 __docformat__ = "numpy"
 __all__ = ['by_teasar', 'by_wavefront', 'by_vertex_clusters',
-           'by_edge_collapse']
+           'by_edge_collapse', 'by_tangent_ball']

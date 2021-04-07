@@ -38,7 +38,7 @@ __all__ = ['by_teasar']
 
 
 def by_teasar(mesh, inv_dist, root=None, progress=True):
-    """Skeletonize using mesh TEASAR.
+    """Skeletonize a mesh mesh using the TEASAR algorithm [1].
 
     This algorithm finds the longest path from a root vertex, invalidates all
     vertices that are within `inv_dist`. Then picks the second longest (and
@@ -48,7 +48,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     nature the skeleton will be exactly on the surface of the mesh.
 
     Based on the implementation by Sven Dorkenwald, Casey Schneider-Mizell and
-    Forrest Collman in `meshparty`.
+    Forrest Collman in `meshparty` (https://github.com/sdorkenw/MeshParty).
 
     Parameters
     ----------
@@ -57,7 +57,6 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                     ``.vertices`` and ``.faces`` properties  (e.g. a
                     trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
                     dictionary ``{'vertices': vertices, 'faces': faces}``.
-
     inv_dist :      int | float
                     Distance along the mesh used for invalidation of vertices.
                     This controls how detailed (or noisy) the skeleton will be.
@@ -71,6 +70,14 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     skeletor.Skeleton
                     Holds results of the skeletonization and enables quick
                     visualization.
+
+    References
+    ----------
+    [1] Sato, M., Bitter, I., Bender, M. A., Kaufman, A. E., & Nakajima, M.
+        (n.d.). TEASAR: tree-structure extraction algorithm for accurate and
+        robust skeletons. In Proceedings the Eighth Pacific Conference on
+        Computer Graphics and Applications. IEEE Comput. Soc.
+        https://doi.org/10.1109/pccga.2000.883951
 
     """
     mesh = make_trimesh(mesh, validate=False)

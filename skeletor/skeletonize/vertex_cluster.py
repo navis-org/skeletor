@@ -33,14 +33,14 @@ from tqdm.auto import tqdm
 from ..utilities import make_trimesh
 
 from .base import Skeleton
-from .utils import edges_to_graph, make_swc, reindex_swc, dfs
+from .utils import edges_to_graph, make_swc, dfs
 
 __all__ = ['by_vertex_clusters']
 
 
 def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                        drop_disconnected=False, progress=True):
-    """Skeletonize a contracted mesh by clustering vertices.
+    """Skeletonize a (contracted) mesh by clustering vertices.
 
     The algorithm traverses the mesh graph and groups vertices together that
     are within a given distance to each other. This uses the geodesic
