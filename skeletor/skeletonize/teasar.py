@@ -152,7 +152,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                 paths[to_invalidate] = 0
 
                 # Update mesh vertex to skeleton node map
-                mesh_map[cc[in_dist]] = sources[in_dist]
+                mesh_map[cc[in_dist]] = cc[sources[in_dist]]
 
                 pbar.update((~valid).sum() - invalidated)
                 invalidated = (~valid).sum()
@@ -167,6 +167,9 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
 
     # Generate the SWC table
     swc, new_ids = make_swc(G_nx, coords=mesh.vertices, reindex=True)
+
+    # Update vertex to node ID map
+    mesh_map = np.array([new_ids[n] for n in mesh_map])
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map, method='teasar')
 
