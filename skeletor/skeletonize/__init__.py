@@ -28,16 +28,17 @@ recommend looking into mesh contraction [^1].
 Please see the documentation of the individual functions for details but here
 is a quick summary:
 
-| function                                    | speed | robust | radii [^2] | description                                        |
-| ------------------------------------------- | :---: | :----: | :--------: | ---------------------------------------------------|
-| `skeletor.skeletonize.by_wavefront()`       | +++   | ++     | yes        | works well for tubular meshes                      |
-| `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | best with contracted meshes [^1]                   |
-| `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | works on mesh surface                              |
-| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | works with mesh normals                            |
-| `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | published with [1] - never got this to work well   |
+| function                                    | speed | robust | radii [^2] | mesh map [^3] | description                                        |
+| ------------------------------------------- | :---: | :----: | :--------: | :-----------: | ---------------------------------------------------|
+| `skeletor.skeletonize.by_wavefront()`       | +++   | ++     | yes        | yes           | works well for tubular meshes                      |
+| `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | yes           | best with contracted meshes [^1]                   |
+| `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | yes           | works on mesh surface                              |
+| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | yes           | works with mesh normals                            |
+| `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | no            | published with [1] - never got this to work well   |
 
 [^1]: use `skeletor.pre.contract()`
 [^2]: radii can also be added in postprocessing with `skeletor.post.radii()`
+[^3]: a mapping from the meshes vertices to skeleton nodes
 
 ## References
 
