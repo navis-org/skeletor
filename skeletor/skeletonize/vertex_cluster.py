@@ -38,8 +38,7 @@ from .utils import edges_to_graph, make_swc, dfs
 __all__ = ['by_vertex_clusters']
 
 
-def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
-                       drop_disconnected=False, progress=True):
+def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True):
     """Skeletonize a (contracted) mesh by clustering vertices.
 
     The algorithm traverses the mesh graph and groups vertices together that
@@ -72,12 +71,16 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
                         mass.
                       - "center": Use the center of mass. This makes for smoother
                         skeletons but can lead to nodes outside the mesh.
-
-    drop_disconnected : bool
-                    If True, will drop disconnected nodes from the skeleton.
-                    Note that this might result in empty skeletons.
     progress :      bool
                     If True, will show progress bar.
+
+    Examples
+    --------
+    >>> import skeletor as sk
+    >>> mesh = sk.example_mesh()
+    >>> cont = sk.pre.contract(mesh, epsilon=0.1)
+    >>> skel = sk.skeletonize.vertex_cluster(cont)
+    >>> skel.mesh = mesh
 
     Returns
     -------
@@ -177,7 +180,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median',
 
     # Produce final graph - this also takes care of some fixing
     G = edges_to_graph(edges, nodes=np.unique(cl_edges.flatten()),
-                       drop_disconnected=drop_disconnected, fix_tree=True)
+                       drop_disconnected=False, fix_tree=True)
 
     # Generate a mesh vertex -> skeleton vertex map
     # Note that nodes are labeled by index of the cluster

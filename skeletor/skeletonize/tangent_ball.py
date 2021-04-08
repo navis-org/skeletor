@@ -130,7 +130,7 @@ def _show_tangent_spheres(mesh, centers, radii, normals=False):
     return scene.show()
 
 
-def by_tangent_ball(mesh, drop_disconnected=False):
+def by_tangent_ball(mesh):
     """Skeletonize a mesh by finding the maximal tangent ball.
 
     This algorithm casts a ray from every mesh vertex along its inverse normals
@@ -150,9 +150,6 @@ def by_tangent_ball(mesh, drop_disconnected=False):
                         ``.vertices`` and ``.faces`` properties  (e.g. a
                         trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a
                         dictionary ``{'vertices': vertices, 'faces': faces}``.
-    drop_disconnected : bool
-                        If True, will drop disconnected nodes from the skeleton.
-                        Note that this might result in empty skeletons.
 
     Returns
     -------
@@ -283,7 +280,7 @@ def by_tangent_ball(mesh, drop_disconnected=False):
     G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
                           nodes=np.arange(0, len(G.vs)),
                           fix_tree=True,
-                          drop_disconnected=drop_disconnected)
+                          drop_disconnected=False)
 
     # Generate the SWC table
     swc = make_swc(G_nx, coords=centers, reindex=False)

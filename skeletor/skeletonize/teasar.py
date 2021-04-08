@@ -62,7 +62,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                     This controls how detailed (or noisy) the skeleton will be.
     root :          int, optional
                     Vertex ID of a root. If not provided will use ``0``.
-    progress :      bool
+    progress :      bool, optional
                     If True, will show progress bar.
 
     Returns

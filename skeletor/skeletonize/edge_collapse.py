@@ -36,8 +36,7 @@ from .utils import mst_over_mesh, edges_to_graph, make_swc
 __all__ = ['by_edge_collapse']
 
 
-def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
-                     drop_disconnected=False, progress=True):
+def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     """Skeletonize a (contracted) mesh by iteratively collapsing edges.
 
     This algorithm (described in [1]) iteratively collapses edges that are part
@@ -63,9 +62,6 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     sample_weight : float, optional
                     Weight for sampling costs which penalize collapses that
                     would generate prohibitively long edges.
-    drop_disconnected : bool
-                    If True, will drop disconnected nodes from the skeleton.
-                    Note that this might result in empty skeletons.
     progress :      bool
                     If True, will show progress bar.
 
@@ -358,8 +354,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
 
     # Generate graph
     G = edges_to_graph(corrected_edges, vertices=mesh.vertices, fix_tree=True,
-                       weight=False,
-                       drop_disconnected=True)
+                       weight=False, drop_disconnected=False)
 
     swc, new_ids = make_swc(G, mesh, reindex=True)
 

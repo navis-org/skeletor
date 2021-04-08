@@ -30,8 +30,7 @@ from .utils import make_swc, reindex_swc, edges_to_graph
 __all__ = ['by_wavefront']
 
 
-def by_wavefront(mesh, waves=1, step_size=1, drop_disconnected=False,
-                 progress=True):
+def by_wavefront(mesh, waves=1, step_size=1, progress=True):
     """Skeletonize a mesh using wave fronts.
 
     The algorithm tries to find rings of vertices and collapse them to
@@ -160,7 +159,7 @@ def by_wavefront(mesh, waves=1, step_size=1, drop_disconnected=False,
     G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
                           nodes=np.arange(0, len(G.vs)),
                           fix_tree=True,
-                          drop_disconnected=drop_disconnected)
+                          drop_disconnected=False)
 
     # Generate the SWC table
     swc = make_swc(G_nx, coords=node_centers, reindex=False)
