@@ -17,6 +17,7 @@
 #    along with this program.
 
 import numpy as np
+import pandas as pd
 import trimesh as tm
 
 from .utils import reindex_swc
@@ -44,6 +45,9 @@ class Skeleton:
     mesh_map :  array, optional
                 Same length as ``mesh``. Maps mesh vertices to vertices (nodes)
                 in the skeleton.
+    skel_map :  array of arrays, optional
+                Inverse of `mesh_map`: maps skeleton vertices (nodes) to mesh
+                vertices.
     method :    str, optional
                 Which method was used to generate the skeleton.
 
@@ -99,6 +103,16 @@ class Skeleton:
                                             vertices=self.vertices,
                                             process=False)
         return self._skeleton
+
+    @property
+    def skel_map(self):
+        """Skeleton vertex (nodes) to mesh vertices. Based on `mesh_map`."""
+        if isinstance(self.mesh_map, type(None)):
+            return None
+        return pd.DataFrame(self.mesh_map
+                            ).reset_index(drop=False
+                                          ).groupby(0)['index'].apply(np.array
+                                                                      ).values
 
     def reindex(self, inplace=False):
         """Clean up skeleton."""
