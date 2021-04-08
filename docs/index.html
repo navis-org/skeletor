@@ -16,13 +16,6 @@
             <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
             <input id="togglestate" type="checkbox">
             <div>
-                        <a class="pdoc-button module-list-button" href="./">
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
-  <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
-</svg>                            &nbsp;
-                            Module Index
-                        </a>
 
 
                     <h2>Contents</h2>
@@ -35,18 +28,53 @@
   <li><a href="#benchmarks">Benchmarks</a></li>
   <li><a href="#what-about-algorithm-x">What about algorithm <code>X</code>?</a></li>
   <li><a href="#references">References</a></li>
-  <li><a href="#top-level-modules-and-functions">Top-level Modules and Functions</a></li>
+  <li><a href="#top-level-functions-and-classes">Top-level functions and classes</a></li>
 </ul>
 
 
-                    <h2>Submodules</h2>
-                    <ul>
-                            <li><a href="skeletor/data.html">skeletor.data</a></li>
-                            <li><a href="skeletor/post.html">skeletor.post</a></li>
-                            <li><a href="skeletor/pre.html">skeletor.pre</a></li>
-                            <li><a href="skeletor/skeletonize.html">skeletor.skeletonize</a></li>
-                            <li><a href="skeletor/utilities.html">skeletor.utilities</a></li>
-                    </ul>
+
+                    <h2>API Documentation</h2>
+                        <ul class="memberlist">
+            <li>
+                    <a class="class" href="#Skeleton">Skeleton</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Skeleton.__init__">Skeleton</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Skeleton.edges">edges</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Skeleton.vertices">vertices</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Skeleton.radius">radius</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Skeleton.skeleton">skeleton</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Skeleton.skel_map">skel_map</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Skeleton.reindex">reindex</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Skeleton.copy">copy</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Skeleton.scene">scene</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Skeleton.show">show</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#example_mesh">example_mesh</a>
+            </li>
+    </ul>
 
 
                     <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev">
@@ -86,8 +114,8 @@ non-trivial and there are a great many research papers exploring various
 different approaches (see <a href="https://scholar.google.com/scholar
 ?hl=en&amp;as_sdt=0%2C5&amp;q=skeleton+extraction&amp;btnG=">Google scholar</a>).</p>
 
-<p><code><a href="">skeletor</a></code> implements some of these algorithms that I found useful in my work
-with neurons. In my experience there is unfortuntely no magic bullet when it
+<p><code><a href="">skeletor</a></code> implements some algorithms that I found useful in my work with
+neurons. In my experience there is unfortuntely no magic bullet when it
 comes to skeletonization and chances are you will have to fiddle around a bit
 to get decent results.</p>
 
@@ -98,7 +126,7 @@ to get decent results.</p>
 <div class="codehilite"><pre><span></span><code>pip3 install skeletor
 </code></pre></div>
 
-<p>For the dev version:</p>
+<p>For the bleeding-edge version from Github:</p>
 
 <div class="codehilite"><pre><span></span><code>pip3 install git+git://github.com/schlegelp/skeletor@master
 </code></pre></div>
@@ -139,19 +167,19 @@ degenerate faces, unreferenced vertices, etc.)</li>
   <td></td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/pre.html#fix_mesh">skeletor.pre.fix_mesh()</a></code></td>
+  <td><code><a href="#pre.fix_mesh">skeletor.pre.fix_mesh()</a></code></td>
   <td>fix some common errors found in meshes</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/pre.html#remesh">skeletor.pre.remesh()</a></code></td>
+  <td><code><a href="#pre.remesh">skeletor.pre.remesh()</a></code></td>
   <td>re-generate mesh (uses Blender 3D)</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/pre.html#simplify">skeletor.pre.simplify()</a></code></td>
+  <td><code><a href="#pre.simplify">skeletor.pre.simplify()</a></code></td>
   <td>reduce mesh complexity (uses Blender 3D)</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/pre.html#contract">skeletor.pre.contract()</a></code></td>
+  <td><code><a href="#pre.contract">skeletor.pre.contract()</a></code></td>
   <td>contract mesh to facilitate skeletonization [1]</td>
 </tr>
 <tr>
@@ -159,23 +187,23 @@ degenerate faces, unreferenced vertices, etc.)</li>
   <td></td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/skeletonize.html#by_wavefront">skeletor.skeletonize.by_wavefront()</a></code></td>
+  <td><code><a href="#skeletonize.by_wavefront">skeletor.skeletonize.by_wavefront()</a></code></td>
   <td>very fast, works well for tubular meshes (like neurons)</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/skeletonize.html#by_vertex_clusters">skeletor.skeletonize.by_vertex_clusters()</a></code></td>
+  <td><code><a href="#skeletonize.by_vertex_clusters">skeletor.skeletonize.by_vertex_clusters()</a></code></td>
   <td>very fast but needs mesh to be contracted (see above)</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/skeletonize.html#by_edge_collapse">skeletor.skeletonize.by_edge_collapse()</a></code></td>
+  <td><code><a href="#skeletonize.by_edge_collapse">skeletor.skeletonize.by_edge_collapse()</a></code></td>
   <td>presented in [1] but never got this to work well</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/skeletonize.html#by_teasar">skeletor.skeletonize.by_teasar()</a></code></td>
+  <td><code><a href="#skeletonize.by_teasar">skeletor.skeletonize.by_teasar()</a></code></td>
   <td>very fast and robust, works on mesh surface</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/skeletonize.html#by_tangent_ball">skeletor.skeletonize.by_tangent_ball()</a></code></td>
+  <td><code><a href="#skeletonize.by_tangent_ball">skeletor.skeletonize.by_tangent_ball()</a></code></td>
   <td>very fast, best on smooth meshes</td>
 </tr>
 <tr>
@@ -183,11 +211,11 @@ degenerate faces, unreferenced vertices, etc.)</li>
   <td></td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/post.html#clean_up">skeletor.post.clean_up()</a></code></td>
+  <td><code><a href="#post.clean_up">skeletor.post.clean_up()</a></code></td>
   <td>fix some potential errors in the skeleton</td>
 </tr>
 <tr>
-  <td><code><a href="skeletor/post.html#radii">skeletor.post.radii()</a></code></td>
+  <td><code><a href="#post.radii">skeletor.post.radii()</a></code></td>
   <td>add radius information using various method</td>
 </tr>
 </tbody>
@@ -200,12 +228,12 @@ degenerate faces, unreferenced vertices, etc.)</li>
 <p>A pipeline might look like this:</p>
 
 <ol>
-<li><code><a href="skeletor/pre.html#fix_mesh">skeletor.pre.fix_mesh()</a></code> to fix the mesh</li>
-<li><code><a href="skeletor/pre.html#simplify">skeletor.pre.simplify()</a></code> to simplify the mesh</li>
-<li><code><a href="skeletor/pre.html#contract">skeletor.pre.contract()</a></code> to contract the mesh [1]</li>
-<li><code><a href="skeletor/skeletonize.html#vertex_clusters">skeletor.skeletonize.vertex_clusters()</a></code> to generate a skeleton</li>
-<li><code><a href="skeletor/post.html#clean_up">skeletor.post.clean_up()</a></code> to clean up some potential issues with the skeleton</li>
-<li><code><a href="skeletor/post.html#radii">skeletor.post.radii()</a></code> to extract radii either by k-nearest neighbours or ray-casting</li>
+<li><code><a href="#pre.fix_mesh">skeletor.pre.fix_mesh()</a></code> to fix the mesh</li>
+<li><code><a href="#pre.simplify">skeletor.pre.simplify()</a></code> to simplify the mesh</li>
+<li><code><a href="#pre.contract">skeletor.pre.contract()</a></code> to contract the mesh [1]</li>
+<li><code><a href="#skeletonize.vertex_clusters">skeletor.skeletonize.vertex_clusters()</a></code> to generate a skeleton</li>
+<li><code><a href="#post.clean_up">skeletor.post.clean_up()</a></code> to clean up some potential issues with the skeleton</li>
+<li><code><a href="#post.radii">skeletor.post.radii()</a></code> to extract radii either by k-nearest neighbours or ray-casting</li>
 </ol>
 
 <p>In my experience there is no one-size-fits-all. You will have to play around to
@@ -232,19 +260,20 @@ vertices, etc.):</p>
 <span class="o">&lt;</span><span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">(</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">6213</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">faces</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">12805</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">&gt;</span>
 </code></pre></div>
 
-<p>Now for tubular meshes like this neuron, the "wave" skeletonization method
-performs really well: it works by casting waves across the mesh (kind of like
-ripples in a pond) and collapsing the resulting rings into a skeleton.</p>
+<p>Now for tubular meshes like this neuron, the "wave front" skeletonization method
+performs really well: it works by casting waves across the mesh and collapsing
+the resulting rings into a skeleton (kinda like when you throw a stone in a
+pond and track the expanding ripples).</p>
 
 <div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_wavefront</span><span class="p">(</span><span class="n">fixed</span><span class="p">,</span> <span class="n">waves</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span>
-<span class="o">&lt;</span><span class="n">Skeleton</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="p">(</span><span class="mi">1096</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1095</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">Skeleton</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="p">(</span><span class="mi">1258</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1194</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="n">wavefront</span><span class="p">)</span><span class="o">&gt;</span>
 </code></pre></div>
 
-<p>All skeletonization methods return a <code>Skeleton</code> object. These are just
-convenient objects to represent and inspect the results.</p>
+<p>All skeletonization methods return a <code><a href="#Skeleton">Skeleton</a></code> object. These are just
+convenient objects to bundle the various outputs of the skeletonziation.</p>
 
-<div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="c1"># location of vertices (nodes)</span>
+<div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="c1"># x/y/z location of skeleton vertices (nodes)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">vertices</span>
 <span class="n">array</span><span class="p">([[</span><span class="mi">16744</span><span class="p">,</span> <span class="mi">36720</span><span class="p">,</span> <span class="mi">26407</span><span class="p">],</span>
        <span class="o">...</span><span class="p">,</span>
@@ -273,7 +302,7 @@ capabilities to inspect the results:</p>
 
 <p><img src="https://github.com/schlegelp/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/></p>
 
-<p>That looks pretty good already but let's run some pro forma postprocessing.</p>
+<p>That looks pretty good already but let's run some pro-forma postprocessing.</p>
 
 <div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">sk</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">clean_up</span><span class="p">(</span><span class="n">skel</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="o">&lt;</span><span class="n">Skeleton</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="p">(</span><span class="mi">1071</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1070</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">&gt;</span>
@@ -318,10 +347,9 @@ likewise be fragmented (i.e. will have multiple roots)</li>
 
 <p><a href="https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb">Benchmarks</a>
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
-<code>fastremap</code> dependency installed. Note that the contraction speed heavily
-depends on the shape of the mesh - thin meshes like the neurons used here
-take fewer steps. Likewise skeletonization using vertex clustering is very
-dependant on the <code>sampling_dist</code> parameter.</p>
+<code>fastremap</code> dependency installed. Note some of these functions (e.g.
+contraction and TEASAR/vertex cluster skeletonization) vary a lot in
+speed based on parameterization.</p>
 
 <h1 id="what-about-algorithm-x">What about algorithm <code>X</code>?</h1>
 
@@ -341,7 +369,11 @@ Also see <a href="https://www.youtube.com/watch?v=-H7n59YQCRM&amp;feature=youtu.
 <a href="https://github.com/aalavandhaann/Py_BL_MeshSkeletonization">Py_BL_MeshSkeletonization</a>
 addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 
-<h1 id="top-level-modules-and-functions">Top-level Modules and Functions</h1>
+<h1 id="top-level-functions-and-classes">Top-level functions and classes</h1>
+
+<p>At top-level we only expose <code><a href="#example_mesh">example_mesh()</a></code> and the <code><a href="#Skeleton">Skeleton</a></code> class (which
+you probably won't ever need to touch manually). Everything else is neatly
+tucked away into submodules (see side-bar or above table).</p>
 </div>
 
                         <details>
@@ -386,8 +418,8 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 <span class="sd">different approaches (see [Google scholar](https://scholar.google.com/scholar</span>
 <span class="sd">?hl=en&amp;as_sdt=0%2C5&amp;q=skeleton+extraction&amp;btnG=)).</span>
 
-<span class="sd">`skeletor` implements some of these algorithms that I found useful in my work</span>
-<span class="sd">with neurons. In my experience there is unfortuntely no magic bullet when it</span>
+<span class="sd">`skeletor` implements some algorithms that I found useful in my work with</span>
+<span class="sd">neurons. In my experience there is unfortuntely no magic bullet when it</span>
 <span class="sd">comes to skeletonization and chances are you will have to fiddle around a bit</span>
 <span class="sd">to get decent results.</span>
 
@@ -398,7 +430,7 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 <span class="sd">pip3 install skeletor</span>
 <span class="sd">```</span>
 
-<span class="sd">For the dev version:</span>
+<span class="sd">For the bleeding-edge version from Github:</span>
 <span class="sd">```bash</span>
 <span class="sd">pip3 install git+git://github.com/schlegelp/skeletor@master</span>
 <span class="sd">```</span>
@@ -474,21 +506,22 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 <span class="sd">&lt;trimesh.Trimesh(vertices.shape=(6213, 3), faces.shape=(12805, 3))&gt;</span>
 <span class="sd">```</span>
 
-<span class="sd">Now for tubular meshes like this neuron, the &quot;wave&quot; skeletonization method</span>
-<span class="sd">performs really well: it works by casting waves across the mesh (kind of like</span>
-<span class="sd">ripples in a pond) and collapsing the resulting rings into a skeleton.</span>
+<span class="sd">Now for tubular meshes like this neuron, the &quot;wave front&quot; skeletonization method</span>
+<span class="sd">performs really well: it works by casting waves across the mesh and collapsing</span>
+<span class="sd">the resulting rings into a skeleton (kinda like when you throw a stone in a</span>
+<span class="sd">pond and track the expanding ripples).</span>
 
 <span class="sd">```Python</span>
 <span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)</span>
 <span class="sd">&gt;&gt;&gt; skel</span>
-<span class="sd">&lt;Skeleton(vertices=(1096, 3), edges=(1095, 2))&gt;</span>
+<span class="sd">&lt;Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)&gt;</span>
 <span class="sd">```</span>
 
 <span class="sd">All skeletonization methods return a `Skeleton` object. These are just</span>
-<span class="sd">convenient objects to represent and inspect the results.</span>
+<span class="sd">convenient objects to bundle the various outputs of the skeletonziation.</span>
 
 <span class="sd">```Python</span>
-<span class="sd">&gt;&gt;&gt; # location of vertices (nodes)</span>
+<span class="sd">&gt;&gt;&gt; # x/y/z location of skeleton vertices (nodes)</span>
 <span class="sd">&gt;&gt;&gt; skel.vertices</span>
 <span class="sd">array([[16744, 36720, 26407],</span>
 <span class="sd">       ...,</span>
@@ -518,7 +551,7 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 
 <span class="sd">&lt;img src=&quot;https://github.com/schlegelp/skeletor/raw/master/_static/example1.png&quot; alt=&quot;skeletor_example&quot; width=&quot;100%&quot;/&gt;</span>
 
-<span class="sd">That looks pretty good already but let&#39;s run some pro forma postprocessing.</span>
+<span class="sd">That looks pretty good already but let&#39;s run some pro-forma postprocessing.</span>
 
 <span class="sd">```Python</span>
 <span class="sd">&gt;&gt;&gt; sk.post.clean_up(skel, inplace=True)</span>
@@ -563,10 +596,9 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 
 <span class="sd">[Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
 <span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
-<span class="sd">`fastremap` dependency installed. Note that the contraction speed heavily</span>
-<span class="sd">depends on the shape of the mesh - thin meshes like the neurons used here</span>
-<span class="sd">take fewer steps. Likewise skeletonization using vertex clustering is very</span>
-<span class="sd">dependant on the `sampling_dist` parameter.</span>
+<span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
+<span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
+<span class="sd">speed based on parameterization.</span>
 
 <span class="sd"># What about algorithm `X`?</span>
 
@@ -586,8 +618,10 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 <span class="sd">[Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)</span>
 <span class="sd">addon created by #0K Srinivasan Ramachandran and published under GPL3.</span>
 
-
-<span class="sd"># Top-level Modules and Functions</span>
+<span class="sd"># Top-level functions and classes</span>
+<span class="sd">At top-level we only expose `example_mesh()` and the `Skeleton` class (which</span>
+<span class="sd">you probably won&#39;t ever need to touch manually). Everything else is neatly</span>
+<span class="sd">tucked away into submodules (see side-bar or above table).</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -602,11 +636,521 @@ addon created by #0K Srinivasan Ramachandran and published under GPL3.</p>
 <span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">example_mesh</span>
 
 <span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Skeleton&#39;</span><span class="p">,</span> <span class="s1">&#39;example_mesh&#39;</span><span class="p">]</span>
 </pre></div>
 
         </details>
 
             </section>
+                <section id="Skeleton">
+                                <div class="attr class">
+        <a class="headerlink" href="#Skeleton">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">Skeleton</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Skeleton</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class representing a skeleton.</span>
+
+<span class="sd">    Typically returned as results from a skeletonization.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    swc :       pd.DataFrame, optional</span>
+<span class="sd">                SWC table.</span>
+<span class="sd">    vertices :  (N, 3) array</span>
+<span class="sd">                Vertex (node) positions.</span>
+<span class="sd">    edges :     (M, 2) array</span>
+<span class="sd">                Indices of connected vertex pairs.</span>
+<span class="sd">    radii :     (N, ) array, optional</span>
+<span class="sd">                Radii for each vertex (node) in the skeleton.</span>
+<span class="sd">    mesh :      trimesh, optional</span>
+<span class="sd">                The original mesh.</span>
+<span class="sd">    mesh_map :  array, optional</span>
+<span class="sd">                Same length as ``mesh``. Maps mesh vertices to vertices (nodes)</span>
+<span class="sd">                in the skeleton.</span>
+<span class="sd">    skel_map :  array of arrays, optional</span>
+<span class="sd">                Inverse of `mesh_map`: maps skeleton vertices (nodes) to mesh</span>
+<span class="sd">                vertices.</span>
+<span class="sd">    method :    str, optional</span>
+<span class="sd">                Which method was used to generate the skeleton.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mesh_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span> <span class="o">=</span> <span class="n">mesh_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Summary.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return quick summary of the skeleton&#39;s geometry.&quot;&quot;&quot;</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;vertices&#39;</span><span class="p">):</span>
+            <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;vertices=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;edges&#39;</span><span class="p">):</span>
+            <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;edges=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;method&#39;</span><span class="p">):</span>
+            <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;method=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;Skeleton(</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s1">)&gt;&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return skeleton edges.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
+                            <span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_id&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return skeleton vertices (nodes).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">[[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return radii.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No radius info found. Run `skeletor.post.radii()`&#39;</span>
+                             <span class="s1">&#39; to get them.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">skeleton</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Skeleton as trimesh Path3D.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_skeleton&#39;</span><span class="p">):</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">tm</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">entities</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_skeleton</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">Path3D</span><span class="p">(</span><span class="n">entities</span><span class="o">=</span><span class="n">lines</span><span class="p">,</span>
+                                            <span class="n">vertices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span>
+                                            <span class="n">process</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_skeleton</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">skel_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Skeleton vertex (nodes) to mesh vertices. Based on `mesh_map`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span>
+                            <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">False</span>
+                                          <span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span>
+                                                                      <span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">reindex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clean up skeleton.&quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Re-index to make node IDs continous again</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">swc</span><span class="p">,</span> <span class="n">new_ids</span> <span class="o">=</span> <span class="n">reindex_swc</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">swc</span><span class="p">)</span>
+
+        <span class="c1"># Update mesh map</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">new_ids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return copy of the skeleton.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">mesh</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">mesh_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        scene :     trimesh.scene.scene.Scene</span>
+<span class="sd">                    Contains the skeleton and optionally the mesh.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+
+            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
+            <span class="c1"># the original meshes</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sc</span>
+
+    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mesh :      bool</span>
+<span class="sd">                    If True, will render transparent mesh on top of the</span>
+<span class="sd">                    skeleton.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        --------</span>
+<span class="sd">        scene :     trimesh.scene.Scene</span>
+<span class="sd">                    Scene with skeleton in it.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
+
+        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
+        <span class="c1"># way to work around this is to apply a transform such that the</span>
+        <span class="c1"># coordinates have -5 to +5 bounds</span>
+        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Class representing a skeleton.</p>
+
+<p>Typically returned as results from a skeletonization.</p>
+
+<h6 id="attributes">Attributes</h6>
+
+<ul>
+<li><strong>swc</strong> (pd.DataFrame, optional):
+SWC table.</li>
+<li><strong>vertices</strong> ((N, 3) array):
+Vertex (node) positions.</li>
+<li><strong>edges</strong> ((M, 2) array):
+Indices of connected vertex pairs.</li>
+<li><strong>radii</strong> ((N, ) array, optional):
+Radii for each vertex (node) in the skeleton.</li>
+<li><strong>mesh</strong> (trimesh, optional):
+The original mesh.</li>
+<li><strong>mesh_map</strong> (array, optional):
+Same length as <code>mesh</code>. Maps mesh vertices to vertices (nodes)
+in the skeleton.</li>
+<li><strong>skel_map</strong> (array of arrays, optional):
+Inverse of <code>mesh_map</code>: maps skeleton vertices (nodes) to mesh
+vertices.</li>
+<li><strong>method</strong> (str, optional):
+Which method was used to generate the skeleton.</li>
+</ul>
+</div>
+
+
+                            <div id="Skeleton.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Skeleton.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">Skeleton</span><span class="signature">(swc, mesh=None, mesh_map=None, method=None)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mesh_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span> <span class="o">=</span> <span class="n">mesh_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            </div>
+                            <div id="Skeleton.edges" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Skeleton.edges">#&nbsp;&nbsp</a>
+
+        <span class="name">edges</span>
+    </div>
+
+            <div class="docstring"><p>Return skeleton edges.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.vertices" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Skeleton.vertices">#&nbsp;&nbsp</a>
+
+        <span class="name">vertices</span>
+    </div>
+
+            <div class="docstring"><p>Return skeleton vertices (nodes).</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.radius" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Skeleton.radius">#&nbsp;&nbsp</a>
+
+        <span class="name">radius</span>
+    </div>
+
+            <div class="docstring"><p>Return radii.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.skeleton" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Skeleton.skeleton">#&nbsp;&nbsp</a>
+
+        <span class="name">skeleton</span>
+    </div>
+
+            <div class="docstring"><p>Skeleton as trimesh Path3D.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.skel_map" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Skeleton.skel_map">#&nbsp;&nbsp</a>
+
+        <span class="name">skel_map</span>
+    </div>
+
+            <div class="docstring"><p>Skeleton vertex (nodes) to mesh vertices. Based on <code>mesh_map</code>.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.reindex" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Skeleton.reindex">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">reindex</span><span class="signature">(self, inplace=False)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">reindex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clean up skeleton.&quot;&quot;&quot;</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Re-index to make node IDs continous again</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">swc</span><span class="p">,</span> <span class="n">new_ids</span> <span class="o">=</span> <span class="n">reindex_swc</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">swc</span><span class="p">)</span>
+
+        <span class="c1"># Update mesh map</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">new_ids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Clean up skeleton.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.copy" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Skeleton.copy">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">copy</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return copy of the skeleton.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">mesh</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">mesh_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh_map</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return copy of the skeleton.</p>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.scene" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Skeleton.scene">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">scene</span><span class="signature">(self, mesh=False, **kwargs)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        scene :     trimesh.scene.scene.Scene</span>
+<span class="sd">                    Contains the skeleton and optionally the mesh.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+
+            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
+            <span class="c1"># the original meshes</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sc</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a Scene object containing the skeleton.</p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>scene</strong> (trimesh.scene.scene.Scene):
+Contains the skeleton and optionally the mesh.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="Skeleton.show" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Skeleton.show">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">show</span><span class="signature">(self, mesh=False, **kwargs)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mesh :      bool</span>
+<span class="sd">                    If True, will render transparent mesh on top of the</span>
+<span class="sd">                    skeleton.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        --------</span>
+<span class="sd">        scene :     trimesh.scene.Scene</span>
+<span class="sd">                    Scene with skeleton in it.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
+
+        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
+        <span class="c1"># way to work around this is to apply a transform such that the</span>
+        <span class="c1"># coordinates have -5 to +5 bounds</span>
+        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Render the skeleton in an opengl window. Requires pyglet.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>mesh</strong> (bool):
+If True, will render transparent mesh on top of the
+skeleton.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>scene</strong> (trimesh.scene.Scene):
+Scene with skeleton in it.</li>
+</ul>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="example_mesh">
+                            <div class="attr function"><a class="headerlink" href="#example_mesh">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">example_mesh</span><span class="signature">()</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">example_mesh</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Load and return example mesh.</span>
+
+<span class="sd">    The example mesh is a fruit fly neuron (an olfactory projection neuron of</span>
+<span class="sd">    the DA1 glomerulus) segmented from an EM image data set. It is part of the</span>
+<span class="sd">    Janelia hemibrain data set (see [here](https://neuprint.janelia.org)) [1].</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Louis K. Scheffer et al., eLife. 2020. doi: 10.7554/eLife.57443</span>
+<span class="sd">    A connectome and analysis of the adult Drosophila central brain</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    trimesh.Trimesh</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import skeletor as sk</span>
+<span class="sd">    &gt;&gt;&gt; # Load this example mesh</span>
+<span class="sd">    &gt;&gt;&gt; mesh = sk.example_mesh()</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tm</span><span class="o">.</span><span class="n">load_mesh</span><span class="p">(</span><span class="n">obj_path</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Load and return example mesh.</p>
+
+<p>The example mesh is a fruit fly neuron (an olfactory projection neuron of
+the DA1 glomerulus) segmented from an EM image data set. It is part of the
+Janelia hemibrain data set (see <a href="https://neuprint.janelia.org">here</a>) [1].</p>
+
+<h6 id="references">References</h6>
+
+<p>[1] Louis K. Scheffer et al., eLife. 2020. doi: 10.7554/eLife.57443
+A connectome and analysis of the adult Drosophila central brain</p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>trimesh.Trimesh</strong></li>
+</ul>
+
+<h6 id="examples">Examples</h6>
+
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load this example mesh</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
+</code></pre></div>
+</div>
+
+
+                </section>
     </main>
 </body>
 </html>
