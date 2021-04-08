@@ -38,8 +38,8 @@ non-trivial and there are a great many research papers exploring various
 different approaches (see [Google scholar](https://scholar.google.com/scholar
 ?hl=en&as_sdt=0%2C5&q=skeleton+extraction&btnG=)).
 
-`skeletor` implements some of these algorithms that I found useful in my work
-with neurons. In my experience there is unfortuntely no magic bullet when it
+`skeletor` implements some algorithms that I found useful in my work with
+neurons. In my experience there is unfortuntely no magic bullet when it
 comes to skeletonization and chances are you will have to fiddle around a bit
 to get decent results.
 
@@ -50,7 +50,7 @@ From PyPI:
 pip3 install skeletor
 ```
 
-For the dev version:
+For the bleeding-edge version from Github:
 ```bash
 pip3 install git+git://github.com/schlegelp/skeletor@master
 ```
@@ -126,21 +126,22 @@ vertices, etc.):
 <trimesh.Trimesh(vertices.shape=(6213, 3), faces.shape=(12805, 3))>
 ```
 
-Now for tubular meshes like this neuron, the "wave" skeletonization method
-performs really well: it works by casting waves across the mesh (kind of like
-ripples in a pond) and collapsing the resulting rings into a skeleton.
+Now for tubular meshes like this neuron, the "wave front" skeletonization method
+performs really well: it works by casting waves across the mesh and collapsing
+the resulting rings into a skeleton (kinda like when you throw a stone in a
+pond and track the expanding ripples).
 
 ```Python
 >>> skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)
 >>> skel
-<Skeleton(vertices=(1096, 3), edges=(1095, 2))>
+<Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)>
 ```
 
 All skeletonization methods return a `Skeleton` object. These are just
-convenient objects to represent and inspect the results.
+convenient objects to bundle the various outputs of the skeletonziation.
 
 ```Python
->>> # location of vertices (nodes)
+>>> # x/y/z location of skeleton vertices (nodes)
 >>> skel.vertices
 array([[16744, 36720, 26407],
        ...,
@@ -170,7 +171,7 @@ capabilities to inspect the results:
 
 <img src="https://github.com/schlegelp/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/>
 
-That looks pretty good already but let's run some pro forma postprocessing.
+That looks pretty good already but let's run some pro-forma postprocessing.
 
 ```Python
 >>> sk.post.clean_up(skel, inplace=True)
@@ -215,10 +216,9 @@ you try out mesh contraction + vertex clustering first:
 
 [Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
-`fastremap` dependency installed. Note that the contraction speed heavily
-depends on the shape of the mesh - thin meshes like the neurons used here
-take fewer steps. Likewise skeletonization using vertex clustering is very
-dependant on the `sampling_dist` parameter.
+`fastremap` dependency installed. Note some of these functions (e.g.
+contraction and TEASAR/vertex cluster skeletonization) vary a lot in
+speed based on parameterization.
 
 # What about algorithm `X`?
 
@@ -238,8 +238,10 @@ Some of the code in skeletor was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
 addon created by #0K Srinivasan Ramachandran and published under GPL3.
 
-
-# Top-level Modules and Functions
+# Top-level functions and classes
+At top-level we only expose `example_mesh()` and the `Skeleton` class (which
+you probably won't ever need to touch manually). Everything else is neatly
+tucked away into submodules (see side-bar or above table).
 
 """
 
@@ -254,3 +256,5 @@ from .skeletonize.base import Skeleton
 from .data import example_mesh
 
 __docformat__ = "numpy"
+
+__all__ = ['Skeleton', 'example_mesh']

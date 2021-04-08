@@ -28,7 +28,7 @@ __docformat__ = "numpy"
 class Skeleton:
     """Class representing a skeleton.
 
-    Typically used to hold results from the skeletonization.
+    Typically returned as results from a skeletonization.
 
     Attributes
     ----------
@@ -38,9 +38,9 @@ class Skeleton:
                 Vertex (node) positions.
     edges :     (M, 2) array
                 Indices of connected vertex pairs.
-    radii :    (N, ) array, optional
+    radii :     (N, ) array, optional
                 Radii for each vertex (node) in the skeleton.
-    mesh :      Trimesh, optional
+    mesh :      trimesh, optional
                 The original mesh.
     mesh_map :  array, optional
                 Same length as ``mesh``. Maps mesh vertices to vertices (nodes)
