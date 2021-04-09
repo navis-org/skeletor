@@ -95,6 +95,92 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
 
     return s
 
+
+def remove_hairs(s, mesh=None, inplace=False):
+    """Remove "hairs" that sometimes occurr along the backbone.
+
+    Works by finding terminal twigs that consist of only a single node. We will
+    then remove those that are within line of sight of their parent.
+
+    Note that this is currently not used for clean up as it does not work very
+    well: removes as many correct hairs as genuine small branches.
+
+    Parameters
+    ----------
+    s :         skeletor.Skeleton
+                Skeleton to clean up.
+    mesh :      trimesh.Trimesh, optional
+                Original mesh (e.g. before contraction). If not provided will
+                use the mesh associated with ``s``.
+    max_dist :  "auto" | int | float
+                Maximum Eucledian distance allowed between leaf nodes for them
+                to be considered for collapsing. If "auto", will use the length
+                of the longest edge in skeleton as limit.
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
+
+    Returns
+    -------
+    SWC :       pandas.DataFrame
+                SWC with line-of-sight twigs removed.
+
+    """
+    if not ncollpyde:
+        raise ImportError('skeletor.post.remove_hairs() requires the '
+                          'ncollpyde package: pip3 install ncollpyde')
+
+    if isinstance(mesh, type(None)):
+        mesh = s.mesh
+
+    # Make a copy of the skeleton
+    if not inplace:
+        s = s.copy()
+
+    # Find branch points
+    pcount = s.swc[s.swc.parent_id >= 0].groupby('parent_id').size()
+    bp = pcount[pcount > 1].index
+
+    # Find terminal twigs
+    twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id)]
+    twigs = twigs[twigs.parent_id.isin(bp)]
+
+    if twigs.empty:
+        return s
+
+    # Initialize ncollpyde Volume
+    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+
+    # Remove twigs that aren't inside the volume
+    twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
+
+    # Generate rays between all pairs and their parents
+    sources = twigs[['x', 'y', 'z']].values
+    targets = s.swc.set_index('node_id').loc[twigs.parent_id,
+                                             ['x', 'y', 'z']].values
+
+    # Get intersections: `ix` points to index of line segment; `loc` is the
+    #  x/y/z coordinate of the intersection and `is_backface` is True if
+    # intersection happened at the inside of a mesh
+    ix, loc, is_backface = coll.intersections(sources, targets)
+
+    # Find pairs of twigs with no intersection - i.e. with line of sight
+    los = ~np.isin(np.arange(sources.shape[0]), ix)
+
+    # To remove: have line of sight
+    to_remove = twigs[los]
+
+    s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)].copy()
+
+    # Update the mesh map
+    mesh_map = getattr(s, 'mesh_map', None)
+    if not isinstance(mesh_map, type(None)):
+        for t in to_remove.itertuples():
+            mesh_map[mesh_map == t.node_id] = t.parent_id
+
+    # Reindex nodes
+    s.reindex(inplace=True)
+
     return s
 
 
