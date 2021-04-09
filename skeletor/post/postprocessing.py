@@ -39,8 +39,7 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     This function bundles a bunch of procedures to clean up the skeleton:
 
       1. Remove twigs that are running parallel to their parent branch
-      2. Collapse twigs that have line of sight to each other
-      3. Move nodes outside the mesh back inside (or at least snap to surface)
+      2. Move nodes outside the mesh back inside (or at least snap to surface)
 
     Note that this is not a magic bullet and some of this will not work (well)
     if the original mesh was degenerate (e.g. internal faces or not watertight)
@@ -65,13 +64,6 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     **kwargs
                 Keyword arguments are passed to the bundled function.
 
-                For `skeletor.postprocessing.drop_line_of_sight_twigs`::
-
-                 max_dist :  "auto" (default) | int | float
-                             Maximum Eucledian distance allowed between leaf nodes for them
-                             to be considered for collapsing. If "auto", will use the length
-                             of the longest edge in skeleton as limit.
-
                 For `skeletor.postprocessing.drop_parallel_twigs`::
 
                  theta :     float (default 0.01)
@@ -83,8 +75,8 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
 
     Returns
     -------
-    SWC :       pandas.DataFrame
-                Hopefully improved SWC.
+    s_clean :   skeletor.Skeleton
+                Hopefully improved skeleton.
 
     """
     if isinstance(mesh, type(None)):
@@ -101,9 +93,7 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     # Recenter vertices
     _ = recenter_vertices(s, mesh, inplace=True)
 
-    # Collapse twigs that in line of sight to one another
-    _ = drop_line_of_sight_twigs(s, mesh, inplace=True,
-                                 max_dist=kwargs.get('max_dist', 'auto'))
+    return s
 
     return s
 
