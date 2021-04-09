@@ -184,7 +184,7 @@ def remove_hairs(s, mesh=None, inplace=False):
     return s
 
 
-def recenter_vertices(s, mesh, inplace=False):
+def recenter_vertices(s, mesh=None, inplace=False):
     """Move nodes that ended up outside the mesh back inside.
 
     Nodes can end up outside the original mesh e.g. if the mesh contraction
@@ -215,6 +215,9 @@ def recenter_vertices(s, mesh, inplace=False):
     if not ncollpyde:
         raise ImportError('skeletor.recenter_vertices() requires '
                           'the ncollpyde package: pip3 install ncollpyde')
+
+    if isinstance(mesh, type(None)):
+        mesh = s.mesh
 
     # Copy skeleton
     if not inplace:
@@ -328,6 +331,10 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
     Note that this only removes 1 layer of twigs (i.e. only the actual leaf
     nodes). Nothing is stopping you from running this function recursively
     though.
+
+    Also note that this function needs a rework because it does not take
+    connected components into account and hence collapses things that were
+    not meant to be connected.
 
     Parameters
     ----------
@@ -532,6 +539,9 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
                                                       'tangent_y',
                                                       'tangent_z']].values
 
+    # Drop the tangent columns we made
+    s.swc.drop(['tangent_x', 'tangent_y', 'tangent_z'], axis=1, inplace=True)
+
     # Generate dotproducts
     dot = np.einsum('ij,ij->i', twig_tangents, parent_tangents)
 
@@ -539,12 +549,17 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
     dot_diff = 1 - np.fabs(dot)
     # Remove twigs where the dotproduct is within `theta` to 1
     to_remove = twigs.loc[dot_diff <= theta]
-    s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)]
 
-    # Drop the tangent columns we made
-    s.swc.drop(['tangent_x', 'tangent_y', 'tangent_z'], axis=1, inplace=True)
+    if not to_remove.empty:
+        s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)].copy()
 
-    # Reindex nodes
-    s.reindex(inplace=True)
+        # Update the mesh map
+        mesh_map = getattr(s, 'mesh_map', None)
+        if not isinstance(mesh_map, type(None)):
+            for t in to_remove.itertuples():
+                mesh_map[mesh_map == t.node_id] = t.parent_id
+
+        # Reindex nodes
+        s.reindex(inplace=True)
 
     return s
