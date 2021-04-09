@@ -24,6 +24,11 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/schlegelp/skeletor',
+    project_urls={
+     "Documentation": "https://schlegelp.github.io/skeletor/",
+     "Source": "https://github.com/schlegelp/skeletor",
+     "Changelog": "https://pip.pypa.io/en/stable/news/",
+    },
     author='Philipp Schlegel',
     author_email='pms70@cam.ac.uk',
     keywords='mesh skeletonization mesh contraction skeleton extraction',

@@ -36,6 +36,8 @@ Optional because not strictly required for the core functions but highly recomme
 ## Documentation
 Please see the [documentation](https://schlegelp.github.io/skeletor/) for details.
 
+The changelog can be found [here](https://github.com/schlegelp/skeletor/blob/master/NEWS.md).
+
 ## Quickstart
 
 For the impatient a quick example:
