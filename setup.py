@@ -46,7 +46,7 @@ setup(
         'Programming Language :: Python :: 3.9',
     ],
     install_requires=requirements,
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     include_package_data=True,
     zip_safe=False
 )
