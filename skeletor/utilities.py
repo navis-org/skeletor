@@ -19,7 +19,7 @@
 import trimesh as tm
 
 
-def make_trimesh(mesh, validate=True):
+def make_trimesh(mesh, validate=True, **kwargs):
     """Construct ``trimesh.Trimesh`` from input data.
 
     Parameters
@@ -31,6 +31,9 @@ def make_trimesh(mesh, validate=True):
     validate :      bool
                     If True, will try to fix potential issues with the mesh
                     (e.g. infinite values, duplicate vertices, degenerate faces).
+    **kwargs
+                    Keyword arguments are passed through to
+                    `skeletor.pre.fix_mesh` if `validate=True`.
 
     Returns
     -------
@@ -56,6 +59,6 @@ def make_trimesh(mesh, validate=True):
                         f'type "{type(mesh)}"')
 
     if validate:
-        mesh = fix_mesh(mesh, inplace=True)
+        mesh = fix_mesh(mesh, inplace=True, **kwargs)
 
     return mesh
