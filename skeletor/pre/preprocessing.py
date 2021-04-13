@@ -23,6 +23,8 @@ import numpy as np
 import scipy as sp
 import trimesh as tm
 
+from ..utilities import make_trimesh
+
 try:
     import fastremap
 except ImportError:
@@ -49,25 +51,29 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
 
     Parameters
     ----------
-    mesh :                  trimesh.Trimesh
+    mesh :                  mesh-like object
+                            Mesh to fix. Must have `.vertices` and `.faces`
+                            properties.
     remove_disconnected :   False | int
                             If a number is given, will iterate over the mesh's
                             connected components and remove those consisting of
                             less than the given number of vertices. For example,
-                            ``remove_fragments=5`` will drop parts of the mesh
-                            that consist of five or less connected vertices.
+                            ``remove_disconnected=5`` will drop parts of the
+                            mesh that consist of five or less connected
+                            vertices.
     inplace :               bool
-                            If True, will perform fixes on the input mesh. If False,
-                            will make a copy first.
+                            If True, will perform fixes on the input mesh.
+                            If False, will make a copy first. This is silently
+                            ignored if `mesh` is not already a trimesh.
 
     Returns
     -------
     fixed mesh :        trimesh.Trimesh
 
     """
-    assert isinstance(mesh, tm.Trimesh)
-
-    if not inplace:
+    if not isinstance(mesh, tm.Trimesh):
+        mesh = make_trimesh(mesh, validate=False)
+    elif not inplace:
         mesh = mesh.copy()
 
     if remove_disconnected:
