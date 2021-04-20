@@ -5,11 +5,10 @@ Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
 _Heads-up: skeletor `1.0.0` introduced some breaking changes and major reorganizations._
-_Please see [Changelog](https://github.com/schlegelp/skeletor/blob/master/NEWS.md)_
+_Please see the [changelog](https://github.com/schlegelp/skeletor/blob/master/NEWS.md)_
 _for details._
 
 ## Install
-
 ```bash
 pip3 install skeletor
 ```
@@ -41,7 +40,6 @@ Please see the [documentation](https://schlegelp.github.io/skeletor/) for detail
 The changelog can be found [here](https://github.com/schlegelp/skeletor/blob/master/NEWS.md).
 
 ## Quickstart
-
 For the impatient a quick example:
 
 ```Python
@@ -87,22 +85,28 @@ capabilities to inspect the results:
 
 ![skeletor_example](https://github.com/schlegelp/skeletor/raw/master/_static/example1.png)
 
-
 ## Benchmarks
 ![skeletor_examples](https://github.com/schlegelp/skeletor/raw/master/benchmarks/benchmark_2.png)
 
 [Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
 `fastremap` dependency installed. Note some of these functions (e.g.
-contraction and TEASAR/vertex cluster skeletonization) vary a lot in
+contraction and TEASAR/vertex cluster skeletonization) can vary a lot in
 speed based on parameterization.
 
-## References
-`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
+## Contributing
+Pull requests are always welcome!
 
+## References & Acknowledgments
+Mesh contraction and the edge collapse approach are based on this paper:
+`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
 The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).
 Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&feature=youtu.be) YouTube video.
 
 Some of the code in skeletor was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
 addon created by #0K Srinivasan Ramachandran and published under GPL3.
+
+The mesh TEASAR approach was adapted from the implementation in
+[meshparty](https://github.com/sdorkenw/MeshParty) by Sven Dorkenwald, Casey
+Schneider-Mizell and Forrest Collman.
