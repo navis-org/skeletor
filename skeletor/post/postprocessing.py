@@ -213,6 +213,10 @@ def recenter_vertices(s, mesh=None, inplace=False):
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
     outside = ~coll.contains(s.vertices)
 
+    # Skip if all inside
+    if not any(outside):
+        return s
+
     # For each outside find the closest vertex
     tree = scipy.spatial.cKDTree(mesh.vertices)
 
