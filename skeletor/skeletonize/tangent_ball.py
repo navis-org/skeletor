@@ -17,6 +17,7 @@
 #    along with this program.
 
 import itertools
+import ncollpyde
 
 import igraph as ig
 import numpy as np
@@ -28,14 +29,6 @@ from .base import Skeleton
 from .utils import edges_to_graph, make_swc, reindex_swc
 
 from ..utilities import make_trimesh
-
-try:
-    import ncollpyde
-except ImportError:
-    ncollpyde = None
-except BaseException:
-    raise
-
 
 # Interesting references:
 # - https://www.sciencedirect.com/science/article/pii/S037843710600464X
@@ -171,11 +164,6 @@ def by_tangent_ball(mesh):
         https://doi.org/10.1007/s00371-011-0594-7
 
     """
-    if not ncollpyde:
-        raise ImportError('Tangent ball skeletonization requires the '
-                          '`ncollpyde` package for ray-casting: '
-                          'pip install ncollpyde')
-
     mesh = make_trimesh(mesh, validate=False)
 
     # Generate the KD tree

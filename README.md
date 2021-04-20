@@ -27,11 +27,11 @@ Automatically installed with `pip`:
 - `trimesh`
 - `tqdm`
 - `python-igraph`
+- `ncollpyde`
 
 Optional because not strictly required for the core functions but highly recommended:
 - [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
-- [ncollpyde](https://github.com/clbarnes/ncollpyde) for ray-casting (radii, clean-up): `pip3 install ncollpyde`
 
 ## Documentation
 Please see the [documentation](https://schlegelp.github.io/skeletor/) for details.

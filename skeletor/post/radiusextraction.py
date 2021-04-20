@@ -18,6 +18,7 @@
 #    along with this program.
 
 import math
+import ncollpyde
 import numbers
 import random
 
@@ -25,13 +26,6 @@ import numpy as np
 import scipy.spatial
 
 from ..utilities import make_trimesh
-
-try:
-    import ncollpyde
-except ImportError:
-    ncollpyde = None
-except BaseException:
-    raise
 
 
 def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs):

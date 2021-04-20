@@ -16,13 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-try:
-    import ncollpyde
-except ImportError:
-    ncollpyde = None
-except BaseException:
-    raise
-
+import ncollpyde
 import numbers
 import warnings
 
@@ -126,10 +120,6 @@ def remove_hairs(s, mesh=None, inplace=False):
                 SWC with line-of-sight twigs removed.
 
     """
-    if not ncollpyde:
-        raise ImportError('skeletor.post.remove_hairs() requires the '
-                          'ncollpyde package: pip3 install ncollpyde')
-
     if isinstance(mesh, type(None)):
         mesh = s.mesh
 
@@ -212,10 +202,6 @@ def recenter_vertices(s, mesh=None, inplace=False):
                 SWC with line-of-sight twigs removed.
 
     """
-    if not ncollpyde:
-        raise ImportError('skeletor.recenter_vertices() requires '
-                          'the ncollpyde package: pip3 install ncollpyde')
-
     if isinstance(mesh, type(None)):
         mesh = s.mesh
 
@@ -357,10 +343,6 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
                 SWC with line-of-sight twigs removed.
 
     """
-    if not ncollpyde:
-        raise ImportError('skeletor.drop_line_of_sight_twigs() requires '
-                          'the ncollpyde package: pip3 install ncollpyde')
-
     # Make a copy of the SWC
     if not inplace:
         s = s.copy()
