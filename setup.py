@@ -18,9 +18,9 @@ with open('requirements.txt') as f:
 setup(
     name='skeletor',
     version=verstr,
-    packages=find_packages(),
+    packages=find_packages(include=['skeletor', 'skeletor.*']),
     license='GNU GPL V3',
-    description='Python 3 implementation of Skeleton Extraction by Mesh contraction algorithm',
+    description='Python 3 library to extract skeletons from 3D meshes',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/schlegelp/skeletor',
