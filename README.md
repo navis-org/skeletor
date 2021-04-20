@@ -1,4 +1,4 @@
-[![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://schlegelp.github.io/skeletor/) [![Tests](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml/badge.svg)](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml)
+[![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://schlegelp.github.io/skeletor/) [![Tests](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml/badge.svg)](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml) [![DOI](https://zenodo.org/badge/153085435.svg)](https://zenodo.org/badge/latestdoi/153085435)
 
 # Skeletor
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
@@ -105,7 +105,7 @@ Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&feature=youtu.be) Yo
 
 Some of the code in skeletor was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)
-addon created by #0K Srinivasan Ramachandran and published under GPL3.
+addon for Blender 3D created by #0K Srinivasan Ramachandran and published under GPL3.
 
 The mesh TEASAR approach was adapted from the implementation in
 [meshparty](https://github.com/sdorkenw/MeshParty) by Sven Dorkenwald, Casey
