@@ -4,7 +4,9 @@
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
-_Heads-up: in preparation for skeletor `1.0.0` we are currently reorganizing/refactoring many functions and modules._
+_Heads-up: skeletor `1.0.0` introduced some breaking changes and major reorganizations._
+_Please see [Changelog](https://github.com/schlegelp/skeletor/blob/master/NEWS.md)_
+_for details._
 
 ## Install
 
