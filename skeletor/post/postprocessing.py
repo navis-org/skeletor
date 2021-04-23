@@ -243,6 +243,10 @@ def recenter_vertices(s, mesh=None, inplace=False):
     # Cast rays
     ix, loc, is_backface = coll.intersections(sources, targets)
 
+    # If no collisions
+    if not any(loc):
+        return s
+
     # Get half-vector
     halfvec = np.zeros(sources.shape)
     halfvec[ix] = (loc - closest_vertex[ix]) / 2
