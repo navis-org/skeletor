@@ -27,7 +27,7 @@ setup(
     project_urls={
      "Documentation": "https://schlegelp.github.io/skeletor/",
      "Source": "https://github.com/schlegelp/skeletor",
-     "Changelog": "https://pip.pypa.io/en/stable/news/",
+     "Changelog": "https://github.com/schlegelp/skeletor/blob/master/NEWS.md",
     },
     author='Philipp Schlegel',
     author_email='pms70@cam.ac.uk',
