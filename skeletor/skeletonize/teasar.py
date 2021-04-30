@@ -37,7 +37,7 @@ except BaseException:
 __all__ = ['by_teasar']
 
 
-def by_teasar(mesh, inv_dist, root=None, progress=True):
+def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
     """Skeletonize a mesh mesh using the TEASAR algorithm [1].
 
     This algorithm finds the longest path from a root vertex, invalidates all
@@ -60,6 +60,12 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     inv_dist :      int | float
                     Distance along the mesh used for invalidation of vertices.
                     This controls how detailed (or noisy) the skeleton will be.
+    min_length :    float, optional
+                    If provided, will skip any branch that is shorter than
+                    `min_length`. Use this to get rid of noise but note that
+                    it will lead to vertices not being mapped to skeleton nodes.
+                    Such vertices will show up with index -1 in
+                    `Skeleton.mesh_map`.
     root :          int, optional
                     Vertex ID of a root. If not provided will use ``0``.
     progress :      bool, optional
@@ -94,16 +100,16 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
 
     with tqdm(desc='Invalidating', total=len(G.vs),
               disable=not progress, leave=False) as pbar:
-        for cc in G.clusters():
+        for cc in sorted(G.clusters(), key=len, reverse=True):
             # Make a subgraph for this connected component
             SG = G.subgraph(cc)
             cc = np.array(cc)
 
-            # Find a root in this subgraph
+            # Find root within subgraph
             if root in cc:
-                this_root = root
+                this_root = np.where(cc == root)[0][0]
             else:
-                root = cc[0]
+                this_root = 0
 
             # Get the sparse adjacency matrix of the subgraph
             sp = SG.get_adjacency_sparse('weight')
@@ -125,9 +131,22 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
                 path = SG.get_shortest_paths(this_root, farthest,
                                              weights='weight', mode='ALL')[0]
 
-                # Add these new edges
-                new_edges = np.vstack((cc[path[:-1]], cc[path[1:]])).T
-                edges = np.append(edges, new_edges).reshape(-1, 2)
+                # Get IDs of edges along the path
+                eids = SG.get_eids(path=path, directed=False)
+
+                # Stop if farthest point is closer than min_length
+                add = True
+                if min_length:
+                    # This should only be distance to the first branchpoint
+                    # from the tip since we set other weights to zero
+                    le = sum(SG.es[eids].get_attribute_values('weight'))
+                    if le < min_length:
+                        add = False
+
+                if add:
+                    # Add these new edges
+                    new_edges = np.vstack((cc[path[:-1]], cc[path[1:]])).T
+                    edges = np.append(edges, new_edges).reshape(-1, 2)
 
                 # Invalidate points in the path
                 valid[path] = False
@@ -135,7 +154,6 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
 
                 # Must set weights along path to 0 so that this path is
                 # taken again in future iterations
-                eids = SG.get_eids(path=path, directed=False)
                 SG.es[eids]['weight'] = 0
 
                 # Get all nodes within `inv_dist` to this path
@@ -169,7 +187,7 @@ def by_teasar(mesh, inv_dist, root=None, progress=True):
     swc, new_ids = make_swc(G_nx, coords=mesh.vertices, reindex=True)
 
     # Update vertex to node ID map
-    mesh_map = np.array([new_ids[n] for n in mesh_map])
+    mesh_map = np.array([new_ids.get(n, -1) for n in mesh_map])
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map, method='teasar')
 
