@@ -244,7 +244,7 @@ def recenter_vertices(s, mesh=None, inplace=False):
     ix, loc, is_backface = coll.intersections(sources, targets)
 
     # If no collisions
-    if not any(loc):
+    if len(loc) == 0:
         return s
 
     # Get half-vector
