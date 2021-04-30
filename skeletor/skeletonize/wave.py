@@ -74,64 +74,9 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
     """
     mesh = make_trimesh(mesh, validate=False)
 
-    # Wave must be a positive integer >= 1
-    waves = int(waves)
-    if waves < 1:
-        raise ValueError('`waves` must be integer >= 1')
-
-    # Same for step size
-    step_size = int(step_size)
-    if step_size < 1:
-        raise ValueError('`step_size` must be integer >= 1')
-
-    # Generate Graph (must be undirected)
-    G = ig.Graph(edges=mesh.edges_unique, directed=False)
-    #G.es['weight'] = mesh.edges_unique_length
-
-    # Prepare empty array to fill with centers
-    centers = np.full((mesh.vertices.shape[0], 3, waves), fill_value=np.nan)
-    radii = np.full((mesh.vertices.shape[0], waves), fill_value=np.nan)
-
-    # Go over each connected component
-    with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress) as pbar:
-        for cc in G.clusters():
-            # Make a subgraph for this connected component
-            SG = G.subgraph(cc)
-            cc = np.array(cc)
-
-            # Select seeds according to the number of waves
-            seeds = np.linspace(0, len(cc) - 1,
-                                min(waves, len(cc))).astype(int)
-
-            # Get the distance between the seeds and all other nodes
-            dist = np.array(SG.shortest_paths(source=seeds, target=None, mode='all'))
-
-            if step_size > 1:
-                mx = dist.flatten()
-                mx = mx[mx < float('inf')].max()
-                dist = np.digitize(dist, bins=np.arange(0, mx, step_size))
-
-            # Go over each wave
-            for w in range(dist.shape[0]):
-                this_wave = dist[w, :]
-                # Collect groups
-                mx = this_wave[this_wave < float('inf')].max()
-                for i in range(0, int(mx) + 1):
-                    this_dist = this_wave == i
-                    ix = np.where(this_dist)[0]
-                    SG2 = SG.subgraph(ix)
-                    for cc2 in SG2.clusters():
-                        this_verts = cc[ix[cc2]]
-                        this_center = mesh.vertices[this_verts].mean(axis=0)
-                        this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts]).min()
-                        centers[this_verts, :, w] = this_center
-                        radii[this_verts, w] = this_radius
-
-            pbar.update(len(cc))
-
-    # Get mean centers and radii over all the waves we casted
-    centers_final = np.nanmean(centers, axis=2)
-    radii_final = np.nanmean(radii, axis=1)
+    centers_final, radii_final, G = _cast_waves(mesh, waves=waves,
+                                                step_size=step_size,
+                                                progress=progress)
 
     # Collapse vertices into nodes
     (node_centers,
@@ -171,3 +116,67 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
                     method='wavefront')
+
+
+def _cast_waves(mesh, waves=1, step_size=1, progress=True):
+    """Cast waves across mesh."""
+    # Wave must be a positive integer >= 1
+    waves = int(waves)
+    if waves < 1:
+        raise ValueError('`waves` must be integer >= 1')
+
+    # Same for step size
+    step_size = int(step_size)
+    if step_size < 1:
+        raise ValueError('`step_size` must be integer >= 1')
+
+    # Generate Graph (must be undirected)
+    G = ig.Graph(edges=mesh.edges_unique, directed=False)
+    #G.es['weight'] = mesh.edges_unique_length
+
+    # Prepare empty array to fill with centers
+    centers = np.full((mesh.vertices.shape[0], 3, waves), fill_value=np.nan)
+    radii = np.full((mesh.vertices.shape[0], waves), fill_value=np.nan)
+
+    # Go over each connected component
+    with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress) as pbar:
+        for cc in G.clusters():
+            # Make a subgraph for this connected component
+            SG = G.subgraph(cc)
+            cc = np.array(cc)
+
+            # Select seeds according to the number of waves
+            seeds = np.linspace(0, len(cc) - 1,
+                                min(waves, len(cc))).astype(int)
+
+            # Get the distance between the seeds and all other nodes
+            dist = np.array(SG.shortest_paths(source=seeds, target=None, mode='all'))
+
+            if step_size > 1:
+                mx = dist.flatten()
+                mx = mx[mx < float('inf')].max()
+                dist = np.digitize(dist, bins=np.arange(0, mx, step_size))
+
+            # Cast the desired number of waves
+            for w in range(dist.shape[0]):
+                this_wave = dist[w, :]
+                # Collect groups
+                mx = this_wave[this_wave < float('inf')].max()
+                for i in range(0, int(mx) + 1):
+                    this_dist = this_wave == i
+                    ix = np.where(this_dist)[0]
+                    SG2 = SG.subgraph(ix)
+                    for cc2 in SG2.clusters():
+                        this_verts = cc[ix[cc2]]
+                        this_center = mesh.vertices[this_verts].mean(axis=0)
+                        this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts]).min()
+                        centers[this_verts, :, w] = this_center
+                        radii[this_verts, w] = this_radius
+
+            pbar.update(len(cc))
+
+    # Get mean centers and radii over all the waves we casted
+    centers_final = np.nanmean(centers, axis=2)
+    radii_final = np.nanmean(radii, axis=1)
+
+    return centers_final, radii_final, G
