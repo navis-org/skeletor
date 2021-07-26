@@ -1,5 +1,16 @@
 # News
 
+## 1.1.0 (2021-07-26)
+
+This is a small release that adds a single method to the `Skeleton` class to
+quickly save results as
+[SWC](http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html)
+file:
+
+```Python
+>>> skel.to_swc('skeleton.swc')
+```
+
 ## 1.0.0 (2021-04-09)
 
 This release represents a major rework of `skeletor`. Notably, functions that
