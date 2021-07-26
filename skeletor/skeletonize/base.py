@@ -16,9 +16,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+import csv
+import datetime
+
 import numpy as np
 import pandas as pd
 import trimesh as tm
+
+from textwrap import dedent
 
 from .utils import reindex_swc
 
@@ -135,6 +140,52 @@ class Skeleton:
         return Skeleton(swc=self.swc.copy() if not isinstance(self.swc, type(None)) else None,
                         mesh=self.mesh.copy() if not isinstance(self.mesh, type(None)) else None,
                         mesh_map=self.mesh_map.copy() if not isinstance(self.mesh_map, type(None)) else None)
+
+    def save_swc(self, filepath):
+        """Save skeleton in SWC format.
+
+        Parameters
+        ----------
+        filepath :      path-like
+                        Filepath to save SWC to.
+
+        """
+        header = dedent(f"""\
+        # SWC format file
+        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html
+        # Created on {datetime.date.today()} using skeletor (https://github.com/schlegelp/skeletor)
+        # PointNo Label X Y Z Radius Parent
+        # Labels:
+        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point
+        """)
+
+        # Make copy of SWC table
+        swc = self.swc.copy()
+
+        # Set all labels to undefined
+        swc['label'] = 0
+        swc.loc[~swc.node_id.isin(swc.parent_id.values), 'label'] = 6
+        n_childs = swc.groupby('parent_id').size()
+        bp = n_childs[n_childs > 1].index.values
+        swc.loc[swc.node_id.isin(bp), 'label'] = 5
+
+        # Add radius if missing
+        if 'radius' not in swc.columns:
+            swc['radius'] = 0
+
+        # Get things in order
+        swc = swc[['node_id', 'label', 'x', 'y', 'z', 'radius', 'parent_id']]
+
+        # Adjust column titles
+        swc.columns = ['PointNo', 'Label', 'X', 'Y', 'Z', 'Radius', 'Parent']
+
+        with open(filepath, 'w') as file:
+            # Write header
+            file.write(header)
+
+            # Write data
+            writer = csv.writer(file, delimiter=' ')
+            writer.writerows(swc.astype(str).values)
 
     def scene(self, mesh=False, **kwargs):
         """Return a Scene object containing the skeleton.

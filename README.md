@@ -74,6 +74,8 @@ array([ 157,  158, 1062, ...,  525,  474,  547])
 0        0         -1  16744.005859  36720.058594  26407.902344  0.000000
 1        1         -1   5602.751953  22266.756510  15799.991211  7.542587
 2        2         -1  16442.666667  14999.978516  10887.916016  5.333333
+>>> # Save SWC file
+>>> skel.save_swc('skeleton.swc')
 ```
 
 If you installed `pyglet` (see above) you can also use `trimesh`'s plotting
