@@ -18,6 +18,7 @@
 
 import igraph as ig
 import numpy as np
+import pandas as pd
 
 from scipy.spatial.distance import cdist
 
@@ -29,8 +30,13 @@ from .utils import make_swc, reindex_swc, edges_to_graph
 
 __all__ = ['by_wavefront']
 
+# This flag determines whether we use inverse radii or edge lengths for the MST.
+# Radii make more sense if working with tubular structures like neurons but this
+# might not apply for all scenarios
+PRESERVE_BACKBONE = True
 
-def by_wavefront(mesh, waves=1, step_size=1, progress=True):
+
+def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
     """Skeletonize a mesh using wave fronts.
 
     The algorithm tries to find rings of vertices and collapse them to
@@ -53,6 +59,11 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
                     different rings. The final skeleton is produced from a mean
                     across all waves. More waves produce higher resolution
                     skeletons but also introduce more noise.
+    origins :       int | list of ints, optional
+                    Vertex ID(s) where the wave(s) are initialized. If we run
+                    out of origins (either because less `origins` than `waves`
+                    or because no origin for one of the connected components)
+                    will fall back to semi-random origin.
     step_size :     int
                     Values greater 1 effectively lead to binning of rings. For
                     example a stepsize of 2 means that two adjacent vertex rings
@@ -75,6 +86,7 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
     mesh = make_trimesh(mesh, validate=False)
 
     centers_final, radii_final, G = _cast_waves(mesh, waves=waves,
+                                                origins=origins,
                                                 step_size=step_size,
                                                 progress=progress)
 
@@ -84,8 +96,11 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
                                      return_inverse=True, axis=0)
 
     # Map radii for individual vertices to the collapsed nodes
-    node_radii = [radii_final[vertex_to_node_map == i].mean() for i in range(vertex_to_node_map.max() + 1)]
-    node_radii = np.array(node_radii)
+    # Using pandas is the fastest way here
+    node_radii = pd.DataFrame()
+    node_radii['node_id'] = vertex_to_node_map
+    node_radii['radius'] = radii_final
+    node_radii = node_radii.groupby('node_id').radius.mean().values
 
     # Contract vertices
     G.contract_vertices(vertex_to_node_map)
@@ -93,17 +108,23 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
     # Remove self loops and duplicate edges
     G = G.simplify()
 
-    # Generate weights
-    el = np.array(G.get_edgelist())
-    weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
-
     # Generate hierarchical tree
+    el = np.array(G.get_edgelist())
+
+    if PRESERVE_BACKBONE:
+        # Use the minimum radius between vertices in an edge
+        weights = np.vstack((node_radii[el[:, 0]],
+                             node_radii[el[:, 1]])).min(axis=0)
+        # MST doesn't like 0 for weights
+        weights[weights <= 0] = weights[weights > 0].min() / 2
+    else:
+        weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
     tree = G.spanning_tree(weights=weights)
 
     # Create a directed acyclic and hierarchical graph
     G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
                           nodes=np.arange(0, len(G.vs)),
-                          fix_tree=True,
+                          fix_tree=False,
                           drop_disconnected=False)
 
     # Generate the SWC table
@@ -118,8 +139,18 @@ def by_wavefront(mesh, waves=1, step_size=1, progress=True):
                     method='wavefront')
 
 
-def _cast_waves(mesh, waves=1, step_size=1, progress=True):
+def _cast_waves(mesh, waves=1, origins=None, step_size=1, progress=True):
     """Cast waves across mesh."""
+    if not isinstance(origins, type(None)):
+        if isinstance(origins, int):
+            origins = [origins]
+        elif not isinstance(origins, (set, list)):
+            raise TypeError('`origins` must be vertex ID (int) or list '
+                            f'thereof, got "{type(origins)}"')
+        origins = np.asarray(origins).astype(int)
+    else:
+        origins = np.array([])
+
     # Wave must be a positive integer >= 1
     waves = int(waves)
     if waves < 1:
@@ -146,8 +177,28 @@ def _cast_waves(mesh, waves=1, step_size=1, progress=True):
             cc = np.array(cc)
 
             # Select seeds according to the number of waves
-            seeds = np.linspace(0, len(cc) - 1,
-                                min(waves, len(cc))).astype(int)
+            n_waves = min(waves, len(cc))
+            pot_seeds = np.arange(len(cc))
+            np.random.seed(1985)  # make seeds predictable
+            # See if we can use any origins
+            if len(origins):
+                # Get those origins in this cc
+                in_cc = np.isin(origins, cc)
+                if any(in_cc):
+                    # Map origins into cc
+                    cc_map = dict(zip(cc, np.arange(0, len(cc))))
+                    seeds = np.array([cc_map[o] for o in origins[in_cc]])
+                else:
+                    seeds = np.array([])
+                if len(seeds) < n_waves:
+                    remaining_seeds = pot_seeds[~np.isin(pot_seeds, seeds)]
+                    seeds = np.append(seeds,
+                                      np.random.choice(remaining_seeds,
+                                                       size=n_waves - len(seeds),
+                                                       replace=False))
+            else:
+                seeds = np.random.choice(pot_seeds, size=n_waves, replace=False)
+            seeds = seeds.astype(int)
 
             # Get the distance between the seeds and all other nodes
             dist = np.array(SG.shortest_paths(source=seeds, target=None, mode='all'))
