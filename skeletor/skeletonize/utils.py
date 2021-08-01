@@ -257,15 +257,9 @@ def reindex_swc(swc, inplace=False):
 
 
 def edges_to_graph(edges, nodes=None, vertices=None, fix_edges=True,
-                   fix_tree=True, drop_disconnected=False, weight=True):
+                   fix_tree=True, drop_disconnected=False, weight=True,
+                   radii=None):
     """Create networkx Graph from edge list."""
-    if not fix_tree and not fix_edges:
-        # If no fixing required, we need to go for a directed graph straight
-        # away
-        G = nx.DiGraph()
-    else:
-        G = nx.Graph()
-
     if fix_edges:
         # Drop self-loops
         edges = edges[edges[:, 0] != edges[:, 1]]
@@ -277,51 +271,49 @@ def edges_to_graph(edges, nodes=None, vertices=None, fix_edges=True,
     if isinstance(nodes, type(None)):
         nodes = unique(edges.flatten())
 
-    if isinstance(vertices, np.ndarray):
-        coords = vertices[nodes]
-        add = [(n, {'x': co[0], 'y': co[1], 'z': co[2]}) for n, co in zip(nodes, coords)]
-    else:
-        add = nodes
-    G.add_nodes_from(add)
+    # Start with undirected graph
+    G = nx.Graph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
 
-    G.add_edges_from([(e[0], e[1]) for e in edges])
-
+    # Fix cycles
     if fix_tree:
-        # First remove cycles
-        while True:
-            try:
-                # Find cycle
-                cycle = nx.find_cycle(G)
-            except nx.exception.NetworkXNoCycle:
-                break
-            except BaseException:
-                raise
+        # If available try cutting at edges with small radii
+        if not isinstance(radii, type(None)):
+            weights = np.vstack((radii[edges[:, 0]],
+                                 radii[edges[:, 1]])).min(axis=0)
+            # MST doesn't like 0 for weights
+            weights[weights <= 0] = weights[weights > 0].min() / 2
+        # Else try cutting at edges with lowest degree
+        else:
+            weights = np.array([max(G.degree[e[0]], G.degree[e[1]]) for e in edges])
+        # Note we are inverting the weights so that we cut either at a low
+        # radius or a low degree
+        nx.set_edge_attributes(G, dict(zip([tuple(e) for e in edges], 1 / weights)), name='weight')
 
-            # Sort by degree
-            cycle = sorted(cycle, key=lambda x: G.degree[x[0]])
+        # Get the minimum spanning tree
+        G = nx.minimum_spanning_tree(G, weight='weight')
 
-            # Remove the edge with the lowest degree
-            G.remove_edge(cycle[0][0], cycle[0][1])
+    # Orient the tree
+    trees = []
+    for cc in nx.connected_components(G):
+        # Get subgraph of this component
+        SG = nx.subgraph(G, cc)
+        # Create an oriented tree
+        trees.append(nx.bfs_tree(SG, source=list(SG.nodes)[0]))
 
-        # Now make sure this is a DAG, i.e. that all edges point in the same direction
-        new_edges = []
-        for c in nx.connected_components(G.to_undirected()):
-            sg = nx.subgraph(G, c)
-            # Pick a random root
-            r = list(sg.nodes)[0]
+    # Create the union of all trees
+    if len(trees) > 1:
+        # For some reason this is much faster than nx.compose
+        G = nx.DiGraph()
+        for t in trees:
+            G.add_edges_from(list(t.edges))
+            G.add_nodes_from(list(t.nodes))
+    else:
+        G = trees[0]
 
-            # Generate parent->child dictionary by graph traversal
-            this_lop = nx.predecessor(sg, r)
-
-            # Note that we assign -1 as root's parent
-            new_edges += [(k, v[0]) for k, v in this_lop.items() if v]
-
-        # We need a directed Graph for this as otherwise the child -> parent
-        # order in the edges might get lost
-        G2 = nx.DiGraph()
-        G2.add_nodes_from(G.nodes)
-        G2.add_edges_from(new_edges)
-        G = G2
+    # Reverse to child -> parent
+    G = G.reverse()
 
     if drop_disconnected:
         # Array of degrees [[node_id, degree], [....], ...]
