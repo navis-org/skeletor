@@ -95,11 +95,9 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
     mesh = make_trimesh(mesh, validate=True)
 
     if method == 'knn':
-        radius = get_radius_kkn(s.swc[['x', 'y', 'z']].values,
+        radius = get_radius_knn(s.swc[['x', 'y', 'z']].values,
                                 mesh=mesh, **kwargs)
     elif method == 'ray':
-        if not ncollpyde:
-            raise ImportError('Method "ray" requires the ncollpyde package.')
         radius = get_radius_ray(s.swc, mesh=mesh, **kwargs)
     else:
         raise ValueError(f'Unknown method "{method}"')
@@ -109,7 +107,7 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
     return
 
 
-def get_radius_kkn(coords, mesh, n=5, aggregate='mean'):
+def get_radius_knn(coords, mesh, n=5, aggregate='mean'):
     """Extract radii using k-nearest-neighbors.
 
     Parameters
@@ -251,7 +249,7 @@ def get_radius_ray(swc, mesh, n_rays=20, aggregate='mean', projection='sphere',
             if isinstance(fallback, numbers.Number):
                 final_dist[needs_fix] = fallback
             elif fallback == 'knn':
-                final_dist[needs_fix] = get_radius_kkn(points[needs_fix], mesh, aggregate=aggregate)
+                final_dist[needs_fix] = get_radius_knn(points[needs_fix], mesh, aggregate=aggregate)
 
     return final_dist
 
