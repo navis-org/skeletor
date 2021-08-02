@@ -119,7 +119,7 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
         weights[weights <= 0] = weights[weights > 0].min() / 2
     else:
         weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
-    tree = G.spanning_tree(weights=weights)
+    tree = G.spanning_tree(weights=1 / weights)
 
     # Create a directed acyclic and hierarchical graph
     G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
