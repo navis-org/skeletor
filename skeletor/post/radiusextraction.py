@@ -96,9 +96,13 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
 
     if method == 'knn':
         radius = get_radius_knn(s.swc[['x', 'y', 'z']].values,
+                                aggregate=aggregate,
                                 mesh=mesh, **kwargs)
     elif method == 'ray':
-        radius = get_radius_ray(s.swc, mesh=mesh, **kwargs)
+        radius = get_radius_ray(s.swc,
+                                mesh=mesh,
+                                aggregate=aggregate,
+                                **kwargs)
     else:
         raise ValueError(f'Unknown method "{method}"')
 
