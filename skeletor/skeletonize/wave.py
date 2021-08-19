@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 from scipy.spatial.distance import cdist
+from scipy.spatial import cKDTree
 
 from tqdm.auto import tqdm
 
@@ -113,10 +114,21 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
 
     if PRESERVE_BACKBONE:
         # Use the minimum radius between vertices in an edge
-        weights = np.vstack((node_radii[el[:, 0]],
-                             node_radii[el[:, 1]])).min(axis=0)
+        weights_rad = np.vstack((node_radii[el[:, 0]],
+                                 node_radii[el[:, 1]])).mean(axis=0)
+
+        # For each node generate a vector based on its immediate neighbors
+        vect, alpha = dotprops(node_centers)
+        weights_alpha = np.vstack((alpha[el[:, 0]],
+                                   alpha[el[:, 1]])).mean(axis=0)
+
+        # Combine both which means we are most likely to cut at small branches
+        # outside of the backbone
+        weights = weights_rad * weights_alpha
+
         # MST doesn't like 0 for weights
         weights[weights <= 0] = weights[weights > 0].min() / 2
+
     else:
         weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
     tree = G.spanning_tree(weights=1 / weights)
@@ -124,11 +136,11 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
     # Create a directed acyclic and hierarchical graph
     G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
                           nodes=np.arange(0, len(G.vs)),
-                          fix_tree=False,
+                          fix_tree=True,  # this makes sure graph is oriented
                           drop_disconnected=False)
 
     # Generate the SWC table
-    swc = make_swc(G_nx, coords=node_centers, reindex=False)
+    swc = make_swc(G_nx, coords=node_centers, reindex=False, validate=True)
     swc['radius'] = node_radii[swc.node_id.values]
     _, new_ids = reindex_swc(swc, inplace=True)
 
@@ -231,3 +243,37 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1, progress=True):
     radii_final = np.nanmean(radii, axis=1)
 
     return centers_final, radii_final, G
+
+
+def dotprops(x, k=20):
+    """Generate vectors and alpha from local neighborhood."""
+    # Checks and balances
+    n_points = x.shape[0]
+
+    # Make sure we don't ask for more nearest neighbors than we have points
+    k = min(n_points, k)
+
+    # Create the KDTree and get the k-nearest neighbors for each point
+    tree = cKDTree(x)
+    dist, ix = tree.query(x, k=k)
+    # This makes sure we have (N, k) shaped array even if k = 1
+    ix = ix.reshape(x.shape[0], k)
+
+    # Get points: array of (N, k, 3)
+    pt = x[ix]
+
+    # Generate centers for each cloud of k nearest neighbors
+    centers = np.mean(pt, axis=1)
+
+    # Generate vector from center
+    cpt = pt - centers.reshape((pt.shape[0], 1, 3))
+
+    # Get inertia (N, 3, 3)
+    inertia = cpt.transpose((0, 2, 1)) @ cpt
+
+    # Extract vector and alpha
+    u, s, vh = np.linalg.svd(inertia)
+    vect = vh[:, 0, :]
+    alpha = (s[:, 0] - s[:, 1]) / np.sum(s, axis=1)
+
+    return vect, alpha
