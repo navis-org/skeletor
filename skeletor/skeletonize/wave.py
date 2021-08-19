@@ -92,13 +92,14 @@ def by_wavefront(mesh,
     agg_map = {'mean': np.mean, 'max': np.max, 'min': np.min,
                'median': np.median, 'percentile75': lambda x: np.percentile(x, 75)}
     assert radius_agg in agg_map
-    agg_func = agg_map[radius_agg]
+    rad_agg_func = agg_map[radius_agg]
 
     mesh = make_trimesh(mesh, validate=False)
 
     centers_final, radii_final, G = _cast_waves(mesh, waves=waves,
                                                 origins=origins,
                                                 step_size=step_size,
+                                                rad_agg_func=rad_agg_func,
                                                 progress=progress)
 
     # Collapse vertices into nodes
@@ -111,7 +112,7 @@ def by_wavefront(mesh,
     node_radii = pd.DataFrame()
     node_radii['node_id'] = vertex_to_node_map
     node_radii['radius'] = radii_final
-    node_radii = node_radii.groupby('node_id').radius.apply(agg_func).values
+    node_radii = node_radii.groupby('node_id').radius.apply(rad_agg_func).values
 
     # Contract vertices
     G.contract_vertices(vertex_to_node_map)
@@ -161,7 +162,8 @@ def by_wavefront(mesh,
                     method='wavefront')
 
 
-def _cast_waves(mesh, waves=1, origins=None, step_size=1, progress=True):
+def _cast_waves(mesh, waves=1, origins=None, step_size=1,
+                rad_agg_func=np.mean, progress=True):
     """Cast waves across mesh."""
     if not isinstance(origins, type(None)):
         if isinstance(origins, int):
