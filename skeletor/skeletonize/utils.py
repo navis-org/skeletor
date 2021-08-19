@@ -259,7 +259,51 @@ def reindex_swc(swc, inplace=False):
 def edges_to_graph(edges, nodes=None, vertices=None, fix_edges=True,
                    fix_tree=True, drop_disconnected=False, weight=True,
                    radii=None):
-    """Create networkx Graph from edge list."""
+    """Create networkx Graph from edge list.
+
+    Parameters
+    ----------
+    edges :         (N, 2) array
+    nodes :         (M, ) array, optional
+                    Node IDs. Should be provided in case of isolated nodes not
+                    part of the edge list.
+    vertices :      (M, 3) array, optional
+                    X/Y/Z locations of nodes.
+    fix_edges :     bool
+                    If True (recommended!) will drop self-loops and remove
+                    recurrent edges.
+    fix_tree :      bool | "length" | "radius" | "degree"
+                    If not False (recommended!) will fix the tree by removing
+                    cycles. This is done using a minimum-spanning-tree or a
+                    breadth-first search (see below). To improve this we can use
+                    weights to increase the probability that cuts are made at
+                    the right edges (i.e. preserving the "correct" topology of
+                    the skeleton):
+
+                      - "length" prioritizes cutting at long edges (requires
+                        node positions as `vertex` to be provided)
+                      - "radius" prioritizes cutting at edges with small radius
+                        (requires `radii` to be provided)
+                      - "degree" (default for `True`) prioritizes cutting at
+                        edges between with low degree (i.e. non branch points)
+                      - `True` will simply use a breadth-first search to
+                        produce a directed graph without cycles.
+
+    drop_disconnected : bool
+                    Drops disconnected nodes from graph. Not recommended since
+                    it breaks the vertex -> node mapping.
+    weight :        bool
+                    Whether to add edge lengths as weight to the final graph.
+                    Requires `vertices` to be provided.
+    radii :         (M, ) array, optional
+                    Radii for each node. Only relevant if `fix_tree='radius'`.
+
+    Returns
+    -------
+    G
+                    networkx.DiGraph if `fix_tree` or networkx.Graph if not.
+
+    """
     if fix_edges:
         # Drop self-loops
         edges = edges[edges[:, 0] != edges[:, 1]]
@@ -276,44 +320,56 @@ def edges_to_graph(edges, nodes=None, vertices=None, fix_edges=True,
     G.add_nodes_from(nodes)
     G.add_edges_from(edges)
 
-    # Fix cycles
-    if fix_tree:
-        # If available try cutting at edges with small radii
-        if not isinstance(radii, type(None)):
-            weights = np.vstack((radii[edges[:, 0]],
-                                 radii[edges[:, 1]])).min(axis=0)
-            # MST doesn't like 0 for weights
-            weights[weights <= 0] = weights[weights > 0].min() / 2
-        # Else try cutting at edges with lowest degree
+    # Fix tree with MST if specified
+    if isinstance(fix_tree, str):
+        if fix_tree == 'radius':
+            # Ty cutting at edges with small radii
+            if isinstance(radii, type(None)):
+                raise ValueError('Must provided `radii` with `fix_tree="radius"`')
+            weights = 1 / np.vstack((radii[edges[:, 0]],
+                                     radii[edges[:, 1]])).mean(axis=0)
+        elif fix_tree == 'length':
+            # Ty cutting at long edges
+            if isinstance(vertices, type(None)):
+                raise ValueError('Must provided `vertices` with `fix_tree="length"`')
+            vec = vertices[np.array(G.edges)[:, 0]] - vertices[np.array(G.edges)[:, 1]]
+            weights = np.sqrt(np.sum(vec ** 2, axis=1))
+        elif fix_tree == 'degree':
+            # Else try cutting at edges with lowest degree
+            weights = 1 / np.array([max(G.degree[e[0]], G.degree[e[1]]) for e in edges])
         else:
-            weights = np.array([max(G.degree[e[0]], G.degree[e[1]]) for e in edges])
+            raise ValueError(f'Unknown mode for `fix_tree`: "{fix_tree}"')
         # Note we are inverting the weights so that we cut either at a low
         # radius or a low degree
-        nx.set_edge_attributes(G, dict(zip([tuple(e) for e in edges], 1 / weights)), name='weight')
+        weights[weights <= 0] = weights[weights > 0].min() / 2
+        nx.set_edge_attributes(G, dict(zip([tuple(e) for e in edges], weights)), name='weight')
 
         # Get the minimum spanning tree
         G = nx.minimum_spanning_tree(G, weight='weight')
 
-    # Orient the tree
-    trees = []
-    for cc in nx.connected_components(G):
-        # Get subgraph of this component
-        SG = nx.subgraph(G, cc)
-        # Create an oriented tree
-        trees.append(nx.bfs_tree(SG, source=list(SG.nodes)[0]))
+    # Even if we already ran the MST, we still need to orient the tree
+    # This by itself also "fixes"  the tree (i.e. breaks cycles) but it doesn't
+    # give us much control over it
+    if fix_tree:
+        trees = []
+        for cc in nx.connected_components(G):
+            # Get subgraph of this component
+            SG = nx.subgraph(G, cc)
+            # Create an oriented tree
+            trees.append(nx.bfs_tree(SG, source=list(SG.nodes)[0]))
 
-    # Create the union of all trees
-    if len(trees) > 1:
-        # For some reason this is much faster than nx.compose
-        G = nx.DiGraph()
-        for t in trees:
-            G.add_edges_from(list(t.edges))
-            G.add_nodes_from(list(t.nodes))
-    else:
-        G = trees[0]
+        # Create the union of all trees
+        if len(trees) > 1:
+            # For some reason this is much faster than nx.compose
+            G = nx.DiGraph()
+            for t in trees:
+                G.add_edges_from(list(t.edges))
+                G.add_nodes_from(list(t.nodes))
+        else:
+            G = trees[0]
 
-    # Reverse to child -> parent
-    G = G.reverse()
+        # Reverse to child -> parent
+        G = G.reverse()
 
     if drop_disconnected:
         # Array of degrees [[node_id, degree], [....], ...]

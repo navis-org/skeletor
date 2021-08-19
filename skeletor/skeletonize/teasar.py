@@ -180,7 +180,7 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
 
     # Create a directed acyclic and hierarchical graph
     G_nx = edges_to_graph(edges=edges[:, [1, 0]],
-                          fix_tree=False, fix_edges=False,
+                          fix_tree=True, fix_edges=False,
                           weight=False)
 
     # Generate the SWC table
