@@ -47,13 +47,16 @@ def make_trimesh(mesh, validate=True, **kwargs):
     elif isinstance(mesh, (tuple, list)):
         if len(mesh) == 2:
             mesh = tm.Trimesh(vertices=mesh[0],
-                              faces=mesh[1])
+                              faces=mesh[1],
+                              process=validate)
     elif isinstance(mesh, dict):
         mesh = tm.Trimesh(vertices=mesh['vertices'],
-                          faces=mesh['faces'])
+                          faces=mesh['faces'],
+                          process=validate)
     elif hasattr(mesh, 'vertices') and hasattr(mesh, 'faces'):
         mesh = tm.Trimesh(vertices=mesh.vertices,
-                          faces=mesh.faces)
+                          faces=mesh.faces,
+                          process=validate)
     else:
         raise TypeError('Unable to construct a trimesh.Trimesh from object of '
                         f'type "{type(mesh)}"')
