@@ -37,7 +37,12 @@ __all__ = ['by_wavefront']
 PRESERVE_BACKBONE = True
 
 
-def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
+def by_wavefront(mesh,
+                 waves=1,
+                 origins=None,
+                 step_size=1,
+                 radius_agg='mean',
+                 progress=True):
     """Skeletonize a mesh using wave fronts.
 
     The algorithm tries to find rings of vertices and collapse them to
@@ -71,9 +76,9 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
                     will be collapsed to the same center. This can help reduce
                     noise in the skeleton (and as such counteracts a large
                     number of waves).
-    drop_disconnected : bool
-                    If True, will drop disconnected nodes from the skeleton.
-                    Note that this might result in empty skeletons.
+    radius_agg :    "mean" | "median" | "max" | "min" | "percentile75"
+                    Function used to aggregate radii over sample (i.e. the
+                    vertices forming a ring that we collapse to its center).
     progress :      bool
                     If True, will show progress bar.
 
@@ -84,6 +89,11 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
                     visualization.
 
     """
+    agg_map = {'mean': np.mean, 'max': np.max, 'min': np.min,
+               'median': np.median, 'percentile75': lambda x: np.percentile(x, 75)}
+    assert radius_agg in agg_map
+    agg_func = agg_map[radius_agg]
+
     mesh = make_trimesh(mesh, validate=False)
 
     centers_final, radii_final, G = _cast_waves(mesh, waves=waves,
@@ -101,7 +111,7 @@ def by_wavefront(mesh, waves=1, origins=None, step_size=1, progress=True):
     node_radii = pd.DataFrame()
     node_radii['node_id'] = vertex_to_node_map
     node_radii['radius'] = radii_final
-    node_radii = node_radii.groupby('node_id').radius.mean().values
+    node_radii = node_radii.groupby('node_id').radius.apply(agg_func).values
 
     # Contract vertices
     G.contract_vertices(vertex_to_node_map)
