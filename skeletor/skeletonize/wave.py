@@ -244,7 +244,8 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
                     for cc2 in SG2.clusters():
                         this_verts = cc[ix[cc2]]
                         this_center = mesh.vertices[this_verts].mean(axis=0)
-                        this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts]).min()
+                        this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts])
+                        this_radius = rad_agg_func(this_radius)
                         centers[this_verts, :, w] = this_center
                         radii[this_verts, w] = this_radius
 
