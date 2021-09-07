@@ -1,7 +1,5 @@
-#    This script is part of skeletonizer (http://www.github.com/schlegelp/skeletonizer).
+#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).
 #    Copyright (C) 2018 Philipp Schlegel
-#    Modified from https://github.com/aalavandhaann/Py_BL_MeshSkeletonization
-#    by #0K Srinivasan Ramachandran.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -52,7 +50,7 @@ pip3 install skeletor
 
 For the bleeding-edge version from Github:
 ```bash
-pip3 install git+git://github.com/schlegelp/skeletor@master
+pip3 install git+git://github.com/navis-org/skeletor@master
 ```
 
 # Getting started
@@ -102,7 +100,7 @@ A pipeline might look like this:
 
 In my experience there is no one-size-fits-all. You will have to play around to
 find the right approach and parameters to get nice skeletons for your meshes.
-If you need help just open an [issue](https://github.com/schlegelp/skeletor/issues).
+If you need help just open an [issue](https://github.com/navis-org/skeletor/issues).
 
 Also check out the Gotchas below!
 
@@ -176,7 +174,7 @@ capabilities to inspect the results:
 >>> skel.show(mesh=True)
 ```
 
-<img src="https://github.com/schlegelp/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/>
+<img src="https://github.com/navis-org/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/>
 
 That looks pretty good already but let's run some pro-forma postprocessing.
 
@@ -219,9 +217,9 @@ you try out mesh contraction + vertex clustering first:
 
 # Benchmarks
 
-<img src="https://github.com/schlegelp/skeletor/raw/master/benchmarks/benchmark_2.png" alt="skeletor_benchmark" width="100%"/>
+<img src="https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png" alt="skeletor_benchmark" width="100%"/>
 
-[Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
+[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
 `fastremap` dependency installed. Note some of these functions (e.g.
 contraction and TEASAR/vertex cluster skeletonization) vary a lot in

@@ -1,7 +1,5 @@
-#    This script is part of skeletor (http://www.github.com/schlegelp/skeletor).
+#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).
 #    Copyright (C) 2018 Philipp Schlegel
-#    Modified from https://github.com/aalavandhaann/Py_BL_MeshSkeletonization
-#    by #0K Srinivasan Ramachandran.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

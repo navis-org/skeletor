@@ -1,11 +1,11 @@
-[![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://schlegelp.github.io/skeletor/) [![Tests](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml/badge.svg)](https://github.com/schlegelp/skeletor/actions/workflows/test-package.yml) [![DOI](https://zenodo.org/badge/153085435.svg)](https://zenodo.org/badge/latestdoi/153085435)
+[![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://navis-org.github.io/skeletor/) [![Tests](https://github.com/navis-org/skeletor/actions/workflows/test-package.yml/badge.svg)](https://github.com/navis-org/skeletor/actions/workflows/test-package.yml) [![DOI](https://zenodo.org/badge/153085435.svg)](https://zenodo.org/badge/latestdoi/153085435)
 
 # Skeletor
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
 _Heads-up: skeletor `1.0.0` introduced some breaking changes and major reorganizations._
-_Please see the [changelog](https://github.com/schlegelp/skeletor/blob/master/NEWS.md)_
+_Please see the [changelog](https://github.com/navis-org/skeletor/blob/master/NEWS.md)_
 _for details._
 
 ## Install
@@ -15,7 +15,7 @@ pip3 install skeletor
 
 For the dev version:
 ```bash
-pip3 install git+git://github.com/schlegelp/skeletor@master
+pip3 install git+git://github.com/navis-org/skeletor@master
 ```
 
 #### Dependencies
@@ -35,9 +35,9 @@ Optional because not strictly required for the core functions but highly recomme
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
 
 ## Documentation
-Please see the [documentation](https://schlegelp.github.io/skeletor/) for details.
+Please see the [documentation](https://navis-org.github.io/skeletor/) for details.
 
-The changelog can be found [here](https://github.com/schlegelp/skeletor/blob/master/NEWS.md).
+The changelog can be found [here](https://github.com/navis-org/skeletor/blob/master/NEWS.md).
 
 ## Quickstart
 For the impatient a quick example:
@@ -85,12 +85,12 @@ capabilities to inspect the results:
 >>> skel.show(mesh=True)
 ```
 
-![skeletor_example](https://github.com/schlegelp/skeletor/raw/master/_static/example1.png)
+![skeletor_example](https://github.com/navis-org/skeletor/raw/master/_static/example1.png)
 
 ## Benchmarks
-![skeletor_examples](https://github.com/schlegelp/skeletor/raw/master/benchmarks/benchmark_2.png)
+![skeletor_examples](https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png)
 
-[Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
+[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
 `fastremap` dependency installed. Note some of these functions (e.g.
 contraction and TEASAR/vertex cluster skeletonization) can vary a lot in

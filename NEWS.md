@@ -44,7 +44,7 @@ separate functions:
   parents always listed before their childs, etc)
 - `Skeleton` results contain a mesh to skeleton mapping as `.mesh_map` property   
 - added an example mesh: to load it use `skeletor.example_mesh()`
-- `skeletor` now has proper tests and a simple [documentation](https://schlegelp.github.io/skeletor/)
+- `skeletor` now has proper tests and a simple [documentation](https://navis-org.github.io/skeletor/)
 
 ### Removals
 - removed `drop_disconnected` parameter from all skeletonization functions -
