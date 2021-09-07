@@ -133,7 +133,7 @@ to get decent results.</p>
 
 <p>For the bleeding-edge version from Github:</p>
 
-<div class="codehilite"><pre><span></span><code>pip3 install git+git://github.com/schlegelp/skeletor@master
+<div class="codehilite"><pre><span></span><code>pip3 install git+git://github.com/navis-org/skeletor@master
 </code></pre></div>
 
 <h1 id="getting-started">Getting started</h1>
@@ -243,7 +243,7 @@ degenerate faces, unreferenced vertices, etc.)</li>
 
 <p>In my experience there is no one-size-fits-all. You will have to play around to
 find the right approach and parameters to get nice skeletons for your meshes.
-If you need help just open an <a href="https://github.com/schlegelp/skeletor/issues">issue</a>.</p>
+If you need help just open an <a href="https://github.com/navis-org/skeletor/issues">issue</a>.</p>
 
 <p>Also check out the Gotchas below!</p>
 
@@ -311,7 +311,7 @@ capabilities to inspect the results:</p>
 <div class="codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
-<p><img src="https://github.com/schlegelp/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/></p>
+<p><img src="https://github.com/navis-org/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/></p>
 
 <p>That looks pretty good already but let's run some pro-forma postprocessing.</p>
 
@@ -354,9 +354,9 @@ likewise be fragmented (i.e. will have multiple roots)</li>
 
 <h1 id="benchmarks">Benchmarks</h1>
 
-<p><img src="https://github.com/schlegelp/skeletor/raw/master/benchmarks/benchmark_2.png" alt="skeletor_benchmark" width="100%"/></p>
+<p><img src="https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png" alt="skeletor_benchmark" width="100%"/></p>
 
-<p><a href="https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb">Benchmarks</a>
+<p><a href="https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb">Benchmarks</a>
 were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
 <code>fastremap</code> dependency installed. Note some of these functions (e.g.
 contraction and TEASAR/vertex cluster skeletonization) vary a lot in
@@ -389,10 +389,8 @@ tucked away into submodules (see side-bar or above table).</p>
 
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="c1">#    This script is part of skeletonizer (http://www.github.com/schlegelp/skeletonizer).</span>
+            <div class="codehilite"><pre><span></span><span class="c1">#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).</span>
 <span class="c1">#    Copyright (C) 2018 Philipp Schlegel</span>
-<span class="c1">#    Modified from https://github.com/aalavandhaann/Py_BL_MeshSkeletonization</span>
-<span class="c1">#    by #0K Srinivasan Ramachandran.</span>
 <span class="c1">#</span>
 <span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
 <span class="c1">#    it under the terms of the GNU General Public License as published by</span>
@@ -443,7 +441,7 @@ tucked away into submodules (see side-bar or above table).</p>
 
 <span class="sd">For the bleeding-edge version from Github:</span>
 <span class="sd">```bash</span>
-<span class="sd">pip3 install git+git://github.com/schlegelp/skeletor@master</span>
+<span class="sd">pip3 install git+git://github.com/navis-org/skeletor@master</span>
 <span class="sd">```</span>
 
 <span class="sd"># Getting started</span>
@@ -493,7 +491,7 @@ tucked away into submodules (see side-bar or above table).</p>
 
 <span class="sd">In my experience there is no one-size-fits-all. You will have to play around to</span>
 <span class="sd">find the right approach and parameters to get nice skeletons for your meshes.</span>
-<span class="sd">If you need help just open an [issue](https://github.com/schlegelp/skeletor/issues).</span>
+<span class="sd">If you need help just open an [issue](https://github.com/navis-org/skeletor/issues).</span>
 
 <span class="sd">Also check out the Gotchas below!</span>
 
@@ -567,7 +565,7 @@ tucked away into submodules (see side-bar or above table).</p>
 <span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
 <span class="sd">```</span>
 
-<span class="sd">&lt;img src=&quot;https://github.com/schlegelp/skeletor/raw/master/_static/example1.png&quot; alt=&quot;skeletor_example&quot; width=&quot;100%&quot;/&gt;</span>
+<span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/_static/example1.png&quot; alt=&quot;skeletor_example&quot; width=&quot;100%&quot;/&gt;</span>
 
 <span class="sd">That looks pretty good already but let&#39;s run some pro-forma postprocessing.</span>
 
@@ -610,9 +608,9 @@ tucked away into submodules (see side-bar or above table).</p>
 
 <span class="sd"># Benchmarks</span>
 
-<span class="sd">&lt;img src=&quot;https://github.com/schlegelp/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
+<span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
 
-<span class="sd">[Benchmarks](https://github.com/schlegelp/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
+<span class="sd">[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
 <span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
 <span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
 <span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
@@ -795,7 +793,7 @@ tucked away into submodules (see side-bar or above table).</p>
         <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
 <span class="s2">        # SWC format file</span>
 <span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
-<span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/schlegelp/skeletor)</span>
+<span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
 <span class="s2">        # PointNo Label X Y Z Radius Parent</span>
 <span class="s2">        # Labels:</span>
 <span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
@@ -1065,7 +1063,7 @@ Which method was used to generate the skeleton.</li>
         <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
 <span class="s2">        # SWC format file</span>
 <span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
-<span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/schlegelp/skeletor)</span>
+<span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
 <span class="s2">        # PointNo Label X Y Z Radius Parent</span>
 <span class="s2">        # Labels:</span>
 <span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
