@@ -74,7 +74,7 @@ def by_wavefront(mesh,
                     will be collapsed to the same center. This can help reduce
                     noise in the skeleton (and as such counteracts a large
                     number of waves).
-    radius_agg :    "mean" | "median" | "max" | "min" | "percentile75"
+    radius_agg :    "mean" | "median" | "max" | "min" | "percentile75" | "percentile25"
                     Function used to aggregate radii over sample (i.e. the
                     vertices forming a ring that we collapse to its center).
     progress :      bool
@@ -88,8 +88,10 @@ def by_wavefront(mesh,
 
     """
     agg_map = {'mean': np.mean, 'max': np.max, 'min': np.min,
-               'median': np.median, 'percentile75': lambda x: np.percentile(x, 75)}
-    assert radius_agg in agg_map
+               'median': np.median,
+               'percentile75': lambda x: np.percentile(x, 75),
+               'percentile25': lambda x: np.percentile(x, 25)}
+    assert radius_agg in agg_map, f'Unknown `radius_agg`: "{radius_agg}"'
     rad_agg_func = agg_map[radius_agg]
 
     mesh = make_trimesh(mesh, validate=False)
