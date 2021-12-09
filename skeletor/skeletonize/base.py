@@ -20,6 +20,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import trimesh as tm
+import networkx as nx
 
 from textwrap import dedent
 
@@ -138,6 +139,28 @@ class Skeleton:
         return Skeleton(swc=self.swc.copy() if not isinstance(self.swc, type(None)) else None,
                         mesh=self.mesh.copy() if not isinstance(self.mesh, type(None)) else None,
                         mesh_map=self.mesh_map.copy() if not isinstance(self.mesh_map, type(None)) else None)
+
+    def get_graph(self):
+        """Generate networkX representation of the skeletons.
+
+        Distance between nodes will be used as edge weights.
+
+        Returns
+        -------
+        networkx.DiGraph
+
+        """
+        not_root = self.swc.parent_id >= 0
+        nodes = self.swc.loc[not_root]
+        parents = self.swc.set_index('node_id').loc[self.swc.loc[not_root, 'parent_id'].values]
+
+        dists = nodes[['x', 'y', 'z']].values - parents[['x', 'y', 'z']].values
+        dists = np.sqrt((dists ** 2).sum(axis=1))
+
+        G = nx.DiGraph()
+        G.add_weighted_edges_from([(s, t, w) for s, t, w in zip(nodes, parents, dists)])
+
+        return G
 
     def save_swc(self, filepath):
         """Save skeleton in SWC format.

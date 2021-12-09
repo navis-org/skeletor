@@ -1,5 +1,6 @@
 import skeletor as sk
 import trimesh as tm
+import networkx as nx
 import numpy as np
 
 
@@ -51,6 +52,11 @@ class TestSkeletonization:
 
         assert len(s.mesh_map) == len(s.mesh.vertices)
         assert all(np.isin(s.mesh_map, s.swc.node_id.values))
+
+    def test_graph(self):
+        s = sk.skeletonize.by_wavefront(sk.example_mesh(), waves=1)
+
+        assert isinstance(s.get_graph(), nx.DiGraph)
 
 
 class TestPostprocessing:
