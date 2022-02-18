@@ -262,4 +262,4 @@ from .data import example_mesh
 
 __docformat__ = "numpy"
 
-__all__ = ['Skeleton', 'example_mesh']
+__all__ = ['Skeleton', 'example_mesh', 'pre', 'post', 'skeletonize']
