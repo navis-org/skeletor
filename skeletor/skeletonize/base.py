@@ -227,7 +227,7 @@ class Skeleton:
             # the original meshes
             sc = tm.Scene([self.mesh.copy(), self.skeleton.copy()], **kwargs)
         else:
-            sc = tm.Scene(self.skeleton, **kwargs)
+            sc = tm.Scene(self.skeleton.copy(), **kwargs)
 
         return sc
 
