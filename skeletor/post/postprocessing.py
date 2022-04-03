@@ -104,10 +104,6 @@ def remove_hairs(s, mesh=None, inplace=False):
     mesh :      trimesh.Trimesh, optional
                 Original mesh (e.g. before contraction). If not provided will
                 use the mesh associated with ``s``.
-    max_dist :  "auto" | int | float
-                Maximum Eucledian distance allowed between leaf nodes for them
-                to be considered for collapsing. If "auto", will use the length
-                of the longest edge in skeleton as limit.
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
