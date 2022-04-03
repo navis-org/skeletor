@@ -15,7 +15,7 @@ pip3 install skeletor
 
 For the dev version:
 ```bash
-pip3 install git+git://github.com/navis-org/skeletor@master
+pip3 install git+https://github.com/navis-org/skeletor@master
 ```
 
 #### Dependencies
