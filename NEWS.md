@@ -1,5 +1,11 @@
 # News
 
+## 1.2.0 (2022-04-03)
+
+This release mainly improves `skeletor.skeletonize.by_wavefront` but it also
+adds a new method to get a graph representation of skeletons:
+`Skeleton.get_graph`.
+
 ## 1.1.0 (2021-07-26)
 
 This is a small release that adds a single method to the `Skeleton` class to
