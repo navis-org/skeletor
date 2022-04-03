@@ -251,7 +251,7 @@ class Skeleton:
         # I encountered some issues if object space is big and the easiest
         # way to work around this is to apply a transform such that the
         # coordinates have -5 to +5 bounds
-        fac = 5 / self.skeleton.bounds[1].max()
+        fac = 5 / np.fabs(self.skeleton.bounds).max()
         scene.apply_transform(np.diag([fac, fac, fac, 1]))
 
         return scene.show(**kwargs)
