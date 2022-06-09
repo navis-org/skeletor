@@ -118,6 +118,13 @@ class Skeleton:
                                           ).groupby(0)['index'].apply(np.array
                                                                       ).values
 
+    @property
+    def leafs(self):
+        """Leaf nodes (includes root)."""
+        swc = self.swc
+        leafs = swc[~swc.node_id.isin(swc.parent_id.values) | (swc.parent_id < 0)]
+        return leafs.copy()
+
     def reindex(self, inplace=False):
         """Clean up skeleton."""
         x = self
