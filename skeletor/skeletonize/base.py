@@ -158,7 +158,8 @@ class Skeleton:
         dists = np.sqrt((dists ** 2).sum(axis=1))
 
         G = nx.DiGraph()
-        G.add_weighted_edges_from([(s, t, w) for s, t, w in zip(nodes, parents, dists)])
+        G.add_weighted_edges_from([(s, t, w) for s, t, w in zip(nodes.node_id.values,
+                                                                nodes.parent_id.values, dists)])
 
         return G
 
