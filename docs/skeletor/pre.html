@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 10.0.4"/>
+    <meta name="generator" content="pdoc 12.0.2"/>
     <title>skeletor.pre API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
     <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
     <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
-    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;}nav.pdoc{--pad:1.75rem;--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent }nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc li{display:block;margin:0;padding:.2rem 0 .2rem var(--indent);transition:all 100ms;}nav.pdoc > div > ul > li{padding-left:0;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
-    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--code);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc section{margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.pdoc details{filter:opacity(1);}.pdoc details:not([open]){height:0;}.pdoc details > summary{position:absolute;top:-35px;right:0;font-size:.75rem;color:var(--muted);padding:0 .7em;user-select:none;cursor:pointer;}.pdoc details > summary:focus{outline:0;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc > section:first-of-type > .docstring{margin-bottom:2.5rem;}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc .headerlink{position:absolute;width:0;margin-left:-1.5rem;line-height:1.4rem;font-size:1.5rem;font-weight:normal;transition:all 100ms ease-in-out;opacity:0;user-select:none;}.pdoc .attr > .headerlink{margin-left:-2.5rem;}.pdoc *:hover > .headerlink,.pdoc *:target > .attr > .headerlink{opacity:1;}.pdoc .attr{display:block;color:var(--text);margin:.5rem 0 .5rem;padding:.4rem 5rem .4rem 1rem;background-color:var(--accent);}.pdoc .classattr{margin-left:2rem;}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{white-space:pre-wrap;}.pdoc .annotation{color:var(--annotation);}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:35px;vertical-align:middle;width:70px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent }nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .pdoc-alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:1rem center;margin-bottom:1rem;}.pdoc .pdoc-alert > *:last-child{margin-bottom:0;}.pdoc .pdoc-alert-note {color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--code);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:35px;vertical-align:middle;width:70px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
     <style>/*! custom.css */</style></head>
 <body>
     <nav class="pdoc">
@@ -46,7 +46,7 @@
 
 
 
-        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev">
+        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
                 alt="pdoc logo"
                 src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22pdoc%20logo%22%20width%3D%22300%22%20height%3D%22150%22%20viewBox%3D%22-1%200%2060%2030%22%3E%3Ctitle%3Epdoc%3C/title%3E%3Cpath%20d%3D%22M29.621%2021.293c-.011-.273-.214-.475-.511-.481a.5.5%200%200%200-.489.503l-.044%201.393c-.097.551-.695%201.215-1.566%201.704-.577.428-1.306.486-2.193.182-1.426-.617-2.467-1.654-3.304-2.487l-.173-.172a3.43%203.43%200%200%200-.365-.306.49.49%200%200%200-.286-.196c-1.718-1.06-4.931-1.47-7.353.191l-.219.15c-1.707%201.187-3.413%202.131-4.328%201.03-.02-.027-.49-.685-.141-1.763.233-.721.546-2.408.772-4.076.042-.09.067-.187.046-.288.166-1.347.277-2.625.241-3.351%201.378-1.008%202.271-2.586%202.271-4.362%200-.976-.272-1.935-.788-2.774-.057-.094-.122-.18-.184-.268.033-.167.052-.339.052-.516%200-1.477-1.202-2.679-2.679-2.679-.791%200-1.496.352-1.987.9a6.3%206.3%200%200%200-1.001.029c-.492-.564-1.207-.929-2.012-.929-1.477%200-2.679%201.202-2.679%202.679A2.65%202.65%200%200%200%20.97%206.554c-.383.747-.595%201.572-.595%202.41%200%202.311%201.507%204.29%203.635%205.107-.037.699-.147%202.27-.423%203.294l-.137.461c-.622%202.042-2.515%208.257%201.727%2010.643%201.614.908%203.06%201.248%204.317%201.248%202.665%200%204.492-1.524%205.322-2.401%201.476-1.559%202.886-1.854%206.491.82%201.877%201.393%203.514%201.753%204.861%201.068%202.223-1.713%202.811-3.867%203.399-6.374.077-.846.056-1.469.054-1.537zm-4.835%204.313c-.054.305-.156.586-.242.629-.034-.007-.131-.022-.307-.157-.145-.111-.314-.478-.456-.908.221.121.432.25.675.355.115.039.219.051.33.081zm-2.251-1.238c-.05.33-.158.648-.252.694-.022.001-.125-.018-.307-.157-.217-.166-.488-.906-.639-1.573.358.344.754.693%201.198%201.036zm-3.887-2.337c-.006-.116-.018-.231-.041-.342.635.145%201.189.368%201.599.625.097.231.166.481.174.642-.03.049-.055.101-.067.158-.046.013-.128.026-.298.004-.278-.037-.901-.57-1.367-1.087zm-1.127-.497c.116.306.176.625.12.71-.019.014-.117.045-.345.016-.206-.027-.604-.332-.986-.695.41-.051.816-.056%201.211-.031zm-4.535%201.535c.209.22.379.47.358.598-.006.041-.088.138-.351.234-.144.055-.539-.063-.979-.259a11.66%2011.66%200%200%200%20.972-.573zm.983-.664c.359-.237.738-.418%201.126-.554.25.237.479.548.457.694-.006.042-.087.138-.351.235-.174.064-.694-.105-1.232-.375zm-3.381%201.794c-.022.145-.061.29-.149.401-.133.166-.358.248-.69.251h-.002c-.133%200-.306-.26-.45-.621.417.091.854.07%201.291-.031zm-2.066-8.077a4.78%204.78%200%200%201-.775-.584c.172-.115.505-.254.88-.378l-.105.962zm-.331%202.302a10.32%2010.32%200%200%201-.828-.502c.202-.143.576-.328.984-.49l-.156.992zm-.45%202.157l-.701-.403c.214-.115.536-.249.891-.376a11.57%2011.57%200%200%201-.19.779zm-.181%201.716c.064.398.194.702.298.893-.194-.051-.435-.162-.736-.398.061-.119.224-.3.438-.495zM8.87%204.141c0%20.152-.123.276-.276.276s-.275-.124-.275-.276.123-.276.276-.276.275.124.275.276zm-.735-.389a1.15%201.15%200%200%200-.314.783%201.16%201.16%200%200%200%201.162%201.162c.457%200%20.842-.27%201.032-.653.026.117.042.238.042.362a1.68%201.68%200%200%201-1.679%201.679%201.68%201.68%200%200%201-1.679-1.679c0-.843.626-1.535%201.436-1.654zM5.059%205.406A1.68%201.68%200%200%201%203.38%207.085a1.68%201.68%200%200%201-1.679-1.679c0-.037.009-.072.011-.109.21.3.541.508.935.508a1.16%201.16%200%200%200%201.162-1.162%201.14%201.14%200%200%200-.474-.912c.015%200%20.03-.005.045-.005.926.001%201.679.754%201.679%201.68zM3.198%204.141c0%20.152-.123.276-.276.276s-.275-.124-.275-.276.123-.276.276-.276.275.124.275.276zM1.375%208.964c0-.52.103-1.035.288-1.52.466.394%201.06.64%201.717.64%201.144%200%202.116-.725%202.499-1.738.383%201.012%201.355%201.738%202.499%201.738.867%200%201.631-.421%202.121-1.062.307.605.478%201.267.478%201.942%200%202.486-2.153%204.51-4.801%204.51s-4.801-2.023-4.801-4.51zm24.342%2019.349c-.985.498-2.267.168-3.813-.979-3.073-2.281-5.453-3.199-7.813-.705-1.315%201.391-4.163%203.365-8.423.97-3.174-1.786-2.239-6.266-1.261-9.479l.146-.492c.276-1.02.395-2.457.444-3.268a6.11%206.11%200%200%200%201.18.115%206.01%206.01%200%200%200%202.536-.562l-.006.175c-.802.215-1.848.612-2.021%201.25-.079.295.021.601.274.837.219.203.415.364.598.501-.667.304-1.243.698-1.311%201.179-.02.144-.022.507.393.787.213.144.395.26.564.365-1.285.521-1.361.96-1.381%201.126-.018.142-.011.496.427.746l.854.489c-.473.389-.971.914-.999%201.429-.018.278.095.532.316.713.675.556%201.231.721%201.653.721.059%200%20.104-.014.158-.02.207.707.641%201.64%201.513%201.64h.013c.8-.008%201.236-.345%201.462-.626.173-.216.268-.457.325-.692.424.195.93.374%201.372.374.151%200%20.294-.021.423-.068.732-.27.944-.704.993-1.021.009-.061.003-.119.002-.179.266.086.538.147.789.147.15%200%20.294-.021.423-.069.542-.2.797-.489.914-.754.237.147.478.258.704.288.106.014.205.021.296.021.356%200%20.595-.101.767-.229.438.435%201.094.992%201.656%201.067.106.014.205.021.296.021a1.56%201.56%200%200%200%20.323-.035c.17.575.453%201.289.866%201.605.358.273.665.362.914.362a.99.99%200%200%200%20.421-.093%201.03%201.03%200%200%200%20.245-.164c.168.428.39.846.68%201.068.358.273.665.362.913.362a.99.99%200%200%200%20.421-.093c.317-.148.512-.448.639-.762.251.157.495.257.726.257.127%200%20.25-.024.37-.071.427-.17.706-.617.841-1.314.022-.015.047-.022.068-.038.067-.051.133-.104.196-.159-.443%201.486-1.107%202.761-2.086%203.257zM8.66%209.925a.5.5%200%201%200-1%200c0%20.653-.818%201.205-1.787%201.205s-1.787-.552-1.787-1.205a.5.5%200%201%200-1%200c0%201.216%201.25%202.205%202.787%202.205s2.787-.989%202.787-2.205zm4.4%2015.965l-.208.097c-2.661%201.258-4.708%201.436-6.086.527-1.542-1.017-1.88-3.19-1.844-4.198a.4.4%200%200%200-.385-.414c-.242-.029-.406.164-.414.385-.046%201.249.367%203.686%202.202%204.896.708.467%201.547.7%202.51.7%201.248%200%202.706-.392%204.362-1.174l.185-.086a.4.4%200%200%200%20.205-.527c-.089-.204-.326-.291-.527-.206zM9.547%202.292c.093.077.205.114.317.114a.5.5%200%200%200%20.318-.886L8.817.397a.5.5%200%200%200-.703.068.5.5%200%200%200%20.069.703l1.364%201.124zm-7.661-.065c.086%200%20.173-.022.253-.068l1.523-.893a.5.5%200%200%200-.506-.863l-1.523.892a.5.5%200%200%200-.179.685c.094.158.261.247.432.247z%22%20transform%3D%22matrix%28-1%200%200%201%2058%200%29%22%20fill%3D%22%233bb300%22/%3E%3Cpath%20d%3D%22M.3%2021.86V10.18q0-.46.02-.68.04-.22.18-.5.28-.54%201.34-.54%201.06%200%201.42.28.38.26.44.78.76-1.04%202.38-1.04%201.64%200%203.1%201.54%201.46%201.54%201.46%203.58%200%202.04-1.46%203.58-1.44%201.54-3.08%201.54-1.64%200-2.38-.92v4.04q0%20.46-.04.68-.02.22-.18.5-.14.3-.5.42-.36.12-.98.12-.62%200-1-.12-.36-.12-.52-.4-.14-.28-.18-.5-.02-.22-.02-.68zm3.96-9.42q-.46.54-.46%201.18%200%20.64.46%201.18.48.52%201.2.52.74%200%201.24-.52.52-.52.52-1.18%200-.66-.48-1.18-.48-.54-1.26-.54-.76%200-1.22.54zm14.741-8.36q.16-.3.54-.42.38-.12%201-.12.64%200%201.02.12.38.12.52.42.16.3.18.54.04.22.04.68v11.94q0%20.46-.04.7-.02.22-.18.5-.3.54-1.7.54-1.38%200-1.54-.98-.84.96-2.34.96-1.8%200-3.28-1.56-1.48-1.58-1.48-3.66%200-2.1%201.48-3.68%201.5-1.58%203.28-1.58%201.48%200%202.3%201v-4.2q0-.46.02-.68.04-.24.18-.52zm-3.24%2010.86q.52.54%201.26.54.74%200%201.22-.54.5-.54.5-1.18%200-.66-.48-1.22-.46-.56-1.26-.56-.8%200-1.28.56-.48.54-.48%201.2%200%20.66.52%201.2zm7.833-1.2q0-2.4%201.68-3.96%201.68-1.56%203.84-1.56%202.16%200%203.82%201.56%201.66%201.54%201.66%203.94%200%201.66-.86%202.96-.86%201.28-2.1%201.9-1.22.6-2.54.6-1.32%200-2.56-.64-1.24-.66-2.1-1.92-.84-1.28-.84-2.88zm4.18%201.44q.64.48%201.3.48.66%200%201.32-.5.66-.5.66-1.48%200-.98-.62-1.46-.62-.48-1.34-.48-.72%200-1.34.5-.62.5-.62%201.48%200%20.96.64%201.46zm11.412-1.44q0%20.84.56%201.32.56.46%201.18.46.64%200%201.18-.36.56-.38.9-.38.6%200%201.46%201.06.46.58.46%201.04%200%20.76-1.1%201.42-1.14.8-2.8.8-1.86%200-3.58-1.34-.82-.64-1.34-1.7-.52-1.08-.52-2.36%200-1.3.52-2.34.52-1.06%201.34-1.7%201.66-1.32%203.54-1.32.76%200%201.48.22.72.2%201.06.4l.32.2q.36.24.56.38.52.4.52.92%200%20.5-.42%201.14-.72%201.1-1.38%201.1-.38%200-1.08-.44-.36-.34-1.04-.34-.66%200-1.24.48-.58.48-.58%201.34z%22%20fill%3D%22green%22/%3E%3C/svg%3E"/>
@@ -54,7 +54,7 @@
 </div>
     </nav>
     <main class="pdoc">
-            <section>
+            <section class="module-info">
                     <h1 class="modulename">
 <a href="./../skeletor.html">skeletor</a><wbr>.pre    </h1>
 
@@ -79,152 +79,143 @@ help you to get your mesh "in shape".</p>
     contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</p>
 </div>
 
-                        <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="c1">#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).</span>
-<span class="c1">#    Copyright (C) 2018 Philipp Schlegel</span>
-<span class="c1">#</span>
-<span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
-<span class="c1">#    it under the terms of the GNU General Public License as published by</span>
-<span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
-<span class="c1">#    (at your option) any later version.</span>
-<span class="c1">#</span>
-<span class="c1">#    This program is distributed in the hope that it will be useful,</span>
-<span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="c1">#    GNU General Public License for more details.</span>
-<span class="c1">#</span>
-<span class="c1">#    You should have received a copy of the GNU General Public License</span>
-<span class="c1">#    along with this program.</span>
+                        <input id="pre-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
-<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">The `skeletor.pre` module contains functions to pre-process meshes before</span>
-<span class="sd">skeletonization.</span>
+                        <label class="view-source-button" for="pre-view-source"><span>View Source</span></label>
 
-<span class="sd">#### Fixing faulty meshes</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="c1">#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="c1">#    Copyright (C) 2018 Philipp Schlegel</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="c1">#</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="c1">#    it under the terms of the GNU General Public License as published by</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="c1">#    (at your option) any later version.</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="c1">#</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="c1">#    This program is distributed in the hope that it will be useful,</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="c1">#    GNU General Public License for more details.</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="c1">#</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="c1">#    You should have received a copy of the GNU General Public License</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="c1">#    along with this program.</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">The `skeletor.pre` module contains functions to pre-process meshes before</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">skeletonization.</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">#### Fixing faulty meshes</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">Some skeletonization methods are susceptible to faulty meshes (degenerate faces,</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">wrong normals, etc.). If your skeleton looks off, it might be worth a shot</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">trying to fix the mesh using `skeletor.pre.fix_mesh()`.</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">#### Mesh contraction</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">As a rule of thumb: the more your mesh looks like a skeleton, the easier it is</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">to extract one (duh). Mesh contraction using `skeletor.pre.contract()` [1] can</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">help you to get your mesh &quot;in shape&quot;.</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">References</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">----------</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">    contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="kn">from</span> <span class="nn">.meshcontraction</span> <span class="kn">import</span> <span class="n">contract</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="kn">from</span> <span class="nn">.preprocessing</span> <span class="kn">import</span> <span class="n">fix_mesh</span><span class="p">,</span> <span class="n">simplify</span><span class="p">,</span> <span class="n">remesh</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;fix_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;simplify&#39;</span><span class="p">,</span> <span class="s1">&#39;remesh&#39;</span><span class="p">,</span> <span class="s1">&#39;contract&#39;</span><span class="p">]</span>
+</span></pre></div>
 
-<span class="sd">Some skeletonization methods are susceptible to faulty meshes (degenerate faces,</span>
-<span class="sd">wrong normals, etc.). If your skeleton looks off, it might be worth a shot</span>
-<span class="sd">trying to fix the mesh using `skeletor.pre.fix_mesh()`.</span>
-
-<span class="sd">#### Mesh contraction</span>
-
-<span class="sd">As a rule of thumb: the more your mesh looks like a skeleton, the easier it is</span>
-<span class="sd">to extract one (duh). Mesh contraction using `skeletor.pre.contract()` [1] can</span>
-<span class="sd">help you to get your mesh &quot;in shape&quot;.</span>
-
-<span class="sd">References</span>
-<span class="sd">----------</span>
-<span class="sd">[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
-<span class="sd">    contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
-
-<span class="sd">&quot;&quot;&quot;</span>
-
-<span class="kn">from</span> <span class="nn">.meshcontraction</span> <span class="kn">import</span> <span class="n">contract</span>
-<span class="kn">from</span> <span class="nn">.preprocessing</span> <span class="kn">import</span> <span class="n">fix_mesh</span><span class="p">,</span> <span class="n">simplify</span><span class="p">,</span> <span class="n">remesh</span>
-
-<span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;fix_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;simplify&#39;</span><span class="p">,</span> <span class="s1">&#39;remesh&#39;</span><span class="p">,</span> <span class="s1">&#39;contract&#39;</span><span class="p">]</span>
-</pre></div>
-
-        </details>
 
             </section>
                 <section id="fix_mesh">
-                            <div class="attr function"><a class="headerlink" href="#fix_mesh">#&nbsp;&nbsp</a>
+                            <input id="fix_mesh-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">fix_mesh</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">mesh</span>,</span><span class="param">	<span class="n">remote_infinite</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">merge_duplicate_verts</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">remove_degenerate_faces</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">remove_unreferenced_verts</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">drop_winglets</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">fix_normals</span><span class="o">=</span><span class="kc">False</span>,</span><span class="param">	<span class="n">remove_disconnected</span><span class="o">=</span><span class="kc">False</span>,</span><span class="param">	<span class="n">inplace</span><span class="o">=</span><span class="kc">False</span></span>)</span>
 
-        
-            <span class="def">def</span>
-            <span class="name">fix_mesh</span><span class="signature">(
-    mesh,
-    remote_infinite=True,
-    merge_duplicate_verts=True,
-    remove_degenerate_faces=True,
-    remove_unreferenced_verts=True,
-    drop_winglets=True,
-    fix_normals=False,
-    remove_disconnected=False,
-    inplace=False
-)</span>:
+                <label class="view-source-button" for="fix_mesh-view-source"><span>View Source</span></label>
+
     </div>
+    <a class="headerlink" href="#fix_mesh"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="fix_mesh-37"><a href="#fix_mesh-37"><span class="linenos"> 37</span></a><span class="k">def</span> <span class="nf">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remote_infinite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merge_duplicate_verts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="fix_mesh-38"><a href="#fix_mesh-38"><span class="linenos"> 38</span></a>             <span class="n">remove_degenerate_faces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_unreferenced_verts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="fix_mesh-39"><a href="#fix_mesh-39"><span class="linenos"> 39</span></a>             <span class="n">drop_winglets</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fix_normals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="fix_mesh-40"><a href="#fix_mesh-40"><span class="linenos"> 40</span></a>             <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+</span><span id="fix_mesh-41"><a href="#fix_mesh-41"><span class="linenos"> 41</span></a>    <span class="sd">&quot;&quot;&quot;Try to fix some common problems with mesh.</span>
+</span><span id="fix_mesh-42"><a href="#fix_mesh-42"><span class="linenos"> 42</span></a>
+</span><span id="fix_mesh-43"><a href="#fix_mesh-43"><span class="linenos"> 43</span></a><span class="sd">     1. Remove infinite values</span>
+</span><span id="fix_mesh-44"><a href="#fix_mesh-44"><span class="linenos"> 44</span></a><span class="sd">     2. Merge duplicate vertices</span>
+</span><span id="fix_mesh-45"><a href="#fix_mesh-45"><span class="linenos"> 45</span></a><span class="sd">     3. Remove duplicate and degenerate faces</span>
+</span><span id="fix_mesh-46"><a href="#fix_mesh-46"><span class="linenos"> 46</span></a><span class="sd">     4. Remove unreference vertices</span>
+</span><span id="fix_mesh-47"><a href="#fix_mesh-47"><span class="linenos"> 47</span></a><span class="sd">     5. Drop winglets (faces that have only one adjacent face)</span>
+</span><span id="fix_mesh-48"><a href="#fix_mesh-48"><span class="linenos"> 48</span></a><span class="sd">     5. Fix normals (Optional)</span>
+</span><span id="fix_mesh-49"><a href="#fix_mesh-49"><span class="linenos"> 49</span></a><span class="sd">     6. Remove disconnected fragments (Optional)</span>
+</span><span id="fix_mesh-50"><a href="#fix_mesh-50"><span class="linenos"> 50</span></a>
+</span><span id="fix_mesh-51"><a href="#fix_mesh-51"><span class="linenos"> 51</span></a><span class="sd">    Parameters</span>
+</span><span id="fix_mesh-52"><a href="#fix_mesh-52"><span class="linenos"> 52</span></a><span class="sd">    ----------</span>
+</span><span id="fix_mesh-53"><a href="#fix_mesh-53"><span class="linenos"> 53</span></a><span class="sd">    mesh :                  mesh-like object</span>
+</span><span id="fix_mesh-54"><a href="#fix_mesh-54"><span class="linenos"> 54</span></a><span class="sd">                            Mesh to fix. Must have `.vertices` and `.faces`</span>
+</span><span id="fix_mesh-55"><a href="#fix_mesh-55"><span class="linenos"> 55</span></a><span class="sd">                            properties.</span>
+</span><span id="fix_mesh-56"><a href="#fix_mesh-56"><span class="linenos"> 56</span></a><span class="sd">    remove_disconnected :   False | int</span>
+</span><span id="fix_mesh-57"><a href="#fix_mesh-57"><span class="linenos"> 57</span></a><span class="sd">                            If a number is given, will iterate over the mesh&#39;s</span>
+</span><span id="fix_mesh-58"><a href="#fix_mesh-58"><span class="linenos"> 58</span></a><span class="sd">                            connected components and remove those consisting of</span>
+</span><span id="fix_mesh-59"><a href="#fix_mesh-59"><span class="linenos"> 59</span></a><span class="sd">                            less than the given number of vertices. For example,</span>
+</span><span id="fix_mesh-60"><a href="#fix_mesh-60"><span class="linenos"> 60</span></a><span class="sd">                            ``remove_disconnected=5`` will drop parts of the</span>
+</span><span id="fix_mesh-61"><a href="#fix_mesh-61"><span class="linenos"> 61</span></a><span class="sd">                            mesh that consist of five or less connected</span>
+</span><span id="fix_mesh-62"><a href="#fix_mesh-62"><span class="linenos"> 62</span></a><span class="sd">                            vertices.</span>
+</span><span id="fix_mesh-63"><a href="#fix_mesh-63"><span class="linenos"> 63</span></a><span class="sd">    inplace :               bool</span>
+</span><span id="fix_mesh-64"><a href="#fix_mesh-64"><span class="linenos"> 64</span></a><span class="sd">                            If True, will perform fixes on the input mesh.</span>
+</span><span id="fix_mesh-65"><a href="#fix_mesh-65"><span class="linenos"> 65</span></a><span class="sd">                            If False, will make a copy first. This is silently</span>
+</span><span id="fix_mesh-66"><a href="#fix_mesh-66"><span class="linenos"> 66</span></a><span class="sd">                            ignored if `mesh` is not already a trimesh.</span>
+</span><span id="fix_mesh-67"><a href="#fix_mesh-67"><span class="linenos"> 67</span></a>
+</span><span id="fix_mesh-68"><a href="#fix_mesh-68"><span class="linenos"> 68</span></a><span class="sd">    Returns</span>
+</span><span id="fix_mesh-69"><a href="#fix_mesh-69"><span class="linenos"> 69</span></a><span class="sd">    -------</span>
+</span><span id="fix_mesh-70"><a href="#fix_mesh-70"><span class="linenos"> 70</span></a><span class="sd">    fixed mesh :        trimesh.Trimesh</span>
+</span><span id="fix_mesh-71"><a href="#fix_mesh-71"><span class="linenos"> 71</span></a>
+</span><span id="fix_mesh-72"><a href="#fix_mesh-72"><span class="linenos"> 72</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="fix_mesh-73"><a href="#fix_mesh-73"><span class="linenos"> 73</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">):</span>
+</span><span id="fix_mesh-74"><a href="#fix_mesh-74"><span class="linenos"> 74</span></a>        <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="fix_mesh-75"><a href="#fix_mesh-75"><span class="linenos"> 75</span></a>    <span class="k">elif</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+</span><span id="fix_mesh-76"><a href="#fix_mesh-76"><span class="linenos"> 76</span></a>        <span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="fix_mesh-77"><a href="#fix_mesh-77"><span class="linenos"> 77</span></a>
+</span><span id="fix_mesh-78"><a href="#fix_mesh-78"><span class="linenos"> 78</span></a>    <span class="k">if</span> <span class="n">remove_disconnected</span><span class="p">:</span>
+</span><span id="fix_mesh-79"><a href="#fix_mesh-79"><span class="linenos"> 79</span></a>        <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="fix_mesh-80"><a href="#fix_mesh-80"><span class="linenos"> 80</span></a>        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertex_adjacency_graph</span><span class="p">):</span>
+</span><span id="fix_mesh-81"><a href="#fix_mesh-81"><span class="linenos"> 81</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">remove_disconnected</span><span class="p">:</span>
+</span><span id="fix_mesh-82"><a href="#fix_mesh-82"><span class="linenos"> 82</span></a>                <span class="n">to_drop</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+</span><span id="fix_mesh-83"><a href="#fix_mesh-83"><span class="linenos"> 83</span></a>
+</span><span id="fix_mesh-84"><a href="#fix_mesh-84"><span class="linenos"> 84</span></a>        <span class="c1"># Remove dropped vertices</span>
+</span><span id="fix_mesh-85"><a href="#fix_mesh-85"><span class="linenos"> 85</span></a>        <span class="n">remove</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">to_drop</span><span class="p">)</span>
+</span><span id="fix_mesh-86"><a href="#fix_mesh-86"><span class="linenos"> 86</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">update_vertices</span><span class="p">(</span><span class="o">~</span><span class="n">remove</span><span class="p">)</span>
+</span><span id="fix_mesh-87"><a href="#fix_mesh-87"><span class="linenos"> 87</span></a>
+</span><span id="fix_mesh-88"><a href="#fix_mesh-88"><span class="linenos"> 88</span></a>    <span class="k">if</span> <span class="n">remote_infinite</span><span class="p">:</span>
+</span><span id="fix_mesh-89"><a href="#fix_mesh-89"><span class="linenos"> 89</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_infinite_values</span><span class="p">()</span>
+</span><span id="fix_mesh-90"><a href="#fix_mesh-90"><span class="linenos"> 90</span></a>
+</span><span id="fix_mesh-91"><a href="#fix_mesh-91"><span class="linenos"> 91</span></a>    <span class="k">if</span> <span class="n">merge_duplicate_verts</span><span class="p">:</span>
+</span><span id="fix_mesh-92"><a href="#fix_mesh-92"><span class="linenos"> 92</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
+</span><span id="fix_mesh-93"><a href="#fix_mesh-93"><span class="linenos"> 93</span></a>
+</span><span id="fix_mesh-94"><a href="#fix_mesh-94"><span class="linenos"> 94</span></a>    <span class="k">if</span> <span class="n">remove_degenerate_faces</span><span class="p">:</span>
+</span><span id="fix_mesh-95"><a href="#fix_mesh-95"><span class="linenos"> 95</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_duplicate_faces</span><span class="p">()</span>
+</span><span id="fix_mesh-96"><a href="#fix_mesh-96"><span class="linenos"> 96</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_degenerate_faces</span><span class="p">()</span>
+</span><span id="fix_mesh-97"><a href="#fix_mesh-97"><span class="linenos"> 97</span></a>
+</span><span id="fix_mesh-98"><a href="#fix_mesh-98"><span class="linenos"> 98</span></a>    <span class="k">if</span> <span class="n">remove_unreferenced_verts</span><span class="p">:</span>
+</span><span id="fix_mesh-99"><a href="#fix_mesh-99"><span class="linenos"> 99</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_unreferenced_vertices</span><span class="p">()</span>
+</span><span id="fix_mesh-100"><a href="#fix_mesh-100"><span class="linenos">100</span></a>
+</span><span id="fix_mesh-101"><a href="#fix_mesh-101"><span class="linenos">101</span></a>    <span class="k">if</span> <span class="n">drop_winglets</span><span class="p">:</span>
+</span><span id="fix_mesh-102"><a href="#fix_mesh-102"><span class="linenos">102</span></a>        <span class="n">mesh</span> <span class="o">=</span> <span class="n">remove_winglets</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+</span><span id="fix_mesh-103"><a href="#fix_mesh-103"><span class="linenos">103</span></a>
+</span><span id="fix_mesh-104"><a href="#fix_mesh-104"><span class="linenos">104</span></a>    <span class="c1"># This should be done after all clean-up operations</span>
+</span><span id="fix_mesh-105"><a href="#fix_mesh-105"><span class="linenos">105</span></a>    <span class="k">if</span> <span class="n">fix_normals</span><span class="p">:</span>
+</span><span id="fix_mesh-106"><a href="#fix_mesh-106"><span class="linenos">106</span></a>        <span class="n">mesh</span><span class="o">.</span><span class="n">fix_normals</span><span class="p">()</span>
+</span><span id="fix_mesh-107"><a href="#fix_mesh-107"><span class="linenos">107</span></a>
+</span><span id="fix_mesh-108"><a href="#fix_mesh-108"><span class="linenos">108</span></a>    <span class="k">return</span> <span class="n">mesh</span>
+</span></pre></div>
 
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remote_infinite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merge_duplicate_verts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-             <span class="n">remove_degenerate_faces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_unreferenced_verts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-             <span class="n">drop_winglets</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fix_normals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-             <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Try to fix some common problems with mesh.</span>
-
-<span class="sd">     1. Remove infinite values</span>
-<span class="sd">     2. Merge duplicate vertices</span>
-<span class="sd">     3. Remove duplicate and degenerate faces</span>
-<span class="sd">     4. Remove unreference vertices</span>
-<span class="sd">     5. Drop winglets (faces that have only one adjacent face)</span>
-<span class="sd">     5. Fix normals (Optional)</span>
-<span class="sd">     6. Remove disconnected fragments (Optional)</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mesh :                  mesh-like object</span>
-<span class="sd">                            Mesh to fix. Must have `.vertices` and `.faces`</span>
-<span class="sd">                            properties.</span>
-<span class="sd">    remove_disconnected :   False | int</span>
-<span class="sd">                            If a number is given, will iterate over the mesh&#39;s</span>
-<span class="sd">                            connected components and remove those consisting of</span>
-<span class="sd">                            less than the given number of vertices. For example,</span>
-<span class="sd">                            ``remove_disconnected=5`` will drop parts of the</span>
-<span class="sd">                            mesh that consist of five or less connected</span>
-<span class="sd">                            vertices.</span>
-<span class="sd">    inplace :               bool</span>
-<span class="sd">                            If True, will perform fixes on the input mesh.</span>
-<span class="sd">                            If False, will make a copy first. This is silently</span>
-<span class="sd">                            ignored if `mesh` is not already a trimesh.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    fixed mesh :        trimesh.Trimesh</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">):</span>
-        <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
-        <span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">remove_disconnected</span><span class="p">:</span>
-        <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertex_adjacency_graph</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">remove_disconnected</span><span class="p">:</span>
-                <span class="n">to_drop</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
-
-        <span class="c1"># Remove dropped vertices</span>
-        <span class="n">remove</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">to_drop</span><span class="p">)</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">update_vertices</span><span class="p">(</span><span class="o">~</span><span class="n">remove</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">remote_infinite</span><span class="p">:</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_infinite_values</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">merge_duplicate_verts</span><span class="p">:</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">merge_vertices</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">remove_degenerate_faces</span><span class="p">:</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_duplicate_faces</span><span class="p">()</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_degenerate_faces</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">remove_unreferenced_verts</span><span class="p">:</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">remove_unreferenced_vertices</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">drop_winglets</span><span class="p">:</span>
-        <span class="n">mesh</span> <span class="o">=</span> <span class="n">remove_winglets</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
-
-    <span class="c1"># This should be done after all clean-up operations</span>
-    <span class="k">if</span> <span class="n">fix_normals</span><span class="p">:</span>
-        <span class="n">mesh</span><span class="o">.</span><span class="n">fix_normals</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">mesh</span>
-</pre></div>
-
-        </details>
 
             <div class="docstring"><p>Try to fix some common problems with mesh.</p>
 
@@ -267,71 +258,71 @@ ignored if <code>mesh</code> is not already a trimesh.</li>
 
                 </section>
                 <section id="simplify">
-                            <div class="attr function"><a class="headerlink" href="#simplify">#&nbsp;&nbsp</a>
+                            <input id="simplify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">simplify</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">mesh</span>, </span><span class="param"><span class="n">ratio</span></span>)</span>
 
-        
-            <span class="def">def</span>
-            <span class="name">simplify</span><span class="signature">(mesh, ratio)</span>:
+                <label class="view-source-button" for="simplify-view-source"><span>View Source</span></label>
+
     </div>
+    <a class="headerlink" href="#simplify"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="simplify-192"><a href="#simplify-192"><span class="linenos">192</span></a><span class="k">def</span> <span class="nf">simplify</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">ratio</span><span class="p">):</span>
+</span><span id="simplify-193"><a href="#simplify-193"><span class="linenos">193</span></a>    <span class="sd">&quot;&quot;&quot;Simplify mesh using Blender 3D.</span>
+</span><span id="simplify-194"><a href="#simplify-194"><span class="linenos">194</span></a>
+</span><span id="simplify-195"><a href="#simplify-195"><span class="linenos">195</span></a><span class="sd">    Uses Blender&#39;s &quot;decimate&quot; modifier in &quot;collapse&quot; mode.</span>
+</span><span id="simplify-196"><a href="#simplify-196"><span class="linenos">196</span></a>
+</span><span id="simplify-197"><a href="#simplify-197"><span class="linenos">197</span></a><span class="sd">    Parameters</span>
+</span><span id="simplify-198"><a href="#simplify-198"><span class="linenos">198</span></a><span class="sd">    ----------</span>
+</span><span id="simplify-199"><a href="#simplify-199"><span class="linenos">199</span></a><span class="sd">    mesh :  trimesh.Trimesh</span>
+</span><span id="simplify-200"><a href="#simplify-200"><span class="linenos">200</span></a><span class="sd">            Mesh to simplify.</span>
+</span><span id="simplify-201"><a href="#simplify-201"><span class="linenos">201</span></a><span class="sd">    ratio : float</span>
+</span><span id="simplify-202"><a href="#simplify-202"><span class="linenos">202</span></a><span class="sd">            Factor to which to reduce faces. For example, a ratio of 0.5 will</span>
+</span><span id="simplify-203"><a href="#simplify-203"><span class="linenos">203</span></a><span class="sd">            reduce the number of faces to 50%.</span>
+</span><span id="simplify-204"><a href="#simplify-204"><span class="linenos">204</span></a>
+</span><span id="simplify-205"><a href="#simplify-205"><span class="linenos">205</span></a><span class="sd">    Returns</span>
+</span><span id="simplify-206"><a href="#simplify-206"><span class="linenos">206</span></a><span class="sd">    -------</span>
+</span><span id="simplify-207"><a href="#simplify-207"><span class="linenos">207</span></a><span class="sd">    trimesh.Trimesh</span>
+</span><span id="simplify-208"><a href="#simplify-208"><span class="linenos">208</span></a><span class="sd">            Simplified mesh.</span>
+</span><span id="simplify-209"><a href="#simplify-209"><span class="linenos">209</span></a>
+</span><span id="simplify-210"><a href="#simplify-210"><span class="linenos">210</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="simplify-211"><a href="#simplify-211"><span class="linenos">211</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">exists</span><span class="p">:</span>
+</span><span id="simplify-212"><a href="#simplify-212"><span class="linenos">212</span></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;No Blender available (executable not found).&#39;</span><span class="p">)</span>
+</span><span id="simplify-213"><a href="#simplify-213"><span class="linenos">213</span></a>    <span class="n">_blender_executable</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">_blender_executable</span>
+</span><span id="simplify-214"><a href="#simplify-214"><span class="linenos">214</span></a>
+</span><span id="simplify-215"><a href="#simplify-215"><span class="linenos">215</span></a>    <span class="k">assert</span> <span class="n">ratio</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ratio must be between 0 and 1&#39;</span>
+</span><span id="simplify-216"><a href="#simplify-216"><span class="linenos">216</span></a>
+</span><span id="simplify-217"><a href="#simplify-217"><span class="linenos">217</span></a>    <span class="c1"># We need to import here to avoid circular imports</span>
+</span><span id="simplify-218"><a href="#simplify-218"><span class="linenos">218</span></a>    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
+</span><span id="simplify-219"><a href="#simplify-219"><span class="linenos">219</span></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="simplify-220"><a href="#simplify-220"><span class="linenos">220</span></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
+</span><span id="simplify-221"><a href="#simplify-221"><span class="linenos">221</span></a>
+</span><span id="simplify-222"><a href="#simplify-222"><span class="linenos">222</span></a>    <span class="c1"># Load the template</span>
+</span><span id="simplify-223"><a href="#simplify-223"><span class="linenos">223</span></a>    <span class="n">temp_name</span> <span class="o">=</span> <span class="s1">&#39;blender_decimate.py.template&#39;</span>
+</span><span id="simplify-224"><a href="#simplify-224"><span class="linenos">224</span></a>    <span class="k">if</span> <span class="n">temp_name</span> <span class="ow">in</span> <span class="n">_cache</span><span class="p">:</span>
+</span><span id="simplify-225"><a href="#simplify-225"><span class="linenos">225</span></a>        <span class="n">template</span> <span class="o">=</span> <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span>
+</span><span id="simplify-226"><a href="#simplify-226"><span class="linenos">226</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="simplify-227"><a href="#simplify-227"><span class="linenos">227</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_pwd</span><span class="p">,</span> <span class="s1">&#39;templates&#39;</span><span class="p">,</span> <span class="n">temp_name</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="simplify-228"><a href="#simplify-228"><span class="linenos">228</span></a>            <span class="n">template</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="simplify-229"><a href="#simplify-229"><span class="linenos">229</span></a>        <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
+</span><span id="simplify-230"><a href="#simplify-230"><span class="linenos">230</span></a>
+</span><span id="simplify-231"><a href="#simplify-231"><span class="linenos">231</span></a>    <span class="c1"># Replace placeholder with actual ratio</span>
+</span><span id="simplify-232"><a href="#simplify-232"><span class="linenos">232</span></a>    <span class="n">script</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$RATIO&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span>
+</span><span id="simplify-233"><a href="#simplify-233"><span class="linenos">233</span></a>
+</span><span id="simplify-234"><a href="#simplify-234"><span class="linenos">234</span></a>    <span class="c1"># Let trimesh&#39;s MeshScript take care of exectution and clean-up</span>
+</span><span id="simplify-235"><a href="#simplify-235"><span class="linenos">235</span></a>    <span class="k">with</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">generic</span><span class="o">.</span><span class="n">MeshScript</span><span class="p">(</span><span class="n">meshes</span><span class="o">=</span><span class="p">[</span><span class="n">mesh</span><span class="p">],</span>
+</span><span id="simplify-236"><a href="#simplify-236"><span class="linenos">236</span></a>                                          <span class="n">script</span><span class="o">=</span><span class="n">script</span><span class="p">,</span>
+</span><span id="simplify-237"><a href="#simplify-237"><span class="linenos">237</span></a>                                          <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">blend</span><span class="p">:</span>
+</span><span id="simplify-238"><a href="#simplify-238"><span class="linenos">238</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">blend</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_blender_executable</span>
+</span><span id="simplify-239"><a href="#simplify-239"><span class="linenos">239</span></a>                           <span class="o">+</span> <span class="s1">&#39; --background --python $SCRIPT&#39;</span><span class="p">)</span>
+</span><span id="simplify-240"><a href="#simplify-240"><span class="linenos">240</span></a>
+</span><span id="simplify-241"><a href="#simplify-241"><span class="linenos">241</span></a>    <span class="c1"># Blender apparently returns actively incorrect face normals</span>
+</span><span id="simplify-242"><a href="#simplify-242"><span class="linenos">242</span></a>    <span class="n">result</span><span class="o">.</span><span class="n">face_normals</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="simplify-243"><a href="#simplify-243"><span class="linenos">243</span></a>
+</span><span id="simplify-244"><a href="#simplify-244"><span class="linenos">244</span></a>    <span class="k">return</span> <span class="n">result</span>
+</span></pre></div>
 
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">simplify</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">ratio</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Simplify mesh using Blender 3D.</span>
-
-<span class="sd">    Uses Blender&#39;s &quot;decimate&quot; modifier in &quot;collapse&quot; mode.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mesh :  trimesh.Trimesh</span>
-<span class="sd">            Mesh to simplify.</span>
-<span class="sd">    ratio : float</span>
-<span class="sd">            Factor to which to reduce faces. For example, a ratio of 0.5 will</span>
-<span class="sd">            reduce the number of faces to 50%.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    trimesh.Trimesh</span>
-<span class="sd">            Simplified mesh.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">exists</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;No Blender available (executable not found).&#39;</span><span class="p">)</span>
-    <span class="n">_blender_executable</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">_blender_executable</span>
-
-    <span class="k">assert</span> <span class="n">ratio</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ratio must be between 0 and 1&#39;</span>
-
-    <span class="c1"># We need to import here to avoid circular imports</span>
-    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
-    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
-
-    <span class="c1"># Load the template</span>
-    <span class="n">temp_name</span> <span class="o">=</span> <span class="s1">&#39;blender_decimate.py.template&#39;</span>
-    <span class="k">if</span> <span class="n">temp_name</span> <span class="ow">in</span> <span class="n">_cache</span><span class="p">:</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_pwd</span><span class="p">,</span> <span class="s1">&#39;templates&#39;</span><span class="p">,</span> <span class="n">temp_name</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">template</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
-
-    <span class="c1"># Replace placeholder with actual ratio</span>
-    <span class="n">script</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$RATIO&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span>
-
-    <span class="c1"># Let trimesh&#39;s MeshScript take care of exectution and clean-up</span>
-    <span class="k">with</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">generic</span><span class="o">.</span><span class="n">MeshScript</span><span class="p">(</span><span class="n">meshes</span><span class="o">=</span><span class="p">[</span><span class="n">mesh</span><span class="p">],</span>
-                                          <span class="n">script</span><span class="o">=</span><span class="n">script</span><span class="p">,</span>
-                                          <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">blend</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">blend</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_blender_executable</span>
-                           <span class="o">+</span> <span class="s1">&#39; --background --python $SCRIPT&#39;</span><span class="p">)</span>
-
-    <span class="c1"># Blender apparently returns actively incorrect face normals</span>
-    <span class="n">result</span><span class="o">.</span><span class="n">face_normals</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">return</span> <span class="n">result</span>
-</pre></div>
-
-        </details>
 
             <div class="docstring"><p>Simplify mesh using Blender 3D.</p>
 
@@ -357,74 +348,74 @@ reduce the number of faces to 50%.</li>
 
                 </section>
                 <section id="remesh">
-                            <div class="attr function"><a class="headerlink" href="#remesh">#&nbsp;&nbsp</a>
+                            <input id="remesh-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">remesh</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">mesh</span>, </span><span class="param"><span class="n">voxel_size</span><span class="o">=</span><span class="mi">50</span>, </span><span class="param"><span class="n">adaptivity</span><span class="o">=</span><span class="mi">5</span></span>)</span>
 
-        
-            <span class="def">def</span>
-            <span class="name">remesh</span><span class="signature">(mesh, voxel_size=50, adaptivity=5)</span>:
+                <label class="view-source-button" for="remesh-view-source"><span>View Source</span></label>
+
     </div>
+    <a class="headerlink" href="#remesh"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="remesh-247"><a href="#remesh-247"><span class="linenos">247</span></a><span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">voxel_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">adaptivity</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+</span><span id="remesh-248"><a href="#remesh-248"><span class="linenos">248</span></a>    <span class="sd">&quot;&quot;&quot;Remesh mesh using Blender 3D.</span>
+</span><span id="remesh-249"><a href="#remesh-249"><span class="linenos">249</span></a>
+</span><span id="remesh-250"><a href="#remesh-250"><span class="linenos">250</span></a><span class="sd">    Uses Blender&#39;s &quot;remesh&quot; modifier in &quot;voxel&quot; mode.</span>
+</span><span id="remesh-251"><a href="#remesh-251"><span class="linenos">251</span></a>
+</span><span id="remesh-252"><a href="#remesh-252"><span class="linenos">252</span></a><span class="sd">    Parameters</span>
+</span><span id="remesh-253"><a href="#remesh-253"><span class="linenos">253</span></a><span class="sd">    ----------</span>
+</span><span id="remesh-254"><a href="#remesh-254"><span class="linenos">254</span></a><span class="sd">    mesh :  trimesh.Trimesh</span>
+</span><span id="remesh-255"><a href="#remesh-255"><span class="linenos">255</span></a><span class="sd">            Mesh to remesh.</span>
+</span><span id="remesh-256"><a href="#remesh-256"><span class="linenos">256</span></a><span class="sd">    voxel_size : float</span>
+</span><span id="remesh-257"><a href="#remesh-257"><span class="linenos">257</span></a><span class="sd">            Size of individual voxels (edge length).</span>
+</span><span id="remesh-258"><a href="#remesh-258"><span class="linenos">258</span></a><span class="sd">    adaptivity: float</span>
+</span><span id="remesh-259"><a href="#remesh-259"><span class="linenos">259</span></a><span class="sd">            Reduces final face count where detail is not important.</span>
+</span><span id="remesh-260"><a href="#remesh-260"><span class="linenos">260</span></a>
+</span><span id="remesh-261"><a href="#remesh-261"><span class="linenos">261</span></a><span class="sd">    Returns</span>
+</span><span id="remesh-262"><a href="#remesh-262"><span class="linenos">262</span></a><span class="sd">    -------</span>
+</span><span id="remesh-263"><a href="#remesh-263"><span class="linenos">263</span></a><span class="sd">    trimesh.Trimesh</span>
+</span><span id="remesh-264"><a href="#remesh-264"><span class="linenos">264</span></a><span class="sd">            Remeshed mesh.</span>
+</span><span id="remesh-265"><a href="#remesh-265"><span class="linenos">265</span></a>
+</span><span id="remesh-266"><a href="#remesh-266"><span class="linenos">266</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="remesh-267"><a href="#remesh-267"><span class="linenos">267</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">exists</span><span class="p">:</span>
+</span><span id="remesh-268"><a href="#remesh-268"><span class="linenos">268</span></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;No Blender available (executable not found).&#39;</span><span class="p">)</span>
+</span><span id="remesh-269"><a href="#remesh-269"><span class="linenos">269</span></a>    <span class="n">_blender_executable</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">_blender_executable</span>
+</span><span id="remesh-270"><a href="#remesh-270"><span class="linenos">270</span></a>
+</span><span id="remesh-271"><a href="#remesh-271"><span class="linenos">271</span></a>    <span class="k">assert</span> <span class="n">voxel_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`voxel_size` must be a positive number&#39;</span>
+</span><span id="remesh-272"><a href="#remesh-272"><span class="linenos">272</span></a>    <span class="k">assert</span> <span class="n">adaptivity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`adaptivity` must be a positive number&#39;</span>
+</span><span id="remesh-273"><a href="#remesh-273"><span class="linenos">273</span></a>
+</span><span id="remesh-274"><a href="#remesh-274"><span class="linenos">274</span></a>    <span class="c1"># We need to import here to avoid circular imports</span>
+</span><span id="remesh-275"><a href="#remesh-275"><span class="linenos">275</span></a>    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
+</span><span id="remesh-276"><a href="#remesh-276"><span class="linenos">276</span></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="remesh-277"><a href="#remesh-277"><span class="linenos">277</span></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
+</span><span id="remesh-278"><a href="#remesh-278"><span class="linenos">278</span></a>
+</span><span id="remesh-279"><a href="#remesh-279"><span class="linenos">279</span></a>    <span class="c1"># Load the template</span>
+</span><span id="remesh-280"><a href="#remesh-280"><span class="linenos">280</span></a>    <span class="n">temp_name</span> <span class="o">=</span> <span class="s1">&#39;blender_remesh.py.template&#39;</span>
+</span><span id="remesh-281"><a href="#remesh-281"><span class="linenos">281</span></a>    <span class="k">if</span> <span class="n">temp_name</span> <span class="ow">in</span> <span class="n">_cache</span><span class="p">:</span>
+</span><span id="remesh-282"><a href="#remesh-282"><span class="linenos">282</span></a>        <span class="n">template</span> <span class="o">=</span> <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span>
+</span><span id="remesh-283"><a href="#remesh-283"><span class="linenos">283</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="remesh-284"><a href="#remesh-284"><span class="linenos">284</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_pwd</span><span class="p">,</span> <span class="s1">&#39;templates&#39;</span><span class="p">,</span> <span class="n">temp_name</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="remesh-285"><a href="#remesh-285"><span class="linenos">285</span></a>            <span class="n">template</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span id="remesh-286"><a href="#remesh-286"><span class="linenos">286</span></a>        <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
+</span><span id="remesh-287"><a href="#remesh-287"><span class="linenos">287</span></a>
+</span><span id="remesh-288"><a href="#remesh-288"><span class="linenos">288</span></a>    <span class="c1"># Replace placeholder with actual ratio</span>
+</span><span id="remesh-289"><a href="#remesh-289"><span class="linenos">289</span></a>    <span class="n">script</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$VOXEL_SIZE&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">voxel_size</span><span class="p">)</span>
+</span><span id="remesh-290"><a href="#remesh-290"><span class="linenos">290</span></a>                              <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$ADAPTIVITY&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">adaptivity</span><span class="p">))</span>
+</span><span id="remesh-291"><a href="#remesh-291"><span class="linenos">291</span></a>
+</span><span id="remesh-292"><a href="#remesh-292"><span class="linenos">292</span></a>    <span class="c1"># Let trimesh&#39;s MeshScript take care of exectution and clean-up</span>
+</span><span id="remesh-293"><a href="#remesh-293"><span class="linenos">293</span></a>    <span class="k">with</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">generic</span><span class="o">.</span><span class="n">MeshScript</span><span class="p">(</span><span class="n">meshes</span><span class="o">=</span><span class="p">[</span><span class="n">mesh</span><span class="p">],</span>
+</span><span id="remesh-294"><a href="#remesh-294"><span class="linenos">294</span></a>                                          <span class="n">script</span><span class="o">=</span><span class="n">script</span><span class="p">,</span>
+</span><span id="remesh-295"><a href="#remesh-295"><span class="linenos">295</span></a>                                          <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">blend</span><span class="p">:</span>
+</span><span id="remesh-296"><a href="#remesh-296"><span class="linenos">296</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">blend</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_blender_executable</span>
+</span><span id="remesh-297"><a href="#remesh-297"><span class="linenos">297</span></a>                           <span class="o">+</span> <span class="s1">&#39; --background --python $SCRIPT&#39;</span><span class="p">)</span>
+</span><span id="remesh-298"><a href="#remesh-298"><span class="linenos">298</span></a>
+</span><span id="remesh-299"><a href="#remesh-299"><span class="linenos">299</span></a>    <span class="c1"># Blender apparently returns actively incorrect face normals</span>
+</span><span id="remesh-300"><a href="#remesh-300"><span class="linenos">300</span></a>    <span class="n">result</span><span class="o">.</span><span class="n">face_normals</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="remesh-301"><a href="#remesh-301"><span class="linenos">301</span></a>
+</span><span id="remesh-302"><a href="#remesh-302"><span class="linenos">302</span></a>    <span class="k">return</span> <span class="n">result</span>
+</span></pre></div>
 
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">remesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">voxel_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">adaptivity</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Remesh mesh using Blender 3D.</span>
-
-<span class="sd">    Uses Blender&#39;s &quot;remesh&quot; modifier in &quot;voxel&quot; mode.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mesh :  trimesh.Trimesh</span>
-<span class="sd">            Mesh to remesh.</span>
-<span class="sd">    voxel_size : float</span>
-<span class="sd">            Size of individual voxels (edge length).</span>
-<span class="sd">    adaptivity: float</span>
-<span class="sd">            Reduces final face count where detail is not important.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    trimesh.Trimesh</span>
-<span class="sd">            Remeshed mesh.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">exists</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;No Blender available (executable not found).&#39;</span><span class="p">)</span>
-    <span class="n">_blender_executable</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">blender</span><span class="o">.</span><span class="n">_blender_executable</span>
-
-    <span class="k">assert</span> <span class="n">voxel_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`voxel_size` must be a positive number&#39;</span>
-    <span class="k">assert</span> <span class="n">adaptivity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;`adaptivity` must be a positive number&#39;</span>
-
-    <span class="c1"># We need to import here to avoid circular imports</span>
-    <span class="kn">from</span> <span class="nn">..utilities</span> <span class="kn">import</span> <span class="n">make_trimesh</span>
-    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">tm</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">)</span>
-
-    <span class="c1"># Load the template</span>
-    <span class="n">temp_name</span> <span class="o">=</span> <span class="s1">&#39;blender_remesh.py.template&#39;</span>
-    <span class="k">if</span> <span class="n">temp_name</span> <span class="ow">in</span> <span class="n">_cache</span><span class="p">:</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_pwd</span><span class="p">,</span> <span class="s1">&#39;templates&#39;</span><span class="p">,</span> <span class="n">temp_name</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">template</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="n">_cache</span><span class="p">[</span><span class="n">temp_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
-
-    <span class="c1"># Replace placeholder with actual ratio</span>
-    <span class="n">script</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$VOXEL_SIZE&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">voxel_size</span><span class="p">)</span>
-                              <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$ADAPTIVITY&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">adaptivity</span><span class="p">))</span>
-
-    <span class="c1"># Let trimesh&#39;s MeshScript take care of exectution and clean-up</span>
-    <span class="k">with</span> <span class="n">tm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">generic</span><span class="o">.</span><span class="n">MeshScript</span><span class="p">(</span><span class="n">meshes</span><span class="o">=</span><span class="p">[</span><span class="n">mesh</span><span class="p">],</span>
-                                          <span class="n">script</span><span class="o">=</span><span class="n">script</span><span class="p">,</span>
-                                          <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">blend</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">blend</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_blender_executable</span>
-                           <span class="o">+</span> <span class="s1">&#39; --background --python $SCRIPT&#39;</span><span class="p">)</span>
-
-    <span class="c1"># Blender apparently returns actively incorrect face normals</span>
-    <span class="n">result</span><span class="o">.</span><span class="n">face_normals</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">return</span> <span class="n">result</span>
-</pre></div>
-
-        </details>
 
             <div class="docstring"><p>Remesh mesh using Blender 3D.</p>
 
@@ -451,247 +442,235 @@ Reduces final face count where detail is not important.</li>
 
                 </section>
                 <section id="contract">
-                            <div class="attr function"><a class="headerlink" href="#contract">#&nbsp;&nbsp</a>
+                            <input id="contract-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">contract</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">mesh</span>,</span><span class="param">	<span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-06</span>,</span><span class="param">	<span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span>,</span><span class="param">	<span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">precision</span><span class="o">=</span><span class="mf">1e-07</span>,</span><span class="param">	<span class="n">SL</span><span class="o">=</span><span class="mi">2</span>,</span><span class="param">	<span class="n">WH0</span><span class="o">=</span><span class="mi">1</span>,</span><span class="param">	<span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span>,</span><span class="param">	<span class="n">operator</span><span class="o">=</span><span class="s1">&#39;cotangent&#39;</span>,</span><span class="param">	<span class="n">progress</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">validate</span><span class="o">=</span><span class="kc">True</span></span>)</span>
 
-        
-            <span class="def">def</span>
-            <span class="name">contract</span><span class="signature">(
-    mesh,
-    epsilon=1e-06,
-    iter_lim=100,
-    time_lim=None,
-    precision=1e-07,
-    SL=2,
-    WH0=1,
-    WL0=&#39;auto&#39;,
-    operator=&#39;cotangent&#39;,
-    progress=True,
-    validate=True
-)</span>:
+                <label class="view-source-button" for="contract-view-source"><span>View Source</span></label>
+
     </div>
+    <a class="headerlink" href="#contract"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="contract-37"><a href="#contract-37"><span class="linenos"> 37</span></a><span class="k">def</span> <span class="nf">contract</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-06</span><span class="p">,</span> <span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">,</span>
+</span><span id="contract-38"><a href="#contract-38"><span class="linenos"> 38</span></a>             <span class="n">SL</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">WH0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="contract-39"><a href="#contract-39"><span class="linenos"> 39</span></a>             <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="contract-40"><a href="#contract-40"><span class="linenos"> 40</span></a>    <span class="sd">&quot;&quot;&quot;Contract mesh.</span>
+</span><span id="contract-41"><a href="#contract-41"><span class="linenos"> 41</span></a>
+</span><span id="contract-42"><a href="#contract-42"><span class="linenos"> 42</span></a><span class="sd">    In a nutshell: this function contracts the mesh by applying rounds of</span>
+</span><span id="contract-43"><a href="#contract-43"><span class="linenos"> 43</span></a><span class="sd">    _constraint_ Laplacian smoothing. This function can be fairly expensive</span>
+</span><span id="contract-44"><a href="#contract-44"><span class="linenos"> 44</span></a><span class="sd">    and I highly recommend you play around with ``SL`` to contract the</span>
+</span><span id="contract-45"><a href="#contract-45"><span class="linenos"> 45</span></a><span class="sd">    mesh in as few steps as possible. The contraction doesn&#39;t have to be perfect</span>
+</span><span id="contract-46"><a href="#contract-46"><span class="linenos"> 46</span></a><span class="sd">    for good skeletonization results (&lt;10%, i.e. `epsilon&lt;0.1`).</span>
+</span><span id="contract-47"><a href="#contract-47"><span class="linenos"> 47</span></a>
+</span><span id="contract-48"><a href="#contract-48"><span class="linenos"> 48</span></a><span class="sd">    Also: parameterization matters a lot! Default parameters will get you there</span>
+</span><span id="contract-49"><a href="#contract-49"><span class="linenos"> 49</span></a><span class="sd">    but playing around with `SL` and `WH0` might speed things up by an order of</span>
+</span><span id="contract-50"><a href="#contract-50"><span class="linenos"> 50</span></a><span class="sd">    magnitude.</span>
+</span><span id="contract-51"><a href="#contract-51"><span class="linenos"> 51</span></a>
+</span><span id="contract-52"><a href="#contract-52"><span class="linenos"> 52</span></a><span class="sd">    Parameters</span>
+</span><span id="contract-53"><a href="#contract-53"><span class="linenos"> 53</span></a><span class="sd">    ----------</span>
+</span><span id="contract-54"><a href="#contract-54"><span class="linenos"> 54</span></a><span class="sd">    mesh :          mesh obj</span>
+</span><span id="contract-55"><a href="#contract-55"><span class="linenos"> 55</span></a><span class="sd">                    The mesh to be contracted. Can be any object (e.g.</span>
+</span><span id="contract-56"><a href="#contract-56"><span class="linenos"> 56</span></a><span class="sd">                    a trimesh.Trimesh) that has ``.vertices`` and ``.faces``</span>
+</span><span id="contract-57"><a href="#contract-57"><span class="linenos"> 57</span></a><span class="sd">                    properties or a tuple ``(vertices, faces)`` or a dictionary</span>
+</span><span id="contract-58"><a href="#contract-58"><span class="linenos"> 58</span></a><span class="sd">                    ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
+</span><span id="contract-59"><a href="#contract-59"><span class="linenos"> 59</span></a><span class="sd">                    Vertices and faces must be (N, 3) numpy arrays.</span>
+</span><span id="contract-60"><a href="#contract-60"><span class="linenos"> 60</span></a><span class="sd">    epsilon :       float (0-1), optional</span>
+</span><span id="contract-61"><a href="#contract-61"><span class="linenos"> 61</span></a><span class="sd">                    Target contraction rate as measured by the sum of all face</span>
+</span><span id="contract-62"><a href="#contract-62"><span class="linenos"> 62</span></a><span class="sd">                    areas in the contracted versus the original mesh. Algorithm</span>
+</span><span id="contract-63"><a href="#contract-63"><span class="linenos"> 63</span></a><span class="sd">                    will stop once mesh is contracted below this threshold.</span>
+</span><span id="contract-64"><a href="#contract-64"><span class="linenos"> 64</span></a><span class="sd">                    Depending on your mesh (number of faces, shape) reaching a</span>
+</span><span id="contract-65"><a href="#contract-65"><span class="linenos"> 65</span></a><span class="sd">                    strong contraction can be extremely costly with comparatively</span>
+</span><span id="contract-66"><a href="#contract-66"><span class="linenos"> 66</span></a><span class="sd">                    little benefit for the subsequent skeletonization. Note that</span>
+</span><span id="contract-67"><a href="#contract-67"><span class="linenos"> 67</span></a><span class="sd">                    the algorithm might stop short of this target if ``iter_lim``</span>
+</span><span id="contract-68"><a href="#contract-68"><span class="linenos"> 68</span></a><span class="sd">                    or ``time_lim`` is reached first or if the sum of face areas</span>
+</span><span id="contract-69"><a href="#contract-69"><span class="linenos"> 69</span></a><span class="sd">                    is increasing from one iteration to the next instead of</span>
+</span><span id="contract-70"><a href="#contract-70"><span class="linenos"> 70</span></a><span class="sd">                    decreasing.</span>
+</span><span id="contract-71"><a href="#contract-71"><span class="linenos"> 71</span></a><span class="sd">    iter_lim :      int (&gt;1), optional</span>
+</span><span id="contract-72"><a href="#contract-72"><span class="linenos"> 72</span></a><span class="sd">                    Maximum rounds of contractions.</span>
+</span><span id="contract-73"><a href="#contract-73"><span class="linenos"> 73</span></a><span class="sd">    time_lim :      int, optional</span>
+</span><span id="contract-74"><a href="#contract-74"><span class="linenos"> 74</span></a><span class="sd">                    Maximum run time in seconds. Note that this limit is not</span>
+</span><span id="contract-75"><a href="#contract-75"><span class="linenos"> 75</span></a><span class="sd">                    checked during but after each round of contraction. Hence,</span>
+</span><span id="contract-76"><a href="#contract-76"><span class="linenos"> 76</span></a><span class="sd">                    the actual total time will likely overshoot ``time_lim``.</span>
+</span><span id="contract-77"><a href="#contract-77"><span class="linenos"> 77</span></a><span class="sd">    precision :     float, optional</span>
+</span><span id="contract-78"><a href="#contract-78"><span class="linenos"> 78</span></a><span class="sd">                    Sets the precision for finding the least-square solution.</span>
+</span><span id="contract-79"><a href="#contract-79"><span class="linenos"> 79</span></a><span class="sd">                    This is the main determinant for speed vs quality: lower</span>
+</span><span id="contract-80"><a href="#contract-80"><span class="linenos"> 80</span></a><span class="sd">                    values will take (much) longer but will get you closer to an</span>
+</span><span id="contract-81"><a href="#contract-81"><span class="linenos"> 81</span></a><span class="sd">                    optimally contracted mesh. Higher values will be faster but</span>
+</span><span id="contract-82"><a href="#contract-82"><span class="linenos"> 82</span></a><span class="sd">                    the iterative contractions might stop early.</span>
+</span><span id="contract-83"><a href="#contract-83"><span class="linenos"> 83</span></a><span class="sd">    SL :            float, optional</span>
+</span><span id="contract-84"><a href="#contract-84"><span class="linenos"> 84</span></a><span class="sd">                    Factor by which the contraction matrix is multiplied for</span>
+</span><span id="contract-85"><a href="#contract-85"><span class="linenos"> 85</span></a><span class="sd">                    each iteration. Higher values = quicker contraction, lower</span>
+</span><span id="contract-86"><a href="#contract-86"><span class="linenos"> 86</span></a><span class="sd">                    values = more likely to get you an optimal contraction.</span>
+</span><span id="contract-87"><a href="#contract-87"><span class="linenos"> 87</span></a><span class="sd">    WH0 :           float, optional</span>
+</span><span id="contract-88"><a href="#contract-88"><span class="linenos"> 88</span></a><span class="sd">                    Initial weight factor for the attraction constraints.</span>
+</span><span id="contract-89"><a href="#contract-89"><span class="linenos"> 89</span></a><span class="sd">                    The ratio of the initial weights ``WL0`` and ``WH0``</span>
+</span><span id="contract-90"><a href="#contract-90"><span class="linenos"> 90</span></a><span class="sd">                    controls the smoothness and the degree of contraction of the</span>
+</span><span id="contract-91"><a href="#contract-91"><span class="linenos"> 91</span></a><span class="sd">                    first iteration result, thus it determines the amount of</span>
+</span><span id="contract-92"><a href="#contract-92"><span class="linenos"> 92</span></a><span class="sd">                    details retained in subsequent and final contracted meshes:</span>
+</span><span id="contract-93"><a href="#contract-93"><span class="linenos"> 93</span></a><span class="sd">                    higher ``WH0`` = more details retained.</span>
+</span><span id="contract-94"><a href="#contract-94"><span class="linenos"> 94</span></a><span class="sd">    WL0 :           &quot;auto&quot; | float</span>
+</span><span id="contract-95"><a href="#contract-95"><span class="linenos"> 95</span></a><span class="sd">                    Initial weight factor for the contraction constraints. By</span>
+</span><span id="contract-96"><a href="#contract-96"><span class="linenos"> 96</span></a><span class="sd">                    default (&quot;auto&quot;), this will be set to ``1e-3 * sqrt(A)``</span>
+</span><span id="contract-97"><a href="#contract-97"><span class="linenos"> 97</span></a><span class="sd">                    with ``A`` being the average face area. This ensures that</span>
+</span><span id="contract-98"><a href="#contract-98"><span class="linenos"> 98</span></a><span class="sd">                    contraction forces scale with the coarseness of the mesh.</span>
+</span><span id="contract-99"><a href="#contract-99"><span class="linenos"> 99</span></a><span class="sd">    operator :      &quot;cotangent&quot; | &quot;umbrella&quot;</span>
+</span><span id="contract-100"><a href="#contract-100"><span class="linenos">100</span></a><span class="sd">                    Which Laplacian operator to use:</span>
+</span><span id="contract-101"><a href="#contract-101"><span class="linenos">101</span></a>
+</span><span id="contract-102"><a href="#contract-102"><span class="linenos">102</span></a><span class="sd">                      - The &quot;cotangent&quot; operator (default) takes both topology</span>
+</span><span id="contract-103"><a href="#contract-103"><span class="linenos">103</span></a><span class="sd">                        and geometry of the mesh into account and is hence a</span>
+</span><span id="contract-104"><a href="#contract-104"><span class="linenos">104</span></a><span class="sd">                        better descriptor of the curvature flow. This is the</span>
+</span><span id="contract-105"><a href="#contract-105"><span class="linenos">105</span></a><span class="sd">                        operator used in the original paper.</span>
+</span><span id="contract-106"><a href="#contract-106"><span class="linenos">106</span></a><span class="sd">                      - The &quot;umbrella&quot; operator (aka &quot;uniform weighting&quot;) uses</span>
+</span><span id="contract-107"><a href="#contract-107"><span class="linenos">107</span></a><span class="sd">                        only topological features of the mesh. This also makes</span>
+</span><span id="contract-108"><a href="#contract-108"><span class="linenos">108</span></a><span class="sd">                        it more robust against flaws in the mesh! Use it when</span>
+</span><span id="contract-109"><a href="#contract-109"><span class="linenos">109</span></a><span class="sd">                        the cotangent operator produces oddly contracted meshes.</span>
+</span><span id="contract-110"><a href="#contract-110"><span class="linenos">110</span></a>
+</span><span id="contract-111"><a href="#contract-111"><span class="linenos">111</span></a><span class="sd">    progress :      bool</span>
+</span><span id="contract-112"><a href="#contract-112"><span class="linenos">112</span></a><span class="sd">                    Whether or not to show a progress bar.</span>
+</span><span id="contract-113"><a href="#contract-113"><span class="linenos">113</span></a><span class="sd">    validate :      bool</span>
+</span><span id="contract-114"><a href="#contract-114"><span class="linenos">114</span></a><span class="sd">                    If True, will try to fix potential issues with the mesh</span>
+</span><span id="contract-115"><a href="#contract-115"><span class="linenos">115</span></a><span class="sd">                    (e.g. infinite values, duplicate vertices, degenerate faces)</span>
+</span><span id="contract-116"><a href="#contract-116"><span class="linenos">116</span></a><span class="sd">                    before collapsing. Degenerate meshes can lead to effectively</span>
+</span><span id="contract-117"><a href="#contract-117"><span class="linenos">117</span></a><span class="sd">                    infinite runtime for this function!</span>
+</span><span id="contract-118"><a href="#contract-118"><span class="linenos">118</span></a>
+</span><span id="contract-119"><a href="#contract-119"><span class="linenos">119</span></a><span class="sd">    Returns</span>
+</span><span id="contract-120"><a href="#contract-120"><span class="linenos">120</span></a><span class="sd">    -------</span>
+</span><span id="contract-121"><a href="#contract-121"><span class="linenos">121</span></a><span class="sd">    trimesh.Trimesh</span>
+</span><span id="contract-122"><a href="#contract-122"><span class="linenos">122</span></a><span class="sd">                    Contracted copy of original mesh. The final contraction rate</span>
+</span><span id="contract-123"><a href="#contract-123"><span class="linenos">123</span></a><span class="sd">                    is attached to the mesh as ``.epsilon`` property.</span>
+</span><span id="contract-124"><a href="#contract-124"><span class="linenos">124</span></a>
+</span><span id="contract-125"><a href="#contract-125"><span class="linenos">125</span></a><span class="sd">    References</span>
+</span><span id="contract-126"><a href="#contract-126"><span class="linenos">126</span></a><span class="sd">    ----------</span>
+</span><span id="contract-127"><a href="#contract-127"><span class="linenos">127</span></a><span class="sd">    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
+</span><span id="contract-128"><a href="#contract-128"><span class="linenos">128</span></a><span class="sd">        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
+</span><span id="contract-129"><a href="#contract-129"><span class="linenos">129</span></a>
+</span><span id="contract-130"><a href="#contract-130"><span class="linenos">130</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="contract-131"><a href="#contract-131"><span class="linenos">131</span></a>    <span class="k">assert</span> <span class="n">operator</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="s1">&#39;umbrella&#39;</span><span class="p">)</span>
+</span><span id="contract-132"><a href="#contract-132"><span class="linenos">132</span></a>    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span><span id="contract-133"><a href="#contract-133"><span class="linenos">133</span></a>
+</span><span id="contract-134"><a href="#contract-134"><span class="linenos">134</span></a>    <span class="c1"># Force into trimesh</span>
+</span><span id="contract-135"><a href="#contract-135"><span class="linenos">135</span></a>    <span class="n">m</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
+</span><span id="contract-136"><a href="#contract-136"><span class="linenos">136</span></a>    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+</span><span id="contract-137"><a href="#contract-137"><span class="linenos">137</span></a>
+</span><span id="contract-138"><a href="#contract-138"><span class="linenos">138</span></a>    <span class="c1"># Initialize attraction weights</span>
+</span><span id="contract-139"><a href="#contract-139"><span class="linenos">139</span></a>    <span class="n">zeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+</span><span id="contract-140"><a href="#contract-140"><span class="linenos">140</span></a>    <span class="n">WH0_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+</span><span id="contract-141"><a href="#contract-141"><span class="linenos">141</span></a>    <span class="n">WH0_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
+</span><span id="contract-142"><a href="#contract-142"><span class="linenos">142</span></a>    <span class="n">WH0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WH0_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</span><span id="contract-143"><a href="#contract-143"><span class="linenos">143</span></a>    <span class="c1"># Make a copy but keep original values</span>
+</span><span id="contract-144"><a href="#contract-144"><span class="linenos">144</span></a>    <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
+</span><span id="contract-145"><a href="#contract-145"><span class="linenos">145</span></a>
+</span><span id="contract-146"><a href="#contract-146"><span class="linenos">146</span></a>    <span class="c1"># Initialize contraction weights</span>
+</span><span id="contract-147"><a href="#contract-147"><span class="linenos">147</span></a>    <span class="k">if</span> <span class="n">WL0</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+</span><span id="contract-148"><a href="#contract-148"><span class="linenos">148</span></a>        <span class="n">WL0</span> <span class="o">=</span> <span class="mf">1e-03</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">averageFaceArea</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+</span><span id="contract-149"><a href="#contract-149"><span class="linenos">149</span></a>        <span class="c1">#WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))</span>
+</span><span id="contract-150"><a href="#contract-150"><span class="linenos">150</span></a>    <span class="n">WL_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+</span><span id="contract-151"><a href="#contract-151"><span class="linenos">151</span></a>    <span class="n">WL_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WL0</span><span class="p">)</span>
+</span><span id="contract-152"><a href="#contract-152"><span class="linenos">152</span></a>    <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WL_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</span><span id="contract-153"><a href="#contract-153"><span class="linenos">153</span></a>
+</span><span id="contract-154"><a href="#contract-154"><span class="linenos">154</span></a>    <span class="c1"># Copy mesh</span>
+</span><span id="contract-155"><a href="#contract-155"><span class="linenos">155</span></a>    <span class="n">dm</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="contract-156"><a href="#contract-156"><span class="linenos">156</span></a>
+</span><span id="contract-157"><a href="#contract-157"><span class="linenos">157</span></a>    <span class="n">area_ratios</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+</span><span id="contract-158"><a href="#contract-158"><span class="linenos">158</span></a>    <span class="n">originalRingAreas</span> <span class="o">=</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-159"><a href="#contract-159"><span class="linenos">159</span></a>    <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span>
+</span><span id="contract-160"><a href="#contract-160"><span class="linenos">160</span></a>    <span class="n">bar_format</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{l_bar}{bar}</span><span class="s2">| [</span><span class="si">{elapsed}</span><span class="s2">&lt;</span><span class="si">{remaining}</span><span class="s2">, &quot;</span>
+</span><span id="contract-161"><a href="#contract-161"><span class="linenos">161</span></a>                  <span class="s2">&quot;</span><span class="si">{postfix[0]}</span><span class="s2">/</span><span class="si">{postfix[1]}</span><span class="s2">it, &quot;</span>
+</span><span id="contract-162"><a href="#contract-162"><span class="linenos">162</span></a>                  <span class="s2">&quot;</span><span class="si">{rate_fmt}</span><span class="s2">, epsilon </span><span class="si">{postfix[2]:.2g}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="contract-163"><a href="#contract-163"><span class="linenos">163</span></a>    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><span id="contract-164"><a href="#contract-164"><span class="linenos">164</span></a>              <span class="n">bar_format</span><span class="o">=</span><span class="n">bar_format</span><span class="p">,</span>
+</span><span id="contract-165"><a href="#contract-165"><span class="linenos">165</span></a>              <span class="n">disable</span><span class="o">=</span><span class="n">progress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="contract-166"><a href="#contract-166"><span class="linenos">166</span></a>              <span class="n">postfix</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">iter_lim</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+</span><span id="contract-167"><a href="#contract-167"><span class="linenos">167</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iter_lim</span><span class="p">):</span>
+</span><span id="contract-168"><a href="#contract-168"><span class="linenos">168</span></a>            <span class="c1"># Get Laplace weights</span>
+</span><span id="contract-169"><a href="#contract-169"><span class="linenos">169</span></a>            <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">:</span>
+</span><span id="contract-170"><a href="#contract-170"><span class="linenos">170</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_cotangent</span><span class="p">(</span><span class="n">dm</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="contract-171"><a href="#contract-171"><span class="linenos">171</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="contract-172"><a href="#contract-172"><span class="linenos">172</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_umbrella</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-173"><a href="#contract-173"><span class="linenos">173</span></a>
+</span><span id="contract-174"><a href="#contract-174"><span class="linenos">174</span></a>            <span class="n">V</span> <span class="o">=</span> <span class="n">getMeshVPos</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-175"><a href="#contract-175"><span class="linenos">175</span></a>            <span class="n">A</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">WL</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">WH</span><span class="p">])</span>
+</span><span id="contract-176"><a href="#contract-176"><span class="linenos">176</span></a>            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">zeros</span><span class="p">,</span> <span class="n">WH</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">V</span><span class="p">)))</span>
+</span><span id="contract-177"><a href="#contract-177"><span class="linenos">177</span></a>
+</span><span id="contract-178"><a href="#contract-178"><span class="linenos">178</span></a>            <span class="n">cpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+</span><span id="contract-179"><a href="#contract-179"><span class="linenos">179</span></a>            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+</span><span id="contract-180"><a href="#contract-180"><span class="linenos">180</span></a>                <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="contract-181"><a href="#contract-181"><span class="linenos">181</span></a><span class="sd">                # Solve A*x = b</span>
+</span><span id="contract-182"><a href="#contract-182"><span class="linenos">182</span></a><span class="sd">                # Note that we force scipy&#39;s lsqr() to use current vertex</span>
+</span><span id="contract-183"><a href="#contract-183"><span class="linenos">183</span></a><span class="sd">                # positions as start points - this speeds things up and</span>
+</span><span id="contract-184"><a href="#contract-184"><span class="linenos">184</span></a><span class="sd">                # without it we get suboptimal solutions that lead to early</span>
+</span><span id="contract-185"><a href="#contract-185"><span class="linenos">185</span></a><span class="sd">                # termination</span>
+</span><span id="contract-186"><a href="#contract-186"><span class="linenos">186</span></a><span class="sd">                cpts[:, j] = lsqr(A, b[:, j],</span>
+</span><span id="contract-187"><a href="#contract-187"><span class="linenos">187</span></a><span class="sd">                                  atol=precision, btol=precision,</span>
+</span><span id="contract-188"><a href="#contract-188"><span class="linenos">188</span></a><span class="sd">                                  damp=1,</span>
+</span><span id="contract-189"><a href="#contract-189"><span class="linenos">189</span></a><span class="sd">                                  x0=dm.vertices[:, j])[0]</span>
+</span><span id="contract-190"><a href="#contract-190"><span class="linenos">190</span></a><span class="sd">                &quot;&quot;&quot;</span>
+</span><span id="contract-191"><a href="#contract-191"><span class="linenos">191</span></a>                <span class="c1"># The solution below is recommended in scipy&#39;s lsqr docstring</span>
+</span><span id="contract-192"><a href="#contract-192"><span class="linenos">192</span></a>                <span class="c1"># for when we have an initial estimate</span>
+</span><span id="contract-193"><a href="#contract-193"><span class="linenos">193</span></a>                <span class="c1"># Gives use the same results as above but is slightly faster</span>
+</span><span id="contract-194"><a href="#contract-194"><span class="linenos">194</span></a>
+</span><span id="contract-195"><a href="#contract-195"><span class="linenos">195</span></a>                <span class="c1"># Initial estimate (i.e. our current positions)</span>
+</span><span id="contract-196"><a href="#contract-196"><span class="linenos">196</span></a>                <span class="n">x0</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
+</span><span id="contract-197"><a href="#contract-197"><span class="linenos">197</span></a>                <span class="c1"># Compute residual vector</span>
+</span><span id="contract-198"><a href="#contract-198"><span class="linenos">198</span></a>                <span class="n">r0</span> <span class="o">=</span> <span class="n">b</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">A</span> <span class="o">*</span> <span class="n">x0</span>
+</span><span id="contract-199"><a href="#contract-199"><span class="linenos">199</span></a>                <span class="c1"># Use LSQR to solve the system</span>
+</span><span id="contract-200"><a href="#contract-200"><span class="linenos">200</span></a>                <span class="n">dx</span> <span class="o">=</span> <span class="n">lsqr</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span>
+</span><span id="contract-201"><a href="#contract-201"><span class="linenos">201</span></a>                          <span class="n">atol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span> <span class="n">btol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span>
+</span><span id="contract-202"><a href="#contract-202"><span class="linenos">202</span></a>                          <span class="n">damp</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="contract-203"><a href="#contract-203"><span class="linenos">203</span></a>                <span class="c1"># Add the correction dx to obtain a final solution</span>
+</span><span id="contract-204"><a href="#contract-204"><span class="linenos">204</span></a>                <span class="n">cpts</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">dx</span>
+</span><span id="contract-205"><a href="#contract-205"><span class="linenos">205</span></a>
+</span><span id="contract-206"><a href="#contract-206"><span class="linenos">206</span></a>            <span class="c1"># Update mesh with new vertex position</span>
+</span><span id="contract-207"><a href="#contract-207"><span class="linenos">207</span></a>            <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">cpts</span>
+</span><span id="contract-208"><a href="#contract-208"><span class="linenos">208</span></a>
+</span><span id="contract-209"><a href="#contract-209"><span class="linenos">209</span></a>            <span class="c1"># Update iteration in progress bar</span>
+</span><span id="contract-210"><a href="#contract-210"><span class="linenos">210</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-211"><a href="#contract-211"><span class="linenos">211</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="contract-212"><a href="#contract-212"><span class="linenos">212</span></a>
+</span><span id="contract-213"><a href="#contract-213"><span class="linenos">213</span></a>            <span class="c1"># Break if face area has increased compared to the last iteration</span>
+</span><span id="contract-214"><a href="#contract-214"><span class="linenos">214</span></a>            <span class="n">new_eps</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">m</span><span class="o">.</span><span class="n">area</span>
+</span><span id="contract-215"><a href="#contract-215"><span class="linenos">215</span></a>            <span class="k">if</span> <span class="p">(</span><span class="n">new_eps</span> <span class="o">&gt;</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+</span><span id="contract-216"><a href="#contract-216"><span class="linenos">216</span></a>                <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">goodvertices</span>
+</span><span id="contract-217"><a href="#contract-217"><span class="linenos">217</span></a>                <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-218"><a href="#contract-218"><span class="linenos">218</span></a>                    <span class="n">tqdm</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Total face area increased from last iteration.&quot;</span>
+</span><span id="contract-219"><a href="#contract-219"><span class="linenos">219</span></a>                               <span class="sa">f</span><span class="s2">&quot; Contraction stopped prematurely after </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> &quot;</span>
+</span><span id="contract-220"><a href="#contract-220"><span class="linenos">220</span></a>                               <span class="sa">f</span><span class="s2">&quot;iterations at epsilon </span><span class="si">{</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="contract-221"><a href="#contract-221"><span class="linenos">221</span></a>                <span class="k">break</span>
+</span><span id="contract-222"><a href="#contract-222"><span class="linenos">222</span></a>            <span class="n">area_ratios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_eps</span><span class="p">)</span>
+</span><span id="contract-223"><a href="#contract-223"><span class="linenos">223</span></a>
+</span><span id="contract-224"><a href="#contract-224"><span class="linenos">224</span></a>            <span class="c1"># Update progress bar</span>
+</span><span id="contract-225"><a href="#contract-225"><span class="linenos">225</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-226"><a href="#contract-226"><span class="linenos">226</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="contract-227"><a href="#contract-227"><span class="linenos">227</span></a>                <span class="n">prog</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="contract-228"><a href="#contract-228"><span class="linenos">228</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="mi">100</span><span class="o">-</span><span class="n">pbar</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+</span><span id="contract-229"><a href="#contract-229"><span class="linenos">229</span></a>
+</span><span id="contract-230"><a href="#contract-230"><span class="linenos">230</span></a>            <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">cpts</span>
+</span><span id="contract-231"><a href="#contract-231"><span class="linenos">231</span></a>
+</span><span id="contract-232"><a href="#contract-232"><span class="linenos">232</span></a>            <span class="c1"># Update contraction weights -&gt; at each iteration the contraction</span>
+</span><span id="contract-233"><a href="#contract-233"><span class="linenos">233</span></a>            <span class="c1"># forces increase to counteract the increased attraction forces</span>
+</span><span id="contract-234"><a href="#contract-234"><span class="linenos">234</span></a>            <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WL</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">SL</span><span class="p">))</span>
+</span><span id="contract-235"><a href="#contract-235"><span class="linenos">235</span></a>
+</span><span id="contract-236"><a href="#contract-236"><span class="linenos">236</span></a>            <span class="c1"># Update attraction weights -&gt; the smaller the one ring areas</span>
+</span><span id="contract-237"><a href="#contract-237"><span class="linenos">237</span></a>            <span class="c1"># the higher the attraction forces</span>
+</span><span id="contract-238"><a href="#contract-238"><span class="linenos">238</span></a>            <span class="n">changeinarea</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">originalRingAreas</span> <span class="o">/</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">))</span>
+</span><span id="contract-239"><a href="#contract-239"><span class="linenos">239</span></a>            <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">changeinarea</span><span class="p">))</span>
+</span><span id="contract-240"><a href="#contract-240"><span class="linenos">240</span></a>
+</span><span id="contract-241"><a href="#contract-241"><span class="linenos">241</span></a>            <span class="c1"># Stop if we reached our target contraction rate</span>
+</span><span id="contract-242"><a href="#contract-242"><span class="linenos">242</span></a>            <span class="k">if</span> <span class="p">(</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">epsilon</span><span class="p">):</span>
+</span><span id="contract-243"><a href="#contract-243"><span class="linenos">243</span></a>                <span class="k">break</span>
+</span><span id="contract-244"><a href="#contract-244"><span class="linenos">244</span></a>
+</span><span id="contract-245"><a href="#contract-245"><span class="linenos">245</span></a>            <span class="c1"># Stop if time limit is reached</span>
+</span><span id="contract-246"><a href="#contract-246"><span class="linenos">246</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_lim</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+</span><span id="contract-247"><a href="#contract-247"><span class="linenos">247</span></a>                <span class="k">if</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">time_lim</span><span class="p">:</span>
+</span><span id="contract-248"><a href="#contract-248"><span class="linenos">248</span></a>                    <span class="k">break</span>
+</span><span id="contract-249"><a href="#contract-249"><span class="linenos">249</span></a>
+</span><span id="contract-250"><a href="#contract-250"><span class="linenos">250</span></a>        <span class="c1"># Keep track of final epsilon</span>
+</span><span id="contract-251"><a href="#contract-251"><span class="linenos">251</span></a>        <span class="n">dm</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="contract-252"><a href="#contract-252"><span class="linenos">252</span></a>
+</span><span id="contract-253"><a href="#contract-253"><span class="linenos">253</span></a>        <span class="k">return</span> <span class="n">dm</span>
+</span></pre></div>
 
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">contract</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-06</span><span class="p">,</span> <span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">,</span>
-             <span class="n">SL</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">WH0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-             <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Contract mesh.</span>
-
-<span class="sd">    In a nutshell: this function contracts the mesh by applying rounds of</span>
-<span class="sd">    _constraint_ Laplacian smoothing. This function can be fairly expensive</span>
-<span class="sd">    and I highly recommend you play around with ``SL`` to contract the</span>
-<span class="sd">    mesh in as few steps as possible. The contraction doesn&#39;t have to be perfect</span>
-<span class="sd">    for good skeletonization results (&lt;10%, i.e. `epsilon&lt;0.1`).</span>
-
-<span class="sd">    Also: parameterization matters a lot! Default parameters will get you there</span>
-<span class="sd">    but playing around with `SL` and `WH0` might speed things up by an order of</span>
-<span class="sd">    magnitude.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    mesh :          mesh obj</span>
-<span class="sd">                    The mesh to be contracted. Can be any object (e.g.</span>
-<span class="sd">                    a trimesh.Trimesh) that has ``.vertices`` and ``.faces``</span>
-<span class="sd">                    properties or a tuple ``(vertices, faces)`` or a dictionary</span>
-<span class="sd">                    ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
-<span class="sd">                    Vertices and faces must be (N, 3) numpy arrays.</span>
-<span class="sd">    epsilon :       float (0-1), optional</span>
-<span class="sd">                    Target contraction rate as measured by the sum of all face</span>
-<span class="sd">                    areas in the contracted versus the original mesh. Algorithm</span>
-<span class="sd">                    will stop once mesh is contracted below this threshold.</span>
-<span class="sd">                    Depending on your mesh (number of faces, shape) reaching a</span>
-<span class="sd">                    strong contraction can be extremely costly with comparatively</span>
-<span class="sd">                    little benefit for the subsequent skeletonization. Note that</span>
-<span class="sd">                    the algorithm might stop short of this target if ``iter_lim``</span>
-<span class="sd">                    or ``time_lim`` is reached first or if the sum of face areas</span>
-<span class="sd">                    is increasing from one iteration to the next instead of</span>
-<span class="sd">                    decreasing.</span>
-<span class="sd">    iter_lim :      int (&gt;1), optional</span>
-<span class="sd">                    Maximum rounds of contractions.</span>
-<span class="sd">    time_lim :      int, optional</span>
-<span class="sd">                    Maximum run time in seconds. Note that this limit is not</span>
-<span class="sd">                    checked during but after each round of contraction. Hence,</span>
-<span class="sd">                    the actual total time will likely overshoot ``time_lim``.</span>
-<span class="sd">    precision :     float, optional</span>
-<span class="sd">                    Sets the precision for finding the least-square solution.</span>
-<span class="sd">                    This is the main determinant for speed vs quality: lower</span>
-<span class="sd">                    values will take (much) longer but will get you closer to an</span>
-<span class="sd">                    optimally contracted mesh. Higher values will be faster but</span>
-<span class="sd">                    the iterative contractions might stop early.</span>
-<span class="sd">    SL :            float, optional</span>
-<span class="sd">                    Factor by which the contraction matrix is multiplied for</span>
-<span class="sd">                    each iteration. Higher values = quicker contraction, lower</span>
-<span class="sd">                    values = more likely to get you an optimal contraction.</span>
-<span class="sd">    WH0 :           float, optional</span>
-<span class="sd">                    Initial weight factor for the attraction constraints.</span>
-<span class="sd">                    The ratio of the initial weights ``WL0`` and ``WH0``</span>
-<span class="sd">                    controls the smoothness and the degree of contraction of the</span>
-<span class="sd">                    first iteration result, thus it determines the amount of</span>
-<span class="sd">                    details retained in subsequent and final contracted meshes:</span>
-<span class="sd">                    higher ``WH0`` = more details retained.</span>
-<span class="sd">    WL0 :           &quot;auto&quot; | float</span>
-<span class="sd">                    Initial weight factor for the contraction constraints. By</span>
-<span class="sd">                    default (&quot;auto&quot;), this will be set to ``1e-3 * sqrt(A)``</span>
-<span class="sd">                    with ``A`` being the average face area. This ensures that</span>
-<span class="sd">                    contraction forces scale with the coarseness of the mesh.</span>
-<span class="sd">    operator :      &quot;cotangent&quot; | &quot;umbrella&quot;</span>
-<span class="sd">                    Which Laplacian operator to use:</span>
-
-<span class="sd">                      - The &quot;cotangent&quot; operator (default) takes both topology</span>
-<span class="sd">                        and geometry of the mesh into account and is hence a</span>
-<span class="sd">                        better descriptor of the curvature flow. This is the</span>
-<span class="sd">                        operator used in the original paper.</span>
-<span class="sd">                      - The &quot;umbrella&quot; operator (aka &quot;uniform weighting&quot;) uses</span>
-<span class="sd">                        only topological features of the mesh. This also makes</span>
-<span class="sd">                        it more robust against flaws in the mesh! Use it when</span>
-<span class="sd">                        the cotangent operator produces oddly contracted meshes.</span>
-
-<span class="sd">    progress :      bool</span>
-<span class="sd">                    Whether or not to show a progress bar.</span>
-<span class="sd">    validate :      bool</span>
-<span class="sd">                    If True, will try to fix potential issues with the mesh</span>
-<span class="sd">                    (e.g. infinite values, duplicate vertices, degenerate faces)</span>
-<span class="sd">                    before collapsing. Degenerate meshes can lead to effectively</span>
-<span class="sd">                    infinite runtime for this function!</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    trimesh.Trimesh</span>
-<span class="sd">                    Contracted copy of original mesh. The final contraction rate</span>
-<span class="sd">                    is attached to the mesh as ``.epsilon`` property.</span>
-
-<span class="sd">    References</span>
-<span class="sd">    ----------</span>
-<span class="sd">    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
-<span class="sd">        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="n">operator</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="s1">&#39;umbrella&#39;</span><span class="p">)</span>
-    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-
-    <span class="c1"># Force into trimesh</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
-
-    <span class="c1"># Initialize attraction weights</span>
-    <span class="n">zeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-    <span class="n">WH0_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-    <span class="n">WH0_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
-    <span class="n">WH0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WH0_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
-    <span class="c1"># Make a copy but keep original values</span>
-    <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
-
-    <span class="c1"># Initialize contraction weights</span>
-    <span class="k">if</span> <span class="n">WL0</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
-        <span class="n">WL0</span> <span class="o">=</span> <span class="mf">1e-03</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">averageFaceArea</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
-        <span class="c1">#WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))</span>
-    <span class="n">WL_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-    <span class="n">WL_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WL0</span><span class="p">)</span>
-    <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WL_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
-
-    <span class="c1"># Copy mesh</span>
-    <span class="n">dm</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-    <span class="n">area_ratios</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="n">originalRingAreas</span> <span class="o">=</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-    <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span>
-    <span class="n">bar_format</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{l_bar}{bar}</span><span class="s2">| [</span><span class="si">{elapsed}</span><span class="s2">&lt;</span><span class="si">{remaining}</span><span class="s2">, &quot;</span>
-                  <span class="s2">&quot;</span><span class="si">{postfix[0]}</span><span class="s2">/</span><span class="si">{postfix[1]}</span><span class="s2">it, &quot;</span>
-                  <span class="s2">&quot;</span><span class="si">{rate_fmt}</span><span class="s2">, epsilon </span><span class="si">{postfix[2]:.2g}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-              <span class="n">bar_format</span><span class="o">=</span><span class="n">bar_format</span><span class="p">,</span>
-              <span class="n">disable</span><span class="o">=</span><span class="n">progress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">,</span>
-              <span class="n">postfix</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">iter_lim</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iter_lim</span><span class="p">):</span>
-            <span class="c1"># Get Laplace weights</span>
-            <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">:</span>
-                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_cotangent</span><span class="p">(</span><span class="n">dm</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_umbrella</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-
-            <span class="n">V</span> <span class="o">=</span> <span class="n">getMeshVPos</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-            <span class="n">A</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">WL</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">WH</span><span class="p">])</span>
-            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">zeros</span><span class="p">,</span> <span class="n">WH</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">V</span><span class="p">)))</span>
-
-            <span class="n">cpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-                <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">                # Solve A*x = b</span>
-<span class="sd">                # Note that we force scipy&#39;s lsqr() to use current vertex</span>
-<span class="sd">                # positions as start points - this speeds things up and</span>
-<span class="sd">                # without it we get suboptimal solutions that lead to early</span>
-<span class="sd">                # termination</span>
-<span class="sd">                cpts[:, j] = lsqr(A, b[:, j],</span>
-<span class="sd">                                  atol=precision, btol=precision,</span>
-<span class="sd">                                  damp=1,</span>
-<span class="sd">                                  x0=dm.vertices[:, j])[0]</span>
-<span class="sd">                &quot;&quot;&quot;</span>
-                <span class="c1"># The solution below is recommended in scipy&#39;s lsqr docstring</span>
-                <span class="c1"># for when we have an initial estimate</span>
-                <span class="c1"># Gives use the same results as above but is slightly faster</span>
-
-                <span class="c1"># Initial estimate (i.e. our current positions)</span>
-                <span class="n">x0</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
-                <span class="c1"># Compute residual vector</span>
-                <span class="n">r0</span> <span class="o">=</span> <span class="n">b</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">A</span> <span class="o">*</span> <span class="n">x0</span>
-                <span class="c1"># Use LSQR to solve the system</span>
-                <span class="n">dx</span> <span class="o">=</span> <span class="n">lsqr</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span>
-                          <span class="n">atol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span> <span class="n">btol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span>
-                          <span class="n">damp</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c1"># Add the correction dx to obtain a final solution</span>
-                <span class="n">cpts</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">dx</span>
-
-            <span class="c1"># Update mesh with new vertex position</span>
-            <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">cpts</span>
-
-            <span class="c1"># Update iteration in progress bar</span>
-            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
-
-            <span class="c1"># Break if face area has increased compared to the last iteration</span>
-            <span class="n">new_eps</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">m</span><span class="o">.</span><span class="n">area</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">new_eps</span> <span class="o">&gt;</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-                <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">goodvertices</span>
-                <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-                    <span class="n">tqdm</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Total face area increased from last iteration.&quot;</span>
-                               <span class="sa">f</span><span class="s2">&quot; Contraction stopped prematurely after </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> &quot;</span>
-                               <span class="sa">f</span><span class="s2">&quot;iterations at epsilon </span><span class="si">{</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-                <span class="k">break</span>
-            <span class="n">area_ratios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_eps</span><span class="p">)</span>
-
-            <span class="c1"># Update progress bar</span>
-            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">prog</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
-                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="mi">100</span><span class="o">-</span><span class="n">pbar</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
-
-            <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">cpts</span>
-
-            <span class="c1"># Update contraction weights -&gt; at each iteration the contraction</span>
-            <span class="c1"># forces increase to counteract the increased attraction forces</span>
-            <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WL</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">SL</span><span class="p">))</span>
-
-            <span class="c1"># Update attraction weights -&gt; the smaller the one ring areas</span>
-            <span class="c1"># the higher the attraction forces</span>
-            <span class="n">changeinarea</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">originalRingAreas</span> <span class="o">/</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">))</span>
-            <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">changeinarea</span><span class="p">))</span>
-
-            <span class="c1"># Stop if we reached our target contraction rate</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">epsilon</span><span class="p">):</span>
-                <span class="k">break</span>
-
-            <span class="c1"># Stop if time limit is reached</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_lim</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">time_lim</span><span class="p">:</span>
-                    <span class="k">break</span>
-
-        <span class="c1"># Keep track of final epsilon</span>
-        <span class="n">dm</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">dm</span>
-</pre></div>
-
-        </details>
 
             <div class="docstring"><p>Contract mesh.</p>
 
