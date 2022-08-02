@@ -339,7 +339,13 @@ play around to find the right recipe. If you don't know where to start, I sugges
 you try out mesh contraction + vertex clustering first:</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Load the example mesh that ships with skeletor</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Alternatively use trimesh to load/construct your own mesh:</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># import trimesh as tm</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># mesh = tm.Trimesh(vertices, faces) </span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># mesh = tm.load_mesh(&#39;some/mesh.obj&#39;)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Run some general clean-up (see docstring for details)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Contract mesh to 10% (0.1) of original volume</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">cont</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="n">fixed</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
@@ -597,79 +603,85 @@ tucked away into submodules (see side-bar or above table).</p>
 </span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>
 </span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a><span class="sd">```Python</span>
 </span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a><span class="sd">&gt;&gt;&gt; import skeletor as sk</span>
-</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
-</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="sd">&gt;&gt;&gt; # Contract mesh to 10% (0.1) of original volume</span>
-</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">&gt;&gt;&gt; cont = sk.pre.contract(fixed, epsilon=0.1)</span>
-</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">&gt;&gt;&gt; # Skeletonize</span>
-</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_vertex_clusters(cont, sampling_dist=100)</span>
-</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a><span class="sd">&gt;&gt;&gt; # Replace contracted mesh with original for postprocessing and plotting</span>
-</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a><span class="sd">&gt;&gt;&gt; skel.mesh = fixed</span>
-</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a><span class="sd">&gt;&gt;&gt; # Add radii (vertex cluster method does not do that automatically)</span>
-</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a><span class="sd">&gt;&gt;&gt; sk.post.radii(skel, method=&#39;knn&#39;)</span>
-</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="sd">```</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a><span class="sd"># Gotchas</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a><span class="sd">- while this is a general purpose library, my personal focus is on neurons and</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a><span class="sd">  this has certainly influenced things like default parameter values and certain</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a><span class="sd">  post-processing steps</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a><span class="sd">- meshes need to be triangular (we are using `trimesh`)</span>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a><span class="sd">- use `sk.pre.simplify` if your mesh is very complex (half a million vertices is</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a><span class="sd">  where things start getting sluggish)</span>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a><span class="sd">- a good mesh contraction is often half the battle</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a><span class="sd">- if the mesh consists of multiple disconnected pieces the skeleton will</span>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a><span class="sd">  likewise be fragmented (i.e. will have multiple roots)</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="sd"># Benchmarks</span>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">speed based on parameterization.</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">&gt;&gt;&gt; # Load the example mesh that ships with skeletor</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="sd">&gt;&gt;&gt; # Alternatively use trimesh to load/construct your own mesh:</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">&gt;&gt;&gt; # import trimesh as tm</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.Trimesh(vertices, faces) </span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.load_mesh(&#39;some/mesh.obj&#39;)</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a><span class="sd">&gt;&gt;&gt; # Run some general clean-up (see docstring for details)</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a><span class="sd">&gt;&gt;&gt; # Contract mesh to 10% (0.1) of original volume</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a><span class="sd">&gt;&gt;&gt; cont = sk.pre.contract(fixed, epsilon=0.1)</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="sd">&gt;&gt;&gt; # Skeletonize</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_vertex_clusters(cont, sampling_dist=100)</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a><span class="sd">&gt;&gt;&gt; # Replace contracted mesh with original for postprocessing and plotting</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a><span class="sd">&gt;&gt;&gt; skel.mesh = fixed</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a><span class="sd">&gt;&gt;&gt; # Add radii (vertex cluster method does not do that automatically)</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a><span class="sd">&gt;&gt;&gt; sk.post.radii(skel, method=&#39;knn&#39;)</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a><span class="sd">```</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a><span class="sd"># Gotchas</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a><span class="sd">- while this is a general purpose library, my personal focus is on neurons and</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a><span class="sd">  this has certainly influenced things like default parameter values and certain</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a><span class="sd">  post-processing steps</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="sd">- meshes need to be triangular (we are using `trimesh`)</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="sd">- use `sk.pre.simplify` if your mesh is very complex (half a million vertices is</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">  where things start getting sluggish)</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">- a good mesh contraction is often half the battle</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">- if the mesh consists of multiple disconnected pieces the skeleton will</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">  likewise be fragmented (i.e. will have multiple roots)</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd"># Benchmarks</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
 </span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd"># What about algorithm `X`?</span>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">`skeletor` contains some algorithms that I found easy enough to implement</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a><span class="sd">and useful for my work with neurons. If you have some interesting paper/approach</span>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">that could make a nice addition to `skeletor`, please get in touch on Github.</span>
-</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a><span class="sd">Pull requests are always welcome!</span>
-</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>
-</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a><span class="sd"># References</span>
-</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>
-</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
-</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>
-</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="sd">The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).</span>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a><span class="sd">Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&amp;feature=youtu.be) YouTube video.</span>
-</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a>
-</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a><span class="sd">Some of the code in skeletor was modified from the</span>
-</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">[Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)</span>
-</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a><span class="sd">addon created by #0K Srinivasan Ramachandran and published under GPL3.</span>
-</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a>
-</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a><span class="sd"># Top-level functions and classes</span>
-</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a><span class="sd">At top-level we only expose `example_mesh()` and the `Skeleton` class (which</span>
-</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">you probably won&#39;t ever need to touch manually). Everything else is neatly</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">tucked away into submodules (see side-bar or above table).</span>
-</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a>
-</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a>
-</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.2.1&quot;</span>
-</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a>
-</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">skeletonize</span>
-</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pre</span>
-</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">post</span>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>
-</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="kn">from</span> <span class="nn">.skeletonize.base</span> <span class="kn">import</span> <span class="n">Skeleton</span>
-</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">example_mesh</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Skeleton&#39;</span><span class="p">,</span> <span class="s1">&#39;example_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;skeletonize&#39;</span><span class="p">]</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a><span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">speed based on parameterization.</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd"># What about algorithm `X`?</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">`skeletor` contains some algorithms that I found easy enough to implement</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">and useful for my work with neurons. If you have some interesting paper/approach</span>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a><span class="sd">that could make a nice addition to `skeletor`, please get in touch on Github.</span>
+</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="sd">Pull requests are always welcome!</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>
+</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a><span class="sd"># References</span>
+</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>
+</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
+</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a>
+</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a><span class="sd">The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).</span>
+</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a><span class="sd">Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&amp;feature=youtu.be) YouTube video.</span>
+</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>
+</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">Some of the code in skeletor was modified from the</span>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">[Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)</span>
+</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">addon created by #0K Srinivasan Ramachandran and published under GPL3.</span>
+</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a>
+</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd"># Top-level functions and classes</span>
+</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">At top-level we only expose `example_mesh()` and the `Skeleton` class (which</span>
+</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">you probably won&#39;t ever need to touch manually). Everything else is neatly</span>
+</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">tucked away into submodules (see side-bar or above table).</span>
+</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a>
+</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.2.1&quot;</span>
+</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">skeletonize</span>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pre</span>
+</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">post</span>
+</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="kn">from</span> <span class="nn">.skeletonize.base</span> <span class="kn">import</span> <span class="n">Skeleton</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">example_mesh</span>
+</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>
+</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
+</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Skeleton&#39;</span><span class="p">,</span> <span class="s1">&#39;example_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;skeletonize&#39;</span><span class="p">]</span>
 </span></pre></div>
 
 
