@@ -190,7 +190,13 @@ you try out mesh contraction + vertex clustering first:
 
 ```Python
 >>> import skeletor as sk
+>>> # Load the example mesh that ships with skeletor
 >>> mesh = sk.example_mesh()
+>>> # Alternatively use trimesh to load/construct your own mesh:
+>>> # import trimesh as tm
+>>> # mesh = tm.Trimesh(vertices, faces) 
+>>> # mesh = tm.load_mesh('some/mesh.obj')
+>>> # Run some general clean-up (see docstring for details)
 >>> fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)
 >>> # Contract mesh to 10% (0.1) of original volume
 >>> cont = sk.pre.contract(fixed, epsilon=0.1)

@@ -37,7 +37,7 @@ Optional because not strictly required for the core functions but highly recomme
 ## Documentation
 Please see the [documentation](https://navis-org.github.io/skeletor/) for details.
 
-The changelog can be found [here](https://github.com/navis-org/skeletor/blob/master/NEWS.md).
+The change log can be found [here](https://github.com/navis-org/skeletor/blob/master/NEWS.md).
 
 ## Quickstart
 For the impatient a quick example:
@@ -45,6 +45,10 @@ For the impatient a quick example:
 ```Python
 >>> import skeletor as sk
 >>> mesh = sk.example_mesh()
+>>> # To load and use your own mesh instead of the example mesh:
+>>> # import trimesh as tm
+>>> # mesh = tm.Trimesh(vertices, faces)  # or...
+>>> # mesh = tm.load_mesh('mesh.obj')
 >>> fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)
 >>> skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)
 >>> skel
