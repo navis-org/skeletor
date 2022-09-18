@@ -227,7 +227,7 @@ def by_tangent_ball(mesh):
                  directed=False)
 
     # Make sure that every connected component has at least one valid target
-    for cc in G.connected_components():
+    for cc in G.clusters():
         if not np.isin(cc, original_ind[~inv]).any():
             inv[cc[0]] = False
             centers[cc[0]] = mesh.vertices[cc[0]]
