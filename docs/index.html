@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.1.0"/>
+    <meta name="generator" content="pdoc 12.2.1"/>
     <title>skeletor API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -142,13 +142,17 @@ to get decent results.</p>
 
 <p>From PyPI:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code>pip3 install skeletor
-</code></pre></div>
+<div class="pdoc-code codehilite">
+<pre><span></span><code>pip3 install skeletor
+</code></pre>
+</div>
 
 <p>For the bleeding-edge version from Github:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code>pip3 install git+https://github.com/navis-org/skeletor@master
-</code></pre></div>
+<div class="pdoc-code codehilite">
+<pre><span></span><code>pip3 install git+https://github.com/navis-org/skeletor@master
+</code></pre>
+</div>
 
 <h1 id="getting-started">Getting started</h1>
 
@@ -265,34 +269,41 @@ If you need help just open an <a href="https://github.com/navis-org/skeletor/iss
 
 <p>First load the example mesh (a fruit fly neuron):</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">mesh</span>
 <span class="o">&lt;</span><span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">(</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">6582</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">faces</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">13772</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">&gt;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Next see if there is stuff to fix in the mesh (degenerate faces, duplicate
 vertices, etc.):</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">fixed</span>
 <span class="o">&lt;</span><span class="n">trimesh</span><span class="o">.</span><span class="n">Trimesh</span><span class="p">(</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">6213</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">faces</span><span class="o">.</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">12805</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">&gt;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Now for tubular meshes like this neuron, the "wave front" skeletonization method
 performs really well: it works by casting waves across the mesh and collapsing
 the resulting rings into a skeleton (kinda like when you throw a stone in a
 pond and track the expanding ripples).</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_wavefront</span><span class="p">(</span><span class="n">fixed</span><span class="p">,</span> <span class="n">waves</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_wavefront</span><span class="p">(</span><span class="n">fixed</span><span class="p">,</span> <span class="n">waves</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span>
 <span class="o">&lt;</span><span class="n">Skeleton</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="p">(</span><span class="mi">1258</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1194</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="n">wavefront</span><span class="p">)</span><span class="o">&gt;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>All skeletonization methods return a <code><a href="#Skeleton">Skeleton</a></code> object. These are just
 convenient objects to bundle the various outputs of the skeletonization.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="c1"># x/y/z location of skeleton vertices (nodes)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="c1"># x/y/z location of skeleton vertices (nodes)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">vertices</span>
 <span class="n">array</span><span class="p">([[</span><span class="mi">16744</span><span class="p">,</span> <span class="mi">36720</span><span class="p">,</span> <span class="mi">26407</span><span class="p">],</span>
        <span class="o">...</span><span class="p">,</span>
@@ -311,34 +322,42 @@ convenient objects to bundle the various outputs of the skeletonization.</p>
 <span class="mi">0</span>        <span class="mi">0</span>         <span class="o">-</span><span class="mi">1</span>  <span class="mf">16744.005859</span>  <span class="mf">36720.058594</span>  <span class="mf">26407.902344</span>  <span class="mf">0.000000</span>
 <span class="mi">1</span>        <span class="mi">1</span>         <span class="o">-</span><span class="mi">1</span>   <span class="mf">5602.751953</span>  <span class="mf">22266.756510</span>  <span class="mf">15799.991211</span>  <span class="mf">7.542587</span>
 <span class="mi">2</span>        <span class="mi">2</span>         <span class="o">-</span><span class="mi">1</span>  <span class="mf">16442.666667</span>  <span class="mf">14999.978516</span>  <span class="mf">10887.916016</span>  <span class="mf">5.333333</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>SWC is a commonly used format for saving skeletons. <code><a href="#Skeleton">Skeleton</a></code> objects
 have a method for quickly saving a correctly formatted SWC file:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">save_swc</span><span class="p">(</span><span class="s1">&#39;~/Documents/my_skeleton.swc&#39;</span><span class="p">)</span>
-</code></pre></div>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">save_swc</span><span class="p">(</span><span class="s1">&#39;~/Documents/my_skeleton.swc&#39;</span><span class="p">)</span>
+</code></pre>
+</div>
 
 <p>If you installed <code>pyglet</code> (see above) you can also use <code>trimesh</code>'s plotting
 capabilities to inspect the results:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre>
+</div>
 
 <p><img src="https://github.com/navis-org/skeletor/raw/master/_static/example1.png" alt="skeletor_example" width="100%"/></p>
 
 <p>That looks pretty good already but let's run some pro-forma postprocessing.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">sk</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">clean_up</span><span class="p">(</span><span class="n">skel</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">sk</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">clean_up</span><span class="p">(</span><span class="n">skel</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="o">&lt;</span><span class="n">Skeleton</span><span class="p">(</span><span class="n">vertices</span><span class="o">=</span><span class="p">(</span><span class="mi">1071</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1070</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">&gt;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>So that would be a full pipeline mesh to skeleton. Don't expect your own meshes
 to produce such nice results off the bat though. Chances are you will need to
 play around to find the right recipe. If you don't know where to start, I suggest
 you try out mesh contraction + vertex clustering first:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Load the example mesh that ships with skeletor</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Alternatively use trimesh to load/construct your own mesh:</span>
@@ -356,7 +375,8 @@ you try out mesh contraction + vertex clustering first:</p>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Add radii (vertex cluster method does not do that automatically)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">sk</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">radii</span><span class="p">(</span><span class="n">skel</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;knn&#39;</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">skel</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h1 id="gotchas">Gotchas</h1>
 
@@ -407,9 +427,9 @@ you probably won't ever need to touch manually). Everything else is neatly
 tucked away into submodules (see side-bar or above table).</p>
 </div>
 
-                        <input id="skeletor-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                        <input id="mod-skeletor-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
-                        <label class="view-source-button" for="skeletor-view-source"><span>View Source</span></label>
+                        <label class="view-source-button" for="mod-skeletor-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="c1">#    This script is part of skeletor (http://www.github.com/navis-org/skeletor).</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="c1">#    Copyright (C) 2018 Philipp Schlegel</span>
@@ -669,8 +689,8 @@ tucked away into submodules (see side-bar or above table).</p>
 </span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a>
 </span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.2.1&quot;</span>
-</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.2.2&quot;</span>
+</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>
 </span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">skeletonize</span>
 </span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pre</span>
@@ -1402,10 +1422,12 @@ A connectome and analysis of the adult Drosophila central brain</p>
 
 <h6 id="examples">Examples</h6>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load this example mesh</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
-</code></pre></div>
+</code></pre>
+</div>
 </div>
 
 
@@ -1511,7 +1533,7 @@ A connectome and analysis of the adult Drosophila central brain</p>
                 }
 
                 let heading;
-                switch (result.doc.type) {
+                switch (result.doc.kind) {
                     case "function":
                         if (doc.fullname.endsWith(".__init__")) {
                             heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
@@ -1538,7 +1560,7 @@ A connectome and analysis of the adult Drosophila central brain</p>
                 }
                 html += `
                         <section class="search-result">
-                        <a href="${url}" class="attr ${doc.type}">${heading}</a>
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
                         <div class="docstring">${doc.doc}</div>
                         </section>
                     `;
