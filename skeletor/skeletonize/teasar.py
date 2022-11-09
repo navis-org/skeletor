@@ -130,7 +130,11 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
                                              weights='weight', mode='ALL')[0]
 
                 # Get IDs of edges along the path
-                eids = SG.get_eids(path=path, directed=False)
+                if getattr(ig, '__version_info__', (0, 0, 0))[1] >= 10:
+                    pairs = zip(path[:-1], path[1:])
+                    eids = SG.get_eids(pairs, directed=False)
+                else:
+                    eids = SG.get_eids(path=path, directed=False)
 
                 # Stop if farthest point is closer than min_length
                 add = True
