@@ -88,7 +88,7 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     return s
 
 
-def remove_hairs(s, mesh=None, inplace=False):
+def remove_hairs(s, mesh=None, los_only=True, inplace=False):
     """Remove "hairs" that sometimes occurr along the backbone.
 
     Works by finding terminal twigs that consist of only a single node. We will
@@ -104,6 +104,9 @@ def remove_hairs(s, mesh=None, inplace=False):
     mesh :      trimesh.Trimesh, optional
                 Original mesh (e.g. before contraction). If not provided will
                 use the mesh associated with ``s``.
+    los_only :  bool
+                If True, will only remove hairs that are in line of sight of
+                their parent. If False, will remove all single-node hairs.
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
@@ -132,27 +135,30 @@ def remove_hairs(s, mesh=None, inplace=False):
     if twigs.empty:
         return s
 
-    # Initialize ncollpyde Volume
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    if los_only:
+        # Initialize ncollpyde Volume
+        coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
-    # Remove twigs that aren't inside the volume
-    twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
+        # Remove twigs that aren't inside the volume
+        twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
 
-    # Generate rays between all pairs and their parents
-    sources = twigs[['x', 'y', 'z']].values
-    targets = s.swc.set_index('node_id').loc[twigs.parent_id,
-                                             ['x', 'y', 'z']].values
+        # Generate rays between all pairs and their parents
+        sources = twigs[['x', 'y', 'z']].values
+        targets = s.swc.set_index('node_id').loc[twigs.parent_id,
+                                                ['x', 'y', 'z']].values
 
-    # Get intersections: `ix` points to index of line segment; `loc` is the
-    #  x/y/z coordinate of the intersection and `is_backface` is True if
-    # intersection happened at the inside of a mesh
-    ix, loc, is_backface = coll.intersections(sources, targets)
+        # Get intersections: `ix` points to index of line segment; `loc` is the
+        #  x/y/z coordinate of the intersection and `is_backface` is True if
+        # intersection happened at the inside of a mesh
+        ix, loc, is_backface = coll.intersections(sources, targets)
 
-    # Find pairs of twigs with no intersection - i.e. with line of sight
-    los = ~np.isin(np.arange(sources.shape[0]), ix)
+        # Find pairs of twigs with no intersection - i.e. with line of sight
+        los = ~np.isin(np.arange(sources.shape[0]), ix)
 
-    # To remove: have line of sight
-    to_remove = twigs[los]
+        # To remove: have line of sight
+        to_remove = twigs[los]
+    else:
+        to_remove = twigs
 
     s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)].copy()
 
