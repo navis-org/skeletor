@@ -48,7 +48,7 @@ separate functions:
   results (SWC, nodes/vertices, edges, etc.) and allows for quick visualization
 - SWC tables are now strictly conforming to the format (continuous node IDs,
   parents always listed before their childs, etc)
-- `Skeleton` results contain a mesh to skeleton mapping as `.mesh_map` property   
+- `Skeleton` results contain a mesh to skeleton mapping as `.mesh_map` property
 - added an example mesh: to load it use `skeletor.example_mesh()`
 - `skeletor` now has proper tests and a simple [documentation](https://navis-org.github.io/skeletor/)
 

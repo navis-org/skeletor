@@ -29,6 +29,13 @@ skeletonization, chances are that your skeleton will not come out perfectly.
   centered inside the mesh
 - superfluous "hairs" on otherwise straight bits
 
+`skeletor.post.smooth` will smooth out the skeleton.
+
+`skeletor.post.despike` can help you remove spikes in the skeleton where
+single nodes are out of aligment.
+
+`skeletor.post.remove_bristles` will remove bristles from the skeleton.
+
 ### Computing radius information
 
 Only `skeletor.skeletonize.by_wavefront()` provides radii off the bat. For all
@@ -38,7 +45,7 @@ other methods, you might want to run `skeletor.post.radii` can help you
 """
 
 from .radiusextraction import radii
-from .postprocessing import clean_up
+from .postprocessing import clean_up, smooth, despike, remove_bristles
 
 __docformat__ = "numpy"
-__all__ = ['radii', 'clean_up']
+__all__ = ["radii", "clean_up", "smooth", "despike", "remove_bristles"]

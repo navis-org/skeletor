@@ -60,7 +60,7 @@ A skeletonization pipeline typically consists of:
 1. Some pre-processing of the mesh (e.g. fixing some potential errors like
    degenerate faces, unreferenced vertices, etc.)
 2. The skeletonization itself
-3. Some post-processing of the skeleton (e.g. adding radius information)
+3. Some post-processing of the skeleton (e.g. adding radius information, smoothing, etc.)
 
 ------
 
@@ -84,6 +84,9 @@ Here is a complete list of available functions:
 | **postprocessing**                          |                                                             |
 | `skeletor.post.clean_up()`                  | fix some potential errors in the skeleton                   |
 | `skeletor.post.radii()`                     | add radius information using various method                 |
+| `skeletor.post.smooth()`                    | smooth the skeleton                                         |
+| `skeletor.post.remove_bristles()`           | remove single-node bristles from the skeleton               |
+| `skeletor.post.despike()`                   | smooth out jumps in the skeleton                            |
 
 ------
 
@@ -194,7 +197,7 @@ you try out mesh contraction + vertex clustering first:
 >>> mesh = sk.example_mesh()
 >>> # Alternatively use trimesh to load/construct your own mesh:
 >>> # import trimesh as tm
->>> # mesh = tm.Trimesh(vertices, faces) 
+>>> # mesh = tm.Trimesh(vertices, faces)
 >>> # mesh = tm.load_mesh('some/mesh.obj')
 >>> # Run some general clean-up (see docstring for details)
 >>> fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)
@@ -217,9 +220,12 @@ you try out mesh contraction + vertex clustering first:
 - meshes need to be triangular (we are using `trimesh`)
 - use `sk.pre.simplify` if your mesh is very complex (half a million vertices is
   where things start getting sluggish)
-- a good mesh contraction is often half the battle
+- a good mesh contraction is often half the battle but it can be tricky to get
+  to work
 - if the mesh consists of multiple disconnected pieces the skeleton will
   likewise be fragmented (i.e. will have multiple roots)
+- it's often a good idea to fix issues with the skeleton in postprocessing rather
+  than trying to get the skeletonization to be perfect
 
 # Benchmarks
 
@@ -256,8 +262,8 @@ tucked away into submodules (see side-bar or above table).
 
 """
 
-__version__ = "1.2.3"
-__version_vector__ = (1, 2, 3)
+__version__ = "1.3.0"
+__version_vector__ = (1, 3, 0)
 
 from . import skeletonize
 from . import pre

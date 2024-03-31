@@ -165,11 +165,17 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
               postfix=[1, iter_lim, 1]) as pbar:
         for i in range(iter_lim):
             # Get Laplace weights
+
             if operator == 'cotangent':
                 L = laplacian_cotangent(dm, normalized=True)
             else:
                 L = laplacian_umbrella(dm)
-
+            """
+            import robust_laplacian
+            L, M_ = robust_laplacian.mesh_laplacian(np.array(dm.vertices),
+                                                    np.array(dm.faces),
+                                                    mollify_factor=1e-3)
+            """
             V = getMeshVPos(dm)
             A = sp.sparse.vstack([WL.dot(L), WH])
             b = np.vstack((zeros, WH.dot(V)))

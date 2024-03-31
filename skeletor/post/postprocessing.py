@@ -88,14 +88,10 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     return s
 
 
-def remove_hairs(s, mesh=None, los_only=True, inplace=False):
-    """Remove "hairs" that sometimes occurr along the backbone.
+def remove_bristles(s, mesh=None, los_only=False, inplace=False):
+    """Remove "bristles" that sometimes occurr along the backbone.
 
-    Works by finding terminal twigs that consist of only a single node. We will
-    then remove those that are within line of sight of their parent.
-
-    Note that this is currently not used for clean up as it does not work very
-    well: removes as many correct hairs as genuine small branches.
+    Works by finding terminal twigs that consist of only a single node.
 
     Parameters
     ----------
@@ -105,16 +101,16 @@ def remove_hairs(s, mesh=None, los_only=True, inplace=False):
                 Original mesh (e.g. before contraction). If not provided will
                 use the mesh associated with ``s``.
     los_only :  bool
-                If True, will only remove hairs that are in line of sight of
-                their parent. If False, will remove all single-node hairs.
+                If True, will only remove bristles that are in line of sight of
+                their parent. If False, will remove all single-node bristles.
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
 
     Returns
     -------
-    SWC :       pandas.DataFrame
-                SWC with line-of-sight twigs removed.
+    s :         skeletor.Skeleton
+                Skeleton with single-node twigs removed.
 
     """
     if isinstance(mesh, type(None)):
@@ -198,8 +194,8 @@ def recenter_vertices(s, mesh=None, inplace=False):
 
     Returns
     -------
-    SWC :       pandas.DataFrame
-                SWC with line-of-sight twigs removed.
+    s :         skeletor.Skeleton
+                Skeleton with vertices recentered.
 
     """
     if isinstance(mesh, type(None)):
@@ -347,8 +343,8 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
 
     Returns
     -------
-    SWC :       pandas.DataFrame
-                SWC with line-of-sight twigs removed.
+    s :         skeletor.Skeleton
+                Skeleton with line-of-sight twigs removed.
 
     """
     # Make a copy of the SWC
@@ -472,7 +468,7 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
 
     Returns
     -------
-    SWC :       pandas.DataFrame
+    s :         skeletor.Skeleton
                 SWC with parallel twigs removed.
 
     """
@@ -551,5 +547,136 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
 
         # Reindex nodes
         s.reindex(inplace=True)
+
+    return s
+
+def smooth(s,
+           window: int = 3,
+           to_smooth: list = ['x', 'y', 'z'],
+           inplace: bool = False):
+    """Smooth skeleton using rolling windows.
+
+    Parameters
+    ----------
+    s :             skeletor.Skeleton
+                    Skeleton to be processed.
+    window :        int, optional
+                    Size (N observations) of the rolling window in number of
+                    nodes.
+    to_smooth :     list
+                    Columns of the node table to smooth. Should work with any
+                    numeric column (e.g. 'radius').
+    inplace :       bool
+                    If False will make and return a copy of the skeleton. If
+                    True, will modify the `s` inplace.
+
+    Returns
+    -------
+    s :             skeletor.Skeleton
+                    Skeleton with smoothed node table.
+
+    """
+    if not inplace:
+        s = s.copy()
+
+    # Prepare nodes (add parent_dist for later, set index)
+    nodes = s.swc.set_index('node_id', inplace=False).copy()
+
+    to_smooth = np.array(to_smooth)
+    miss = to_smooth[~np.isin(to_smooth, nodes.columns)]
+    if len(miss):
+        raise ValueError(f'Column(s) not found in node table: {miss}')
+
+    # Go over each segment and smooth
+    for seg in s.get_segments():
+        # Get this segment's parent distances and get cumsum
+        this_co = nodes.loc[seg, to_smooth]
+
+        interp = this_co.rolling(window, min_periods=1).mean()
+
+        nodes.loc[seg, to_smooth] = interp.values
+
+    # Reassign nodes
+    s.swc = nodes.reset_index(drop=False, inplace=False)
+
+    return s
+
+def despike(s,
+            sigma = 5,
+            max_spike_length = 1,
+            inplace = False,
+            reverse = False):
+    r"""Remove spikes in skeleton.
+
+    For each node A, the euclidean distance to its next successor (parent)
+    B and that node's successor C (i.e A->B->C) is computed. If
+    :math:`\\frac{dist(A,B)}{dist(A,C)}>sigma`, node B is considered a spike
+    and realigned between A and C.
+
+    Parameters
+    ----------
+    x :                 skeletor.Skeleton
+                        Skeleton to be processed.
+    sigma :             float | int, optional
+                        Threshold for spike detection. Smaller sigma = more
+                        aggressive spike detection.
+    max_spike_length :  int, optional
+                        Determines how long (# of nodes) a spike can be.
+    inplace :           bool, optional
+                        If False, a copy of the neuron is returned.
+    reverse :           bool, optional
+                        If True, will **also** walk the segments from proximal
+                        to distal. Use this to catch spikes on e.g. terminal
+                        nodes.
+
+    Returns
+    -------
+    s                   skeletor.Skeleton
+                        Despiked neuron.
+
+    """
+    if not inplace:
+        s = s.copy()
+
+    # Index nodes table by node ID
+    this_nodes = s.nodes.set_index('node_id', inplace=False)
+
+    segments = s.get_segments()
+    segs_to_walk = segments
+
+    if reverse:
+        segs_to_walk += segs_to_walk[::-1]
+
+    # For each spike length do -> do this in reverse to correct the long
+    # spikes first
+    for l in list(range(1, max_spike_length + 1))[::-1]:
+        # Go over all segments
+        for seg in segs_to_walk:
+            # Get nodes A, B and C of this segment
+            this_A = this_nodes.loc[seg[:-l - 1]]
+            this_B = this_nodes.loc[seg[l:-1]]
+            this_C = this_nodes.loc[seg[l + 1:]]
+
+            # Get coordinates
+            A = this_A[['x', 'y', 'z']].values
+            B = this_B[['x', 'y', 'z']].values
+            C = this_C[['x', 'y', 'z']].values
+
+            # Calculate euclidian distances A->B and A->C
+            dist_AB = np.linalg.norm(A - B, axis=1)
+            dist_AC = np.linalg.norm(A - C, axis=1)
+
+            # Get the spikes
+            spikes_ix = np.where(np.divide(dist_AB, dist_AC, where=dist_AC != 0) > sigma)[0]
+            spikes = this_B.iloc[spikes_ix]
+
+            if not spikes.empty:
+                # Interpolate new position(s) between A and C
+                new_positions = A[spikes_ix] + (C[spikes_ix] - A[spikes_ix]) / 2
+
+                this_nodes.loc[spikes.index, ['x', 'y', 'z']] = new_positions
+
+    # Reassign node table
+    s.swc = this_nodes.reset_index(drop=False, inplace=False)
 
     return s
