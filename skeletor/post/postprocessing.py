@@ -639,7 +639,7 @@ def despike(s,
         s = s.copy()
 
     # Index nodes table by node ID
-    this_nodes = s.nodes.set_index('node_id', inplace=False)
+    this_nodes = s.swc.set_index('node_id', inplace=False)
 
     segments = s.get_segments()
     segs_to_walk = segments
