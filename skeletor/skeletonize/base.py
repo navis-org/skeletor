@@ -170,6 +170,70 @@ class Skeleton:
 
         return G
 
+    def get_segments(self,
+                     weight = 'weight',
+                     return_lengths = False):
+        """Generate a list of linear segments while maximizing segment lengths.
+
+        Parameters
+        ----------
+        weight :    'weight' | None, optional
+                    If ``"weight"`` use physical, geodesic length to determine
+                    segment length. If ``None`` use number of nodes (faster).
+        return_lengths : bool
+                    If True, also return lengths of segments according to ``weight``.
+
+        Returns
+        -------
+        segments :  list
+                    Segments as list of lists containing node IDs. List is
+                    sorted by segment lengths.
+        lengths :   list
+                    Length for each segment according to ``weight``. Only provided
+                    if `return_lengths` is True.
+
+        """
+        assert weight in ('weight', None), f'Unable to use weight "{weight}"'
+
+        # Get graph representation
+        G = self.get_graph()
+
+        # Get distances to root
+        dists = {}
+        for root in self.swc[self.swc.parent_id < 0].node_id.values:
+            dists.update(nx.shortest_path_length(G, target=root, weight=weight))
+
+        # Sort leaf nodes
+        endNodeIDs = self.leafs[self.leafs.parent_id >= 0].node_id.values
+        endNodeIDs = sorted(endNodeIDs, key=lambda x: dists.get(x, 0), reverse=True)
+
+        seen: set = set()
+        sequences = []
+        for nodeID in endNodeIDs:
+            sequence = [nodeID]
+            parents = list(G.successors(nodeID))
+            while True:
+                if not parents:
+                    break
+                parentID = parents[0]
+                sequence.append(parentID)
+                if parentID in seen:
+                    break
+                seen.add(parentID)
+                parents = list(G.successors(parentID))
+
+            if len(sequence) > 1:
+                sequences.append(sequence)
+
+        # Sort sequences by length
+        lengths = [dists[s[0]] - dists[s[-1]] for s in sequences]
+        sequences = [x for _, x in sorted(zip(lengths, sequences), reverse=True)]
+
+        if return_lengths:
+            return sequences, sorted(lengths, reverse=True)
+        else:
+            return sequences
+
     def save_swc(self, filepath):
         """Save skeleton in SWC format.
 
