@@ -90,6 +90,9 @@
                                 <a class="function" href="#Skeleton.get_graph">get_graph</a>
                         </li>
                         <li>
+                                <a class="function" href="#Skeleton.get_segments">get_segments</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Skeleton.save_swc">save_swc</a>
                         </li>
                         <li>
@@ -174,7 +177,7 @@ to get decent results.</p>
 <li>Some pre-processing of the mesh (e.g. fixing some potential errors like
 degenerate faces, unreferenced vertices, etc.)</li>
 <li>The skeletonization itself</li>
-<li>Some post-processing of the skeleton (e.g. adding radius information)</li>
+<li>Some post-processing of the skeleton (e.g. adding radius information, smoothing, etc.)</li>
 </ol>
 
 <hr />
@@ -252,6 +255,18 @@ degenerate faces, unreferenced vertices, etc.)</li>
 <tr>
   <td><code><a href="skeletor/post.html#radii">skeletor.post.radii()</a></code></td>
   <td>add radius information using various method</td>
+</tr>
+<tr>
+  <td><code><a href="skeletor/post.html#smooth">skeletor.post.smooth()</a></code></td>
+  <td>smooth the skeleton</td>
+</tr>
+<tr>
+  <td><code><a href="skeletor/post.html#remove_bristles">skeletor.post.remove_bristles()</a></code></td>
+  <td>remove single-node bristles from the skeleton</td>
+</tr>
+<tr>
+  <td><code><a href="skeletor/post.html#despike">skeletor.post.despike()</a></code></td>
+  <td>smooth out jumps in the skeleton</td>
 </tr>
 </tbody>
 </table>
@@ -374,7 +389,7 @@ you try out mesh contraction + vertex clustering first:</p>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Alternatively use trimesh to load/construct your own mesh:</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># import trimesh as tm</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="c1"># mesh = tm.Trimesh(vertices, faces) </span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># mesh = tm.Trimesh(vertices, faces)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># mesh = tm.load_mesh(&#39;some/mesh.obj&#39;)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Run some general clean-up (see docstring for details)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -399,9 +414,12 @@ post-processing steps</li>
 <li>meshes need to be triangular (we are using <code>trimesh</code>)</li>
 <li>use <code>sk.pre.simplify</code> if your mesh is very complex (half a million vertices is
 where things start getting sluggish)</li>
-<li>a good mesh contraction is often half the battle</li>
+<li>a good mesh contraction is often half the battle but it can be tricky to get
+to work</li>
 <li>if the mesh consists of multiple disconnected pieces the skeleton will
 likewise be fragmented (i.e. will have multiple roots)</li>
+<li>it's often a good idea to fix issues with the skeleton in postprocessing rather
+than trying to get the skeletonization to be perfect</li>
 </ul>
 
 <h1 id="benchmarks">Benchmarks</h1>
@@ -505,7 +523,7 @@ tucked away into submodules (see side-bar or above table).</p>
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">1. Some pre-processing of the mesh (e.g. fixing some potential errors like</span>
 </span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="sd">   degenerate faces, unreferenced vertices, etc.)</span>
 </span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">2. The skeletonization itself</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">3. Some post-processing of the skeleton (e.g. adding radius information)</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">3. Some post-processing of the skeleton (e.g. adding radius information, smoothing, etc.)</span>
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a><span class="sd">------</span>
 </span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>
@@ -529,191 +547,197 @@ tucked away into submodules (see side-bar or above table).</p>
 </span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">| **postprocessing**                          |                                                             |</span>
 </span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="sd">| `skeletor.post.clean_up()`                  | fix some potential errors in the skeleton                   |</span>
 </span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a><span class="sd">| `skeletor.post.radii()`                     | add radius information using various method                 |</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">------</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="sd">See docstrings of the respective functions for details.</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="sd">A pipeline might look like this:</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="sd"> 1. `skeletor.pre.fix_mesh()` to fix the mesh</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd"> 2. `skeletor.pre.simplify()` to simplify the mesh</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="sd"> 3. `skeletor.pre.contract()` to contract the mesh [1]</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd"> 4. `skeletor.skeletonize.vertex_clusters()` to generate a skeleton</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd"> 5. `skeletor.post.clean_up()` to clean up some potential issues with the skeleton</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd"> 6. `skeletor.post.radii()` to extract radii either by k-nearest neighbours or ray-casting</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">In my experience there is no one-size-fits-all. You will have to play around to</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">find the right approach and parameters to get nice skeletons for your meshes.</span>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">If you need help just open an [issue](https://github.com/navis-org/skeletor/issues).</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">Also check out the Gotchas below!</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd"># Examples</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">First load the example mesh (a fruit fly neuron):</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="sd">```Python</span>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="sd">&gt;&gt;&gt; import skeletor as sk</span>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">&gt;&gt;&gt; mesh</span>
-</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">&lt;trimesh.Trimesh(vertices.shape=(6582, 3), faces.shape=(13772, 3))&gt;</span>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">```</span>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">Next see if there is stuff to fix in the mesh (degenerate faces, duplicate</span>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">vertices, etc.):</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="sd">| `skeletor.post.smooth()`                    | smooth the skeleton                                         |</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">| `skeletor.post.remove_bristles()`           | remove single-node bristles from the skeleton               |</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a><span class="sd">| `skeletor.post.despike()`                   | smooth out jumps in the skeleton                            |</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a><span class="sd">------</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="sd">See docstrings of the respective functions for details.</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">A pipeline might look like this:</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd"> 1. `skeletor.pre.fix_mesh()` to fix the mesh</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd"> 2. `skeletor.pre.simplify()` to simplify the mesh</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd"> 3. `skeletor.pre.contract()` to contract the mesh [1]</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd"> 4. `skeletor.skeletonize.vertex_clusters()` to generate a skeleton</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd"> 5. `skeletor.post.clean_up()` to clean up some potential issues with the skeleton</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd"> 6. `skeletor.post.radii()` to extract radii either by k-nearest neighbours or ray-casting</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="sd">In my experience there is no one-size-fits-all. You will have to play around to</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">find the right approach and parameters to get nice skeletons for your meshes.</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">If you need help just open an [issue](https://github.com/navis-org/skeletor/issues).</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">Also check out the Gotchas below!</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="sd"># Examples</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="sd">First load the example mesh (a fruit fly neuron):</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">```Python</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">&gt;&gt;&gt; import skeletor as sk</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="sd">&gt;&gt;&gt; mesh</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">&lt;trimesh.Trimesh(vertices.shape=(6582, 3), faces.shape=(13772, 3))&gt;</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">```</span>
 </span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
-</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">```Python</span>
-</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">&gt;&gt;&gt; fixed</span>
-</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">&lt;trimesh.Trimesh(vertices.shape=(6213, 3), faces.shape=(12805, 3))&gt;</span>
-</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">```</span>
-</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>
-</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">Now for tubular meshes like this neuron, the &quot;wave front&quot; skeletonization method</span>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">performs really well: it works by casting waves across the mesh and collapsing</span>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">the resulting rings into a skeleton (kinda like when you throw a stone in a</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">pond and track the expanding ripples).</span>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">```Python</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">&gt;&gt;&gt; skel</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">&lt;Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)&gt;</span>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">```</span>
-</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>
-</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">All skeletonization methods return a `Skeleton` object. These are just</span>
-</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">convenient objects to bundle the various outputs of the skeletonization.</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">Next see if there is stuff to fix in the mesh (degenerate faces, duplicate</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">vertices, etc.):</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">```Python</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">&gt;&gt;&gt; fixed</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">&lt;trimesh.Trimesh(vertices.shape=(6213, 3), faces.shape=(12805, 3))&gt;</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">```</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">Now for tubular meshes like this neuron, the &quot;wave front&quot; skeletonization method</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">performs really well: it works by casting waves across the mesh and collapsing</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">the resulting rings into a skeleton (kinda like when you throw a stone in a</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">pond and track the expanding ripples).</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">```Python</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">&gt;&gt;&gt; skel</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">&lt;Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)&gt;</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">```</span>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">```Python</span>
-</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">&gt;&gt;&gt; # x/y/z location of skeleton vertices (nodes)</span>
-</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a><span class="sd">&gt;&gt;&gt; skel.vertices</span>
-</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="sd">array([[16744, 36720, 26407],</span>
-</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a><span class="sd">       ...,</span>
-</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">       [22076, 23217, 24472]])</span>
-</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">&gt;&gt;&gt; # child -&gt; parent edges</span>
-</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="sd">&gt;&gt;&gt; skel.edges</span>
-</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">array([[  64,   31],</span>
-</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">       ...,</span>
-</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a><span class="sd">       [1257, 1252]])</span>
-</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">&gt;&gt;&gt; # Mapping for mesh to skeleton vertex indices</span>
-</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="sd">&gt;&gt;&gt; skel.mesh_map</span>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">array([ 157,  158, 1062, ...,  525,  474,  547])</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">&gt;&gt;&gt; # SWC table</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">&gt;&gt;&gt; skel.swc.head()</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">   node_id  parent_id             x             y             z    radius</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">0        0         -1  16744.005859  36720.058594  26407.902344  0.000000</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a><span class="sd">1        1         -1   5602.751953  22266.756510  15799.991211  7.542587</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="sd">2        2         -1  16442.666667  14999.978516  10887.916016  5.333333</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a><span class="sd">```</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a><span class="sd">SWC is a commonly used format for saving skeletons. `Skeleton` objects</span>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="sd">have a method for quickly saving a correctly formatted SWC file:</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">All skeletonization methods return a `Skeleton` object. These are just</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">convenient objects to bundle the various outputs of the skeletonization.</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="sd">```Python</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a><span class="sd">&gt;&gt;&gt; # x/y/z location of skeleton vertices (nodes)</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">&gt;&gt;&gt; skel.vertices</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">array([[16744, 36720, 26407],</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="sd">       ...,</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">       [22076, 23217, 24472]])</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">&gt;&gt;&gt; # child -&gt; parent edges</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a><span class="sd">&gt;&gt;&gt; skel.edges</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">array([[  64,   31],</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="sd">       ...,</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">       [1257, 1252]])</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">&gt;&gt;&gt; # Mapping for mesh to skeleton vertex indices</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">&gt;&gt;&gt; skel.mesh_map</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">array([ 157,  158, 1062, ...,  525,  474,  547])</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">&gt;&gt;&gt; # SWC table</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a><span class="sd">&gt;&gt;&gt; skel.swc.head()</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="sd">   node_id  parent_id             x             y             z    radius</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a><span class="sd">0        0         -1  16744.005859  36720.058594  26407.902344  0.000000</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a><span class="sd">1        1         -1   5602.751953  22266.756510  15799.991211  7.542587</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a><span class="sd">2        2         -1  16442.666667  14999.978516  10887.916016  5.333333</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="sd">```</span>
 </span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a><span class="sd">```Python</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="sd">&gt;&gt;&gt; skel.save_swc(&#39;~/Documents/my_skeleton.swc&#39;)</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a><span class="sd">```</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a><span class="sd">If you installed `pyglet` (see above) you can also use `trimesh`&#39;s plotting</span>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a><span class="sd">capabilities to inspect the results:</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a><span class="sd">SWC is a commonly used format for saving skeletons. `Skeleton` objects</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="sd">have a method for quickly saving a correctly formatted SWC file:</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a><span class="sd">```Python</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a><span class="sd">&gt;&gt;&gt; skel.save_swc(&#39;~/Documents/my_skeleton.swc&#39;)</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a><span class="sd">```</span>
 </span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a><span class="sd">```Python</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="sd">```</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/_static/example1.png&quot; alt=&quot;skeletor_example&quot; width=&quot;100%&quot;/&gt;</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="sd">That looks pretty good already but let&#39;s run some pro-forma postprocessing.</span>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="sd">```Python</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="sd">&gt;&gt;&gt; sk.post.clean_up(skel, inplace=True)</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="sd">&lt;Skeleton(vertices=(1071, 3), edges=(1070, 2))&gt;</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a><span class="sd">```</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a><span class="sd">So that would be a full pipeline mesh to skeleton. Don&#39;t expect your own meshes</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a><span class="sd">to produce such nice results off the bat though. Chances are you will need to</span>
-</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a><span class="sd">play around to find the right recipe. If you don&#39;t know where to start, I suggest</span>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="sd">you try out mesh contraction + vertex clustering first:</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>
-</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a><span class="sd">```Python</span>
-</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a><span class="sd">&gt;&gt;&gt; import skeletor as sk</span>
-</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">&gt;&gt;&gt; # Load the example mesh that ships with skeletor</span>
-</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="sd">&gt;&gt;&gt; # Alternatively use trimesh to load/construct your own mesh:</span>
-</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">&gt;&gt;&gt; # import trimesh as tm</span>
-</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.Trimesh(vertices, faces) </span>
-</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.load_mesh(&#39;some/mesh.obj&#39;)</span>
-</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a><span class="sd">&gt;&gt;&gt; # Run some general clean-up (see docstring for details)</span>
-</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
-</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a><span class="sd">&gt;&gt;&gt; # Contract mesh to 10% (0.1) of original volume</span>
-</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a><span class="sd">&gt;&gt;&gt; cont = sk.pre.contract(fixed, epsilon=0.1)</span>
-</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="sd">&gt;&gt;&gt; # Skeletonize</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_vertex_clusters(cont, sampling_dist=100)</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a><span class="sd">&gt;&gt;&gt; # Replace contracted mesh with original for postprocessing and plotting</span>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a><span class="sd">&gt;&gt;&gt; skel.mesh = fixed</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a><span class="sd">&gt;&gt;&gt; # Add radii (vertex cluster method does not do that automatically)</span>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a><span class="sd">&gt;&gt;&gt; sk.post.radii(skel, method=&#39;knn&#39;)</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a><span class="sd">```</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a><span class="sd"># Gotchas</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a><span class="sd">- while this is a general purpose library, my personal focus is on neurons and</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a><span class="sd">  this has certainly influenced things like default parameter values and certain</span>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a><span class="sd">  post-processing steps</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="sd">- meshes need to be triangular (we are using `trimesh`)</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="sd">- use `sk.pre.simplify` if your mesh is very complex (half a million vertices is</span>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">  where things start getting sluggish)</span>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">- a good mesh contraction is often half the battle</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">- if the mesh consists of multiple disconnected pieces the skeleton will</span>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">  likewise be fragmented (i.e. will have multiple roots)</span>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd"># Benchmarks</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
-</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a><span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">speed based on parameterization.</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a><span class="sd">If you installed `pyglet` (see above) you can also use `trimesh`&#39;s plotting</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="sd">capabilities to inspect the results:</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="sd">```Python</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="sd">```</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/_static/example1.png&quot; alt=&quot;skeletor_example&quot; width=&quot;100%&quot;/&gt;</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="sd">That looks pretty good already but let&#39;s run some pro-forma postprocessing.</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a><span class="sd">```Python</span>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a><span class="sd">&gt;&gt;&gt; sk.post.clean_up(skel, inplace=True)</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a><span class="sd">&lt;Skeleton(vertices=(1071, 3), edges=(1070, 2))&gt;</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a><span class="sd">```</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="sd">So that would be a full pipeline mesh to skeleton. Don&#39;t expect your own meshes</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="sd">to produce such nice results off the bat though. Chances are you will need to</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a><span class="sd">play around to find the right recipe. If you don&#39;t know where to start, I suggest</span>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a><span class="sd">you try out mesh contraction + vertex clustering first:</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">```Python</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="sd">&gt;&gt;&gt; import skeletor as sk</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">&gt;&gt;&gt; # Load the example mesh that ships with skeletor</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">&gt;&gt;&gt; mesh = sk.example_mesh()</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a><span class="sd">&gt;&gt;&gt; # Alternatively use trimesh to load/construct your own mesh:</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a><span class="sd">&gt;&gt;&gt; # import trimesh as tm</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.Trimesh(vertices, faces)</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a><span class="sd">&gt;&gt;&gt; # mesh = tm.load_mesh(&#39;some/mesh.obj&#39;)</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a><span class="sd">&gt;&gt;&gt; # Run some general clean-up (see docstring for details)</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="sd">&gt;&gt;&gt; fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="sd">&gt;&gt;&gt; # Contract mesh to 10% (0.1) of original volume</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a><span class="sd">&gt;&gt;&gt; cont = sk.pre.contract(fixed, epsilon=0.1)</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a><span class="sd">&gt;&gt;&gt; # Skeletonize</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a><span class="sd">&gt;&gt;&gt; skel = sk.skeletonize.by_vertex_clusters(cont, sampling_dist=100)</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a><span class="sd">&gt;&gt;&gt; # Replace contracted mesh with original for postprocessing and plotting</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a><span class="sd">&gt;&gt;&gt; skel.mesh = fixed</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a><span class="sd">&gt;&gt;&gt; # Add radii (vertex cluster method does not do that automatically)</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a><span class="sd">&gt;&gt;&gt; sk.post.radii(skel, method=&#39;knn&#39;)</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a><span class="sd">&gt;&gt;&gt; skel.show(mesh=True)</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a><span class="sd">```</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a><span class="sd"># Gotchas</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="sd">- while this is a general purpose library, my personal focus is on neurons and</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="sd">  this has certainly influenced things like default parameter values and certain</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">  post-processing steps</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">- meshes need to be triangular (we are using `trimesh`)</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">- use `sk.pre.simplify` if your mesh is very complex (half a million vertices is</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">  where things start getting sluggish)</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="sd">- a good mesh contraction is often half the battle but it can be tricky to get</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">  to work</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">- if the mesh consists of multiple disconnected pieces the skeleton will</span>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">  likewise be fragmented (i.e. will have multiple roots)</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">- it&#39;s often a good idea to fix issues with the skeleton in postprocessing rather</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">  than trying to get the skeletonization to be perfect</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd"># Benchmarks</span>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">&lt;img src=&quot;https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png&quot; alt=&quot;skeletor_benchmark&quot; width=&quot;100%&quot;/&gt;</span>
 </span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>
-</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd"># What about algorithm `X`?</span>
-</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>
-</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">`skeletor` contains some algorithms that I found easy enough to implement</span>
-</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">and useful for my work with neurons. If you have some interesting paper/approach</span>
-</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a><span class="sd">that could make a nice addition to `skeletor`, please get in touch on Github.</span>
-</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="sd">Pull requests are always welcome!</span>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>
-</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a><span class="sd"># References</span>
-</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>
-</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
-</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a>
-</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a><span class="sd">The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).</span>
-</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a><span class="sd">Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&amp;feature=youtu.be) YouTube video.</span>
-</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>
-</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">Some of the code in skeletor was modified from the</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">[Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)</span>
-</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">addon created by #0K Srinivasan Ramachandran and published under GPL3.</span>
-</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a>
-</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd"># Top-level functions and classes</span>
-</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">At top-level we only expose `example_mesh()` and the `Skeleton` class (which</span>
-</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">you probably won&#39;t ever need to touch manually). Everything else is neatly</span>
-</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">tucked away into submodules (see side-bar or above table).</span>
-</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a>
-</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.2.3&quot;</span>
-</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">skeletonize</span>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pre</span>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">post</span>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="kn">from</span> <span class="nn">.skeletonize.base</span> <span class="kn">import</span> <span class="n">Skeleton</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">example_mesh</span>
-</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>
-</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
-</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Skeleton&#39;</span><span class="p">,</span> <span class="s1">&#39;example_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;skeletonize&#39;</span><span class="p">]</span>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd">[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a><span class="sd">were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional</span>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">`fastremap` dependency installed. Note some of these functions (e.g.</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">contraction and TEASAR/vertex cluster skeletonization) vary a lot in</span>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a><span class="sd">speed based on parameterization.</span>
+</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a><span class="sd"># What about algorithm `X`?</span>
+</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a>
+</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a><span class="sd">`skeletor` contains some algorithms that I found easy enough to implement</span>
+</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">and useful for my work with neurons. If you have some interesting paper/approach</span>
+</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a><span class="sd">that could make a nice addition to `skeletor`, please get in touch on Github.</span>
+</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a><span class="sd">Pull requests are always welcome!</span>
+</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>
+</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a><span class="sd"># References</span>
+</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
+</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a>
+</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="sd">The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).</span>
+</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd">Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&amp;feature=youtu.be) YouTube video.</span>
+</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a>
+</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">Some of the code in skeletor was modified from the</span>
+</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">[Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)</span>
+</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="sd">addon created by #0K Srinivasan Ramachandran and published under GPL3.</span>
+</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a>
+</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a><span class="sd"># Top-level functions and classes</span>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="sd">At top-level we only expose `example_mesh()` and the `Skeleton` class (which</span>
+</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="sd">you probably won&#39;t ever need to touch manually). Everything else is neatly</span>
+</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">tucked away into submodules (see side-bar or above table).</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
+</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.3.0&quot;</span>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="n">__version_vector__</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>
+</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">skeletonize</span>
+</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">pre</span>
+</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a><span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">post</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a>
+</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a><span class="kn">from</span> <span class="nn">.skeletonize.base</span> <span class="kn">import</span> <span class="n">Skeleton</span>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">example_mesh</span>
+</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a>
+</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
+</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Skeleton&#39;</span><span class="p">,</span> <span class="s1">&#39;example_mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;skeletonize&#39;</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -865,103 +889,168 @@ tucked away into submodules (see side-bar or above table).</p>
 </span><span id="Skeleton-166"><a href="#Skeleton-166"><span class="linenos">166</span></a>        <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">dists</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
 </span><span id="Skeleton-167"><a href="#Skeleton-167"><span class="linenos">167</span></a>
 </span><span id="Skeleton-168"><a href="#Skeleton-168"><span class="linenos">168</span></a>        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
-</span><span id="Skeleton-169"><a href="#Skeleton-169"><span class="linenos">169</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_weighted_edges_from</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">nodes</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dists</span><span class="p">))</span>
-</span><span id="Skeleton-170"><a href="#Skeleton-170"><span class="linenos">170</span></a>
-</span><span id="Skeleton-171"><a href="#Skeleton-171"><span class="linenos">171</span></a>        <span class="k">return</span> <span class="n">G</span>
-</span><span id="Skeleton-172"><a href="#Skeleton-172"><span class="linenos">172</span></a>
-</span><span id="Skeleton-173"><a href="#Skeleton-173"><span class="linenos">173</span></a>    <span class="k">def</span> <span class="nf">save_swc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
-</span><span id="Skeleton-174"><a href="#Skeleton-174"><span class="linenos">174</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save skeleton in SWC format.</span>
-</span><span id="Skeleton-175"><a href="#Skeleton-175"><span class="linenos">175</span></a>
-</span><span id="Skeleton-176"><a href="#Skeleton-176"><span class="linenos">176</span></a><span class="sd">        Parameters</span>
-</span><span id="Skeleton-177"><a href="#Skeleton-177"><span class="linenos">177</span></a><span class="sd">        ----------</span>
-</span><span id="Skeleton-178"><a href="#Skeleton-178"><span class="linenos">178</span></a><span class="sd">        filepath :      path-like</span>
-</span><span id="Skeleton-179"><a href="#Skeleton-179"><span class="linenos">179</span></a><span class="sd">                        Filepath to save SWC to.</span>
-</span><span id="Skeleton-180"><a href="#Skeleton-180"><span class="linenos">180</span></a>
-</span><span id="Skeleton-181"><a href="#Skeleton-181"><span class="linenos">181</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton-182"><a href="#Skeleton-182"><span class="linenos">182</span></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
-</span><span id="Skeleton-183"><a href="#Skeleton-183"><span class="linenos">183</span></a><span class="s2">        # SWC format file</span>
-</span><span id="Skeleton-184"><a href="#Skeleton-184"><span class="linenos">184</span></a><span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
-</span><span id="Skeleton-185"><a href="#Skeleton-185"><span class="linenos">185</span></a><span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
-</span><span id="Skeleton-186"><a href="#Skeleton-186"><span class="linenos">186</span></a><span class="s2">        # PointNo Label X Y Z Radius Parent</span>
-</span><span id="Skeleton-187"><a href="#Skeleton-187"><span class="linenos">187</span></a><span class="s2">        # Labels:</span>
-</span><span id="Skeleton-188"><a href="#Skeleton-188"><span class="linenos">188</span></a><span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
-</span><span id="Skeleton-189"><a href="#Skeleton-189"><span class="linenos">189</span></a><span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
-</span><span id="Skeleton-190"><a href="#Skeleton-190"><span class="linenos">190</span></a>
-</span><span id="Skeleton-191"><a href="#Skeleton-191"><span class="linenos">191</span></a>        <span class="c1"># Make copy of SWC table</span>
-</span><span id="Skeleton-192"><a href="#Skeleton-192"><span class="linenos">192</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="Skeleton-193"><a href="#Skeleton-193"><span class="linenos">193</span></a>
-</span><span id="Skeleton-194"><a href="#Skeleton-194"><span class="linenos">194</span></a>        <span class="c1"># Set all labels to undefined</span>
-</span><span id="Skeleton-195"><a href="#Skeleton-195"><span class="linenos">195</span></a>        <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="Skeleton-196"><a href="#Skeleton-196"><span class="linenos">196</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>
-</span><span id="Skeleton-197"><a href="#Skeleton-197"><span class="linenos">197</span></a>        <span class="n">n_childs</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;parent_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</span><span id="Skeleton-198"><a href="#Skeleton-198"><span class="linenos">198</span></a>        <span class="n">bp</span> <span class="o">=</span> <span class="n">n_childs</span><span class="p">[</span><span class="n">n_childs</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
-</span><span id="Skeleton-199"><a href="#Skeleton-199"><span class="linenos">199</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bp</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-</span><span id="Skeleton-200"><a href="#Skeleton-200"><span class="linenos">200</span></a>
-</span><span id="Skeleton-201"><a href="#Skeleton-201"><span class="linenos">201</span></a>        <span class="c1"># Add radius if missing</span>
-</span><span id="Skeleton-202"><a href="#Skeleton-202"><span class="linenos">202</span></a>        <span class="k">if</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">swc</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-</span><span id="Skeleton-203"><a href="#Skeleton-203"><span class="linenos">203</span></a>            <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="Skeleton-204"><a href="#Skeleton-204"><span class="linenos">204</span></a>
-</span><span id="Skeleton-205"><a href="#Skeleton-205"><span class="linenos">205</span></a>        <span class="c1"># Get things in order</span>
-</span><span id="Skeleton-206"><a href="#Skeleton-206"><span class="linenos">206</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span><span class="p">[[</span><span class="s1">&#39;node_id&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_id&#39;</span><span class="p">]]</span>
-</span><span id="Skeleton-207"><a href="#Skeleton-207"><span class="linenos">207</span></a>
-</span><span id="Skeleton-208"><a href="#Skeleton-208"><span class="linenos">208</span></a>        <span class="c1"># Adjust column titles</span>
-</span><span id="Skeleton-209"><a href="#Skeleton-209"><span class="linenos">209</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PointNo&#39;</span><span class="p">,</span> <span class="s1">&#39;Label&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Radius&#39;</span><span class="p">,</span> <span class="s1">&#39;Parent&#39;</span><span class="p">]</span>
+</span><span id="Skeleton-169"><a href="#Skeleton-169"><span class="linenos">169</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</span><span id="Skeleton-170"><a href="#Skeleton-170"><span class="linenos">170</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_weighted_edges_from</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">nodes</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dists</span><span class="p">))</span>
+</span><span id="Skeleton-171"><a href="#Skeleton-171"><span class="linenos">171</span></a>
+</span><span id="Skeleton-172"><a href="#Skeleton-172"><span class="linenos">172</span></a>        <span class="k">return</span> <span class="n">G</span>
+</span><span id="Skeleton-173"><a href="#Skeleton-173"><span class="linenos">173</span></a>
+</span><span id="Skeleton-174"><a href="#Skeleton-174"><span class="linenos">174</span></a>    <span class="k">def</span> <span class="nf">get_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Skeleton-175"><a href="#Skeleton-175"><span class="linenos">175</span></a>                     <span class="n">weight</span> <span class="o">=</span> <span class="s1">&#39;weight&#39;</span><span class="p">,</span>
+</span><span id="Skeleton-176"><a href="#Skeleton-176"><span class="linenos">176</span></a>                     <span class="n">return_lengths</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+</span><span id="Skeleton-177"><a href="#Skeleton-177"><span class="linenos">177</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a list of linear segments while maximizing segment lengths.</span>
+</span><span id="Skeleton-178"><a href="#Skeleton-178"><span class="linenos">178</span></a>
+</span><span id="Skeleton-179"><a href="#Skeleton-179"><span class="linenos">179</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton-180"><a href="#Skeleton-180"><span class="linenos">180</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton-181"><a href="#Skeleton-181"><span class="linenos">181</span></a><span class="sd">        weight :    &#39;weight&#39; | None, optional</span>
+</span><span id="Skeleton-182"><a href="#Skeleton-182"><span class="linenos">182</span></a><span class="sd">                    If ``&quot;weight&quot;`` use physical, geodesic length to determine</span>
+</span><span id="Skeleton-183"><a href="#Skeleton-183"><span class="linenos">183</span></a><span class="sd">                    segment length. If ``None`` use number of nodes (faster).</span>
+</span><span id="Skeleton-184"><a href="#Skeleton-184"><span class="linenos">184</span></a><span class="sd">        return_lengths : bool</span>
+</span><span id="Skeleton-185"><a href="#Skeleton-185"><span class="linenos">185</span></a><span class="sd">                    If True, also return lengths of segments according to ``weight``.</span>
+</span><span id="Skeleton-186"><a href="#Skeleton-186"><span class="linenos">186</span></a>
+</span><span id="Skeleton-187"><a href="#Skeleton-187"><span class="linenos">187</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton-188"><a href="#Skeleton-188"><span class="linenos">188</span></a><span class="sd">        -------</span>
+</span><span id="Skeleton-189"><a href="#Skeleton-189"><span class="linenos">189</span></a><span class="sd">        segments :  list</span>
+</span><span id="Skeleton-190"><a href="#Skeleton-190"><span class="linenos">190</span></a><span class="sd">                    Segments as list of lists containing node IDs. List is</span>
+</span><span id="Skeleton-191"><a href="#Skeleton-191"><span class="linenos">191</span></a><span class="sd">                    sorted by segment lengths.</span>
+</span><span id="Skeleton-192"><a href="#Skeleton-192"><span class="linenos">192</span></a><span class="sd">        lengths :   list</span>
+</span><span id="Skeleton-193"><a href="#Skeleton-193"><span class="linenos">193</span></a><span class="sd">                    Length for each segment according to ``weight``. Only provided</span>
+</span><span id="Skeleton-194"><a href="#Skeleton-194"><span class="linenos">194</span></a><span class="sd">                    if `return_lengths` is True.</span>
+</span><span id="Skeleton-195"><a href="#Skeleton-195"><span class="linenos">195</span></a>
+</span><span id="Skeleton-196"><a href="#Skeleton-196"><span class="linenos">196</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton-197"><a href="#Skeleton-197"><span class="linenos">197</span></a>        <span class="k">assert</span> <span class="n">weight</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;Unable to use weight &quot;</span><span class="si">{</span><span class="n">weight</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+</span><span id="Skeleton-198"><a href="#Skeleton-198"><span class="linenos">198</span></a>
+</span><span id="Skeleton-199"><a href="#Skeleton-199"><span class="linenos">199</span></a>        <span class="c1"># Get graph representation</span>
+</span><span id="Skeleton-200"><a href="#Skeleton-200"><span class="linenos">200</span></a>        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>
+</span><span id="Skeleton-201"><a href="#Skeleton-201"><span class="linenos">201</span></a>
+</span><span id="Skeleton-202"><a href="#Skeleton-202"><span class="linenos">202</span></a>        <span class="c1"># Get distances to root</span>
+</span><span id="Skeleton-203"><a href="#Skeleton-203"><span class="linenos">203</span></a>        <span class="n">dists</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="Skeleton-204"><a href="#Skeleton-204"><span class="linenos">204</span></a>        <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+</span><span id="Skeleton-205"><a href="#Skeleton-205"><span class="linenos">205</span></a>            <span class="n">dists</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">shortest_path_length</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">))</span>
+</span><span id="Skeleton-206"><a href="#Skeleton-206"><span class="linenos">206</span></a>
+</span><span id="Skeleton-207"><a href="#Skeleton-207"><span class="linenos">207</span></a>        <span class="c1"># Sort leaf nodes</span>
+</span><span id="Skeleton-208"><a href="#Skeleton-208"><span class="linenos">208</span></a>        <span class="n">endNodeIDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">leafs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">leafs</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span>
+</span><span id="Skeleton-209"><a href="#Skeleton-209"><span class="linenos">209</span></a>        <span class="n">endNodeIDs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">endNodeIDs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">dists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="Skeleton-210"><a href="#Skeleton-210"><span class="linenos">210</span></a>
-</span><span id="Skeleton-211"><a href="#Skeleton-211"><span class="linenos">211</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-</span><span id="Skeleton-212"><a href="#Skeleton-212"><span class="linenos">212</span></a>            <span class="c1"># Write header</span>
-</span><span id="Skeleton-213"><a href="#Skeleton-213"><span class="linenos">213</span></a>            <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
-</span><span id="Skeleton-214"><a href="#Skeleton-214"><span class="linenos">214</span></a>
-</span><span id="Skeleton-215"><a href="#Skeleton-215"><span class="linenos">215</span></a>            <span class="c1"># Write data</span>
-</span><span id="Skeleton-216"><a href="#Skeleton-216"><span class="linenos">216</span></a>            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-</span><span id="Skeleton-217"><a href="#Skeleton-217"><span class="linenos">217</span></a>            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-</span><span id="Skeleton-218"><a href="#Skeleton-218"><span class="linenos">218</span></a>
-</span><span id="Skeleton-219"><a href="#Skeleton-219"><span class="linenos">219</span></a>    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Skeleton-220"><a href="#Skeleton-220"><span class="linenos">220</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
-</span><span id="Skeleton-221"><a href="#Skeleton-221"><span class="linenos">221</span></a>
-</span><span id="Skeleton-222"><a href="#Skeleton-222"><span class="linenos">222</span></a><span class="sd">        Returns</span>
-</span><span id="Skeleton-223"><a href="#Skeleton-223"><span class="linenos">223</span></a><span class="sd">        -------</span>
-</span><span id="Skeleton-224"><a href="#Skeleton-224"><span class="linenos">224</span></a><span class="sd">        scene :     trimesh.scene.scene.Scene</span>
-</span><span id="Skeleton-225"><a href="#Skeleton-225"><span class="linenos">225</span></a><span class="sd">                    Contains the skeleton and optionally the mesh.</span>
-</span><span id="Skeleton-226"><a href="#Skeleton-226"><span class="linenos">226</span></a>
-</span><span id="Skeleton-227"><a href="#Skeleton-227"><span class="linenos">227</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton-228"><a href="#Skeleton-228"><span class="linenos">228</span></a>        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
-</span><span id="Skeleton-229"><a href="#Skeleton-229"><span class="linenos">229</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
-</span><span id="Skeleton-230"><a href="#Skeleton-230"><span class="linenos">230</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
-</span><span id="Skeleton-231"><a href="#Skeleton-231"><span class="linenos">231</span></a>
-</span><span id="Skeleton-232"><a href="#Skeleton-232"><span class="linenos">232</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
-</span><span id="Skeleton-233"><a href="#Skeleton-233"><span class="linenos">233</span></a>
-</span><span id="Skeleton-234"><a href="#Skeleton-234"><span class="linenos">234</span></a>            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
-</span><span id="Skeleton-235"><a href="#Skeleton-235"><span class="linenos">235</span></a>            <span class="c1"># the original meshes</span>
-</span><span id="Skeleton-236"><a href="#Skeleton-236"><span class="linenos">236</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="Skeleton-237"><a href="#Skeleton-237"><span class="linenos">237</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="Skeleton-238"><a href="#Skeleton-238"><span class="linenos">238</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="Skeleton-239"><a href="#Skeleton-239"><span class="linenos">239</span></a>
-</span><span id="Skeleton-240"><a href="#Skeleton-240"><span class="linenos">240</span></a>        <span class="k">return</span> <span class="n">sc</span>
-</span><span id="Skeleton-241"><a href="#Skeleton-241"><span class="linenos">241</span></a>
-</span><span id="Skeleton-242"><a href="#Skeleton-242"><span class="linenos">242</span></a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Skeleton-243"><a href="#Skeleton-243"><span class="linenos">243</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
-</span><span id="Skeleton-244"><a href="#Skeleton-244"><span class="linenos">244</span></a>
-</span><span id="Skeleton-245"><a href="#Skeleton-245"><span class="linenos">245</span></a><span class="sd">        Parameters</span>
-</span><span id="Skeleton-246"><a href="#Skeleton-246"><span class="linenos">246</span></a><span class="sd">        ----------</span>
-</span><span id="Skeleton-247"><a href="#Skeleton-247"><span class="linenos">247</span></a><span class="sd">        mesh :      bool</span>
-</span><span id="Skeleton-248"><a href="#Skeleton-248"><span class="linenos">248</span></a><span class="sd">                    If True, will render transparent mesh on top of the</span>
-</span><span id="Skeleton-249"><a href="#Skeleton-249"><span class="linenos">249</span></a><span class="sd">                    skeleton.</span>
-</span><span id="Skeleton-250"><a href="#Skeleton-250"><span class="linenos">250</span></a>
-</span><span id="Skeleton-251"><a href="#Skeleton-251"><span class="linenos">251</span></a><span class="sd">        Returns</span>
-</span><span id="Skeleton-252"><a href="#Skeleton-252"><span class="linenos">252</span></a><span class="sd">        --------</span>
-</span><span id="Skeleton-253"><a href="#Skeleton-253"><span class="linenos">253</span></a><span class="sd">        scene :     trimesh.scene.Scene</span>
-</span><span id="Skeleton-254"><a href="#Skeleton-254"><span class="linenos">254</span></a><span class="sd">                    Scene with skeleton in it.</span>
+</span><span id="Skeleton-211"><a href="#Skeleton-211"><span class="linenos">211</span></a>        <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="Skeleton-212"><a href="#Skeleton-212"><span class="linenos">212</span></a>        <span class="n">sequences</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Skeleton-213"><a href="#Skeleton-213"><span class="linenos">213</span></a>        <span class="k">for</span> <span class="n">nodeID</span> <span class="ow">in</span> <span class="n">endNodeIDs</span><span class="p">:</span>
+</span><span id="Skeleton-214"><a href="#Skeleton-214"><span class="linenos">214</span></a>            <span class="n">sequence</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodeID</span><span class="p">]</span>
+</span><span id="Skeleton-215"><a href="#Skeleton-215"><span class="linenos">215</span></a>            <span class="n">parents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">nodeID</span><span class="p">))</span>
+</span><span id="Skeleton-216"><a href="#Skeleton-216"><span class="linenos">216</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="Skeleton-217"><a href="#Skeleton-217"><span class="linenos">217</span></a>                <span class="k">if</span> <span class="ow">not</span> <span class="n">parents</span><span class="p">:</span>
+</span><span id="Skeleton-218"><a href="#Skeleton-218"><span class="linenos">218</span></a>                    <span class="k">break</span>
+</span><span id="Skeleton-219"><a href="#Skeleton-219"><span class="linenos">219</span></a>                <span class="n">parentID</span> <span class="o">=</span> <span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="Skeleton-220"><a href="#Skeleton-220"><span class="linenos">220</span></a>                <span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parentID</span><span class="p">)</span>
+</span><span id="Skeleton-221"><a href="#Skeleton-221"><span class="linenos">221</span></a>                <span class="k">if</span> <span class="n">parentID</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+</span><span id="Skeleton-222"><a href="#Skeleton-222"><span class="linenos">222</span></a>                    <span class="k">break</span>
+</span><span id="Skeleton-223"><a href="#Skeleton-223"><span class="linenos">223</span></a>                <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">parentID</span><span class="p">)</span>
+</span><span id="Skeleton-224"><a href="#Skeleton-224"><span class="linenos">224</span></a>                <span class="n">parents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">parentID</span><span class="p">))</span>
+</span><span id="Skeleton-225"><a href="#Skeleton-225"><span class="linenos">225</span></a>
+</span><span id="Skeleton-226"><a href="#Skeleton-226"><span class="linenos">226</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="Skeleton-227"><a href="#Skeleton-227"><span class="linenos">227</span></a>                <span class="n">sequences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+</span><span id="Skeleton-228"><a href="#Skeleton-228"><span class="linenos">228</span></a>
+</span><span id="Skeleton-229"><a href="#Skeleton-229"><span class="linenos">229</span></a>        <span class="c1"># Sort sequences by length</span>
+</span><span id="Skeleton-230"><a href="#Skeleton-230"><span class="linenos">230</span></a>        <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="n">dists</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">dists</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+</span><span id="Skeleton-231"><a href="#Skeleton-231"><span class="linenos">231</span></a>        <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">sequences</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+</span><span id="Skeleton-232"><a href="#Skeleton-232"><span class="linenos">232</span></a>
+</span><span id="Skeleton-233"><a href="#Skeleton-233"><span class="linenos">233</span></a>        <span class="k">if</span> <span class="n">return_lengths</span><span class="p">:</span>
+</span><span id="Skeleton-234"><a href="#Skeleton-234"><span class="linenos">234</span></a>            <span class="k">return</span> <span class="n">sequences</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="Skeleton-235"><a href="#Skeleton-235"><span class="linenos">235</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Skeleton-236"><a href="#Skeleton-236"><span class="linenos">236</span></a>            <span class="k">return</span> <span class="n">sequences</span>
+</span><span id="Skeleton-237"><a href="#Skeleton-237"><span class="linenos">237</span></a>
+</span><span id="Skeleton-238"><a href="#Skeleton-238"><span class="linenos">238</span></a>    <span class="k">def</span> <span class="nf">save_swc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
+</span><span id="Skeleton-239"><a href="#Skeleton-239"><span class="linenos">239</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save skeleton in SWC format.</span>
+</span><span id="Skeleton-240"><a href="#Skeleton-240"><span class="linenos">240</span></a>
+</span><span id="Skeleton-241"><a href="#Skeleton-241"><span class="linenos">241</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton-242"><a href="#Skeleton-242"><span class="linenos">242</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton-243"><a href="#Skeleton-243"><span class="linenos">243</span></a><span class="sd">        filepath :      path-like</span>
+</span><span id="Skeleton-244"><a href="#Skeleton-244"><span class="linenos">244</span></a><span class="sd">                        Filepath to save SWC to.</span>
+</span><span id="Skeleton-245"><a href="#Skeleton-245"><span class="linenos">245</span></a>
+</span><span id="Skeleton-246"><a href="#Skeleton-246"><span class="linenos">246</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton-247"><a href="#Skeleton-247"><span class="linenos">247</span></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+</span><span id="Skeleton-248"><a href="#Skeleton-248"><span class="linenos">248</span></a><span class="s2">        # SWC format file</span>
+</span><span id="Skeleton-249"><a href="#Skeleton-249"><span class="linenos">249</span></a><span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
+</span><span id="Skeleton-250"><a href="#Skeleton-250"><span class="linenos">250</span></a><span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
+</span><span id="Skeleton-251"><a href="#Skeleton-251"><span class="linenos">251</span></a><span class="s2">        # PointNo Label X Y Z Radius Parent</span>
+</span><span id="Skeleton-252"><a href="#Skeleton-252"><span class="linenos">252</span></a><span class="s2">        # Labels:</span>
+</span><span id="Skeleton-253"><a href="#Skeleton-253"><span class="linenos">253</span></a><span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
+</span><span id="Skeleton-254"><a href="#Skeleton-254"><span class="linenos">254</span></a><span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
 </span><span id="Skeleton-255"><a href="#Skeleton-255"><span class="linenos">255</span></a>
-</span><span id="Skeleton-256"><a href="#Skeleton-256"><span class="linenos">256</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton-257"><a href="#Skeleton-257"><span class="linenos">257</span></a>        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
+</span><span id="Skeleton-256"><a href="#Skeleton-256"><span class="linenos">256</span></a>        <span class="c1"># Make copy of SWC table</span>
+</span><span id="Skeleton-257"><a href="#Skeleton-257"><span class="linenos">257</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </span><span id="Skeleton-258"><a href="#Skeleton-258"><span class="linenos">258</span></a>
-</span><span id="Skeleton-259"><a href="#Skeleton-259"><span class="linenos">259</span></a>        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
-</span><span id="Skeleton-260"><a href="#Skeleton-260"><span class="linenos">260</span></a>        <span class="c1"># way to work around this is to apply a transform such that the</span>
-</span><span id="Skeleton-261"><a href="#Skeleton-261"><span class="linenos">261</span></a>        <span class="c1"># coordinates have -5 to +5 bounds</span>
-</span><span id="Skeleton-262"><a href="#Skeleton-262"><span class="linenos">262</span></a>        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-</span><span id="Skeleton-263"><a href="#Skeleton-263"><span class="linenos">263</span></a>        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
-</span><span id="Skeleton-264"><a href="#Skeleton-264"><span class="linenos">264</span></a>
-</span><span id="Skeleton-265"><a href="#Skeleton-265"><span class="linenos">265</span></a>        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="Skeleton-259"><a href="#Skeleton-259"><span class="linenos">259</span></a>        <span class="c1"># Set all labels to undefined</span>
+</span><span id="Skeleton-260"><a href="#Skeleton-260"><span class="linenos">260</span></a>        <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="Skeleton-261"><a href="#Skeleton-261"><span class="linenos">261</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>
+</span><span id="Skeleton-262"><a href="#Skeleton-262"><span class="linenos">262</span></a>        <span class="n">n_childs</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;parent_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+</span><span id="Skeleton-263"><a href="#Skeleton-263"><span class="linenos">263</span></a>        <span class="n">bp</span> <span class="o">=</span> <span class="n">n_childs</span><span class="p">[</span><span class="n">n_childs</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+</span><span id="Skeleton-264"><a href="#Skeleton-264"><span class="linenos">264</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bp</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+</span><span id="Skeleton-265"><a href="#Skeleton-265"><span class="linenos">265</span></a>
+</span><span id="Skeleton-266"><a href="#Skeleton-266"><span class="linenos">266</span></a>        <span class="c1"># Add radius if missing</span>
+</span><span id="Skeleton-267"><a href="#Skeleton-267"><span class="linenos">267</span></a>        <span class="k">if</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">swc</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="Skeleton-268"><a href="#Skeleton-268"><span class="linenos">268</span></a>            <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="Skeleton-269"><a href="#Skeleton-269"><span class="linenos">269</span></a>
+</span><span id="Skeleton-270"><a href="#Skeleton-270"><span class="linenos">270</span></a>        <span class="c1"># Get things in order</span>
+</span><span id="Skeleton-271"><a href="#Skeleton-271"><span class="linenos">271</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span><span class="p">[[</span><span class="s1">&#39;node_id&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_id&#39;</span><span class="p">]]</span>
+</span><span id="Skeleton-272"><a href="#Skeleton-272"><span class="linenos">272</span></a>
+</span><span id="Skeleton-273"><a href="#Skeleton-273"><span class="linenos">273</span></a>        <span class="c1"># Adjust column titles</span>
+</span><span id="Skeleton-274"><a href="#Skeleton-274"><span class="linenos">274</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PointNo&#39;</span><span class="p">,</span> <span class="s1">&#39;Label&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Radius&#39;</span><span class="p">,</span> <span class="s1">&#39;Parent&#39;</span><span class="p">]</span>
+</span><span id="Skeleton-275"><a href="#Skeleton-275"><span class="linenos">275</span></a>
+</span><span id="Skeleton-276"><a href="#Skeleton-276"><span class="linenos">276</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+</span><span id="Skeleton-277"><a href="#Skeleton-277"><span class="linenos">277</span></a>            <span class="c1"># Write header</span>
+</span><span id="Skeleton-278"><a href="#Skeleton-278"><span class="linenos">278</span></a>            <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+</span><span id="Skeleton-279"><a href="#Skeleton-279"><span class="linenos">279</span></a>
+</span><span id="Skeleton-280"><a href="#Skeleton-280"><span class="linenos">280</span></a>            <span class="c1"># Write data</span>
+</span><span id="Skeleton-281"><a href="#Skeleton-281"><span class="linenos">281</span></a>            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+</span><span id="Skeleton-282"><a href="#Skeleton-282"><span class="linenos">282</span></a>            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</span><span id="Skeleton-283"><a href="#Skeleton-283"><span class="linenos">283</span></a>
+</span><span id="Skeleton-284"><a href="#Skeleton-284"><span class="linenos">284</span></a>    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="Skeleton-285"><a href="#Skeleton-285"><span class="linenos">285</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
+</span><span id="Skeleton-286"><a href="#Skeleton-286"><span class="linenos">286</span></a>
+</span><span id="Skeleton-287"><a href="#Skeleton-287"><span class="linenos">287</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton-288"><a href="#Skeleton-288"><span class="linenos">288</span></a><span class="sd">        -------</span>
+</span><span id="Skeleton-289"><a href="#Skeleton-289"><span class="linenos">289</span></a><span class="sd">        scene :     trimesh.scene.scene.Scene</span>
+</span><span id="Skeleton-290"><a href="#Skeleton-290"><span class="linenos">290</span></a><span class="sd">                    Contains the skeleton and optionally the mesh.</span>
+</span><span id="Skeleton-291"><a href="#Skeleton-291"><span class="linenos">291</span></a>
+</span><span id="Skeleton-292"><a href="#Skeleton-292"><span class="linenos">292</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton-293"><a href="#Skeleton-293"><span class="linenos">293</span></a>        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
+</span><span id="Skeleton-294"><a href="#Skeleton-294"><span class="linenos">294</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+</span><span id="Skeleton-295"><a href="#Skeleton-295"><span class="linenos">295</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
+</span><span id="Skeleton-296"><a href="#Skeleton-296"><span class="linenos">296</span></a>
+</span><span id="Skeleton-297"><a href="#Skeleton-297"><span class="linenos">297</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+</span><span id="Skeleton-298"><a href="#Skeleton-298"><span class="linenos">298</span></a>
+</span><span id="Skeleton-299"><a href="#Skeleton-299"><span class="linenos">299</span></a>            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
+</span><span id="Skeleton-300"><a href="#Skeleton-300"><span class="linenos">300</span></a>            <span class="c1"># the original meshes</span>
+</span><span id="Skeleton-301"><a href="#Skeleton-301"><span class="linenos">301</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="Skeleton-302"><a href="#Skeleton-302"><span class="linenos">302</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Skeleton-303"><a href="#Skeleton-303"><span class="linenos">303</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="Skeleton-304"><a href="#Skeleton-304"><span class="linenos">304</span></a>
+</span><span id="Skeleton-305"><a href="#Skeleton-305"><span class="linenos">305</span></a>        <span class="k">return</span> <span class="n">sc</span>
+</span><span id="Skeleton-306"><a href="#Skeleton-306"><span class="linenos">306</span></a>
+</span><span id="Skeleton-307"><a href="#Skeleton-307"><span class="linenos">307</span></a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="Skeleton-308"><a href="#Skeleton-308"><span class="linenos">308</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
+</span><span id="Skeleton-309"><a href="#Skeleton-309"><span class="linenos">309</span></a>
+</span><span id="Skeleton-310"><a href="#Skeleton-310"><span class="linenos">310</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton-311"><a href="#Skeleton-311"><span class="linenos">311</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton-312"><a href="#Skeleton-312"><span class="linenos">312</span></a><span class="sd">        mesh :      bool</span>
+</span><span id="Skeleton-313"><a href="#Skeleton-313"><span class="linenos">313</span></a><span class="sd">                    If True, will render transparent mesh on top of the</span>
+</span><span id="Skeleton-314"><a href="#Skeleton-314"><span class="linenos">314</span></a><span class="sd">                    skeleton.</span>
+</span><span id="Skeleton-315"><a href="#Skeleton-315"><span class="linenos">315</span></a>
+</span><span id="Skeleton-316"><a href="#Skeleton-316"><span class="linenos">316</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton-317"><a href="#Skeleton-317"><span class="linenos">317</span></a><span class="sd">        --------</span>
+</span><span id="Skeleton-318"><a href="#Skeleton-318"><span class="linenos">318</span></a><span class="sd">        scene :     trimesh.scene.Scene</span>
+</span><span id="Skeleton-319"><a href="#Skeleton-319"><span class="linenos">319</span></a><span class="sd">                    Scene with skeleton in it.</span>
+</span><span id="Skeleton-320"><a href="#Skeleton-320"><span class="linenos">320</span></a>
+</span><span id="Skeleton-321"><a href="#Skeleton-321"><span class="linenos">321</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton-322"><a href="#Skeleton-322"><span class="linenos">322</span></a>        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
+</span><span id="Skeleton-323"><a href="#Skeleton-323"><span class="linenos">323</span></a>
+</span><span id="Skeleton-324"><a href="#Skeleton-324"><span class="linenos">324</span></a>        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
+</span><span id="Skeleton-325"><a href="#Skeleton-325"><span class="linenos">325</span></a>        <span class="c1"># way to work around this is to apply a transform such that the</span>
+</span><span id="Skeleton-326"><a href="#Skeleton-326"><span class="linenos">326</span></a>        <span class="c1"># coordinates have -5 to +5 bounds</span>
+</span><span id="Skeleton-327"><a href="#Skeleton-327"><span class="linenos">327</span></a>        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</span><span id="Skeleton-328"><a href="#Skeleton-328"><span class="linenos">328</span></a>        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+</span><span id="Skeleton-329"><a href="#Skeleton-329"><span class="linenos">329</span></a>
+</span><span id="Skeleton-330"><a href="#Skeleton-330"><span class="linenos">330</span></a>        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1289,9 +1378,10 @@ Which method was used to generate the skeleton.</li>
 </span><span id="Skeleton.get_graph-166"><a href="#Skeleton.get_graph-166"><span class="linenos">166</span></a>        <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">dists</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
 </span><span id="Skeleton.get_graph-167"><a href="#Skeleton.get_graph-167"><span class="linenos">167</span></a>
 </span><span id="Skeleton.get_graph-168"><a href="#Skeleton.get_graph-168"><span class="linenos">168</span></a>        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
-</span><span id="Skeleton.get_graph-169"><a href="#Skeleton.get_graph-169"><span class="linenos">169</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_weighted_edges_from</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">nodes</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dists</span><span class="p">))</span>
-</span><span id="Skeleton.get_graph-170"><a href="#Skeleton.get_graph-170"><span class="linenos">170</span></a>
-</span><span id="Skeleton.get_graph-171"><a href="#Skeleton.get_graph-171"><span class="linenos">171</span></a>        <span class="k">return</span> <span class="n">G</span>
+</span><span id="Skeleton.get_graph-169"><a href="#Skeleton.get_graph-169"><span class="linenos">169</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</span><span id="Skeleton.get_graph-170"><a href="#Skeleton.get_graph-170"><span class="linenos">170</span></a>        <span class="n">G</span><span class="o">.</span><span class="n">add_weighted_edges_from</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">nodes</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dists</span><span class="p">))</span>
+</span><span id="Skeleton.get_graph-171"><a href="#Skeleton.get_graph-171"><span class="linenos">171</span></a>
+</span><span id="Skeleton.get_graph-172"><a href="#Skeleton.get_graph-172"><span class="linenos">172</span></a>        <span class="k">return</span> <span class="n">G</span>
 </span></pre></div>
 
 
@@ -1308,6 +1398,109 @@ Which method was used to generate the skeleton.</li>
 
 
                             </div>
+                            <div id="Skeleton.get_segments" class="classattr">
+                                        <input id="Skeleton.get_segments-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">get_segments</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span>, </span><span class="param"><span class="n">return_lengths</span><span class="o">=</span><span class="kc">False</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Skeleton.get_segments-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Skeleton.get_segments"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.get_segments-174"><a href="#Skeleton.get_segments-174"><span class="linenos">174</span></a>    <span class="k">def</span> <span class="nf">get_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Skeleton.get_segments-175"><a href="#Skeleton.get_segments-175"><span class="linenos">175</span></a>                     <span class="n">weight</span> <span class="o">=</span> <span class="s1">&#39;weight&#39;</span><span class="p">,</span>
+</span><span id="Skeleton.get_segments-176"><a href="#Skeleton.get_segments-176"><span class="linenos">176</span></a>                     <span class="n">return_lengths</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+</span><span id="Skeleton.get_segments-177"><a href="#Skeleton.get_segments-177"><span class="linenos">177</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a list of linear segments while maximizing segment lengths.</span>
+</span><span id="Skeleton.get_segments-178"><a href="#Skeleton.get_segments-178"><span class="linenos">178</span></a>
+</span><span id="Skeleton.get_segments-179"><a href="#Skeleton.get_segments-179"><span class="linenos">179</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton.get_segments-180"><a href="#Skeleton.get_segments-180"><span class="linenos">180</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton.get_segments-181"><a href="#Skeleton.get_segments-181"><span class="linenos">181</span></a><span class="sd">        weight :    &#39;weight&#39; | None, optional</span>
+</span><span id="Skeleton.get_segments-182"><a href="#Skeleton.get_segments-182"><span class="linenos">182</span></a><span class="sd">                    If ``&quot;weight&quot;`` use physical, geodesic length to determine</span>
+</span><span id="Skeleton.get_segments-183"><a href="#Skeleton.get_segments-183"><span class="linenos">183</span></a><span class="sd">                    segment length. If ``None`` use number of nodes (faster).</span>
+</span><span id="Skeleton.get_segments-184"><a href="#Skeleton.get_segments-184"><span class="linenos">184</span></a><span class="sd">        return_lengths : bool</span>
+</span><span id="Skeleton.get_segments-185"><a href="#Skeleton.get_segments-185"><span class="linenos">185</span></a><span class="sd">                    If True, also return lengths of segments according to ``weight``.</span>
+</span><span id="Skeleton.get_segments-186"><a href="#Skeleton.get_segments-186"><span class="linenos">186</span></a>
+</span><span id="Skeleton.get_segments-187"><a href="#Skeleton.get_segments-187"><span class="linenos">187</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton.get_segments-188"><a href="#Skeleton.get_segments-188"><span class="linenos">188</span></a><span class="sd">        -------</span>
+</span><span id="Skeleton.get_segments-189"><a href="#Skeleton.get_segments-189"><span class="linenos">189</span></a><span class="sd">        segments :  list</span>
+</span><span id="Skeleton.get_segments-190"><a href="#Skeleton.get_segments-190"><span class="linenos">190</span></a><span class="sd">                    Segments as list of lists containing node IDs. List is</span>
+</span><span id="Skeleton.get_segments-191"><a href="#Skeleton.get_segments-191"><span class="linenos">191</span></a><span class="sd">                    sorted by segment lengths.</span>
+</span><span id="Skeleton.get_segments-192"><a href="#Skeleton.get_segments-192"><span class="linenos">192</span></a><span class="sd">        lengths :   list</span>
+</span><span id="Skeleton.get_segments-193"><a href="#Skeleton.get_segments-193"><span class="linenos">193</span></a><span class="sd">                    Length for each segment according to ``weight``. Only provided</span>
+</span><span id="Skeleton.get_segments-194"><a href="#Skeleton.get_segments-194"><span class="linenos">194</span></a><span class="sd">                    if `return_lengths` is True.</span>
+</span><span id="Skeleton.get_segments-195"><a href="#Skeleton.get_segments-195"><span class="linenos">195</span></a>
+</span><span id="Skeleton.get_segments-196"><a href="#Skeleton.get_segments-196"><span class="linenos">196</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton.get_segments-197"><a href="#Skeleton.get_segments-197"><span class="linenos">197</span></a>        <span class="k">assert</span> <span class="n">weight</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;Unable to use weight &quot;</span><span class="si">{</span><span class="n">weight</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+</span><span id="Skeleton.get_segments-198"><a href="#Skeleton.get_segments-198"><span class="linenos">198</span></a>
+</span><span id="Skeleton.get_segments-199"><a href="#Skeleton.get_segments-199"><span class="linenos">199</span></a>        <span class="c1"># Get graph representation</span>
+</span><span id="Skeleton.get_segments-200"><a href="#Skeleton.get_segments-200"><span class="linenos">200</span></a>        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>
+</span><span id="Skeleton.get_segments-201"><a href="#Skeleton.get_segments-201"><span class="linenos">201</span></a>
+</span><span id="Skeleton.get_segments-202"><a href="#Skeleton.get_segments-202"><span class="linenos">202</span></a>        <span class="c1"># Get distances to root</span>
+</span><span id="Skeleton.get_segments-203"><a href="#Skeleton.get_segments-203"><span class="linenos">203</span></a>        <span class="n">dists</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="Skeleton.get_segments-204"><a href="#Skeleton.get_segments-204"><span class="linenos">204</span></a>        <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-205"><a href="#Skeleton.get_segments-205"><span class="linenos">205</span></a>            <span class="n">dists</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">shortest_path_length</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">))</span>
+</span><span id="Skeleton.get_segments-206"><a href="#Skeleton.get_segments-206"><span class="linenos">206</span></a>
+</span><span id="Skeleton.get_segments-207"><a href="#Skeleton.get_segments-207"><span class="linenos">207</span></a>        <span class="c1"># Sort leaf nodes</span>
+</span><span id="Skeleton.get_segments-208"><a href="#Skeleton.get_segments-208"><span class="linenos">208</span></a>        <span class="n">endNodeIDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">leafs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">leafs</span><span class="o">.</span><span class="n">parent_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span>
+</span><span id="Skeleton.get_segments-209"><a href="#Skeleton.get_segments-209"><span class="linenos">209</span></a>        <span class="n">endNodeIDs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">endNodeIDs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">dists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="Skeleton.get_segments-210"><a href="#Skeleton.get_segments-210"><span class="linenos">210</span></a>
+</span><span id="Skeleton.get_segments-211"><a href="#Skeleton.get_segments-211"><span class="linenos">211</span></a>        <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="Skeleton.get_segments-212"><a href="#Skeleton.get_segments-212"><span class="linenos">212</span></a>        <span class="n">sequences</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Skeleton.get_segments-213"><a href="#Skeleton.get_segments-213"><span class="linenos">213</span></a>        <span class="k">for</span> <span class="n">nodeID</span> <span class="ow">in</span> <span class="n">endNodeIDs</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-214"><a href="#Skeleton.get_segments-214"><span class="linenos">214</span></a>            <span class="n">sequence</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodeID</span><span class="p">]</span>
+</span><span id="Skeleton.get_segments-215"><a href="#Skeleton.get_segments-215"><span class="linenos">215</span></a>            <span class="n">parents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">nodeID</span><span class="p">))</span>
+</span><span id="Skeleton.get_segments-216"><a href="#Skeleton.get_segments-216"><span class="linenos">216</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-217"><a href="#Skeleton.get_segments-217"><span class="linenos">217</span></a>                <span class="k">if</span> <span class="ow">not</span> <span class="n">parents</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-218"><a href="#Skeleton.get_segments-218"><span class="linenos">218</span></a>                    <span class="k">break</span>
+</span><span id="Skeleton.get_segments-219"><a href="#Skeleton.get_segments-219"><span class="linenos">219</span></a>                <span class="n">parentID</span> <span class="o">=</span> <span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="Skeleton.get_segments-220"><a href="#Skeleton.get_segments-220"><span class="linenos">220</span></a>                <span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parentID</span><span class="p">)</span>
+</span><span id="Skeleton.get_segments-221"><a href="#Skeleton.get_segments-221"><span class="linenos">221</span></a>                <span class="k">if</span> <span class="n">parentID</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-222"><a href="#Skeleton.get_segments-222"><span class="linenos">222</span></a>                    <span class="k">break</span>
+</span><span id="Skeleton.get_segments-223"><a href="#Skeleton.get_segments-223"><span class="linenos">223</span></a>                <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">parentID</span><span class="p">)</span>
+</span><span id="Skeleton.get_segments-224"><a href="#Skeleton.get_segments-224"><span class="linenos">224</span></a>                <span class="n">parents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">parentID</span><span class="p">))</span>
+</span><span id="Skeleton.get_segments-225"><a href="#Skeleton.get_segments-225"><span class="linenos">225</span></a>
+</span><span id="Skeleton.get_segments-226"><a href="#Skeleton.get_segments-226"><span class="linenos">226</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-227"><a href="#Skeleton.get_segments-227"><span class="linenos">227</span></a>                <span class="n">sequences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+</span><span id="Skeleton.get_segments-228"><a href="#Skeleton.get_segments-228"><span class="linenos">228</span></a>
+</span><span id="Skeleton.get_segments-229"><a href="#Skeleton.get_segments-229"><span class="linenos">229</span></a>        <span class="c1"># Sort sequences by length</span>
+</span><span id="Skeleton.get_segments-230"><a href="#Skeleton.get_segments-230"><span class="linenos">230</span></a>        <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="n">dists</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">dists</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+</span><span id="Skeleton.get_segments-231"><a href="#Skeleton.get_segments-231"><span class="linenos">231</span></a>        <span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">sequences</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+</span><span id="Skeleton.get_segments-232"><a href="#Skeleton.get_segments-232"><span class="linenos">232</span></a>
+</span><span id="Skeleton.get_segments-233"><a href="#Skeleton.get_segments-233"><span class="linenos">233</span></a>        <span class="k">if</span> <span class="n">return_lengths</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-234"><a href="#Skeleton.get_segments-234"><span class="linenos">234</span></a>            <span class="k">return</span> <span class="n">sequences</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="Skeleton.get_segments-235"><a href="#Skeleton.get_segments-235"><span class="linenos">235</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Skeleton.get_segments-236"><a href="#Skeleton.get_segments-236"><span class="linenos">236</span></a>            <span class="k">return</span> <span class="n">sequences</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Generate a list of linear segments while maximizing segment lengths.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>weight</strong> ('weight' | None, optional):
+If <code>"weight"</code> use physical, geodesic length to determine
+segment length. If <code>None</code> use number of nodes (faster).</li>
+<li><strong>return_lengths</strong> (bool):
+If True, also return lengths of segments according to <code>weight</code>.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>segments</strong> (list):
+Segments as list of lists containing node IDs. List is
+sorted by segment lengths.</li>
+<li><strong>lengths</strong> (list):
+Length for each segment according to <code>weight</code>. Only provided
+if <code>return_lengths</code> is True.</li>
+</ul>
+</div>
+
+
+                            </div>
                             <div id="Skeleton.save_swc" class="classattr">
                                         <input id="Skeleton.save_swc-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1319,51 +1512,51 @@ Which method was used to generate the skeleton.</li>
 
     </div>
     <a class="headerlink" href="#Skeleton.save_swc"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.save_swc-173"><a href="#Skeleton.save_swc-173"><span class="linenos">173</span></a>    <span class="k">def</span> <span class="nf">save_swc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
-</span><span id="Skeleton.save_swc-174"><a href="#Skeleton.save_swc-174"><span class="linenos">174</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save skeleton in SWC format.</span>
-</span><span id="Skeleton.save_swc-175"><a href="#Skeleton.save_swc-175"><span class="linenos">175</span></a>
-</span><span id="Skeleton.save_swc-176"><a href="#Skeleton.save_swc-176"><span class="linenos">176</span></a><span class="sd">        Parameters</span>
-</span><span id="Skeleton.save_swc-177"><a href="#Skeleton.save_swc-177"><span class="linenos">177</span></a><span class="sd">        ----------</span>
-</span><span id="Skeleton.save_swc-178"><a href="#Skeleton.save_swc-178"><span class="linenos">178</span></a><span class="sd">        filepath :      path-like</span>
-</span><span id="Skeleton.save_swc-179"><a href="#Skeleton.save_swc-179"><span class="linenos">179</span></a><span class="sd">                        Filepath to save SWC to.</span>
-</span><span id="Skeleton.save_swc-180"><a href="#Skeleton.save_swc-180"><span class="linenos">180</span></a>
-</span><span id="Skeleton.save_swc-181"><a href="#Skeleton.save_swc-181"><span class="linenos">181</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton.save_swc-182"><a href="#Skeleton.save_swc-182"><span class="linenos">182</span></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
-</span><span id="Skeleton.save_swc-183"><a href="#Skeleton.save_swc-183"><span class="linenos">183</span></a><span class="s2">        # SWC format file</span>
-</span><span id="Skeleton.save_swc-184"><a href="#Skeleton.save_swc-184"><span class="linenos">184</span></a><span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
-</span><span id="Skeleton.save_swc-185"><a href="#Skeleton.save_swc-185"><span class="linenos">185</span></a><span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
-</span><span id="Skeleton.save_swc-186"><a href="#Skeleton.save_swc-186"><span class="linenos">186</span></a><span class="s2">        # PointNo Label X Y Z Radius Parent</span>
-</span><span id="Skeleton.save_swc-187"><a href="#Skeleton.save_swc-187"><span class="linenos">187</span></a><span class="s2">        # Labels:</span>
-</span><span id="Skeleton.save_swc-188"><a href="#Skeleton.save_swc-188"><span class="linenos">188</span></a><span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
-</span><span id="Skeleton.save_swc-189"><a href="#Skeleton.save_swc-189"><span class="linenos">189</span></a><span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
-</span><span id="Skeleton.save_swc-190"><a href="#Skeleton.save_swc-190"><span class="linenos">190</span></a>
-</span><span id="Skeleton.save_swc-191"><a href="#Skeleton.save_swc-191"><span class="linenos">191</span></a>        <span class="c1"># Make copy of SWC table</span>
-</span><span id="Skeleton.save_swc-192"><a href="#Skeleton.save_swc-192"><span class="linenos">192</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="Skeleton.save_swc-193"><a href="#Skeleton.save_swc-193"><span class="linenos">193</span></a>
-</span><span id="Skeleton.save_swc-194"><a href="#Skeleton.save_swc-194"><span class="linenos">194</span></a>        <span class="c1"># Set all labels to undefined</span>
-</span><span id="Skeleton.save_swc-195"><a href="#Skeleton.save_swc-195"><span class="linenos">195</span></a>        <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="Skeleton.save_swc-196"><a href="#Skeleton.save_swc-196"><span class="linenos">196</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>
-</span><span id="Skeleton.save_swc-197"><a href="#Skeleton.save_swc-197"><span class="linenos">197</span></a>        <span class="n">n_childs</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;parent_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</span><span id="Skeleton.save_swc-198"><a href="#Skeleton.save_swc-198"><span class="linenos">198</span></a>        <span class="n">bp</span> <span class="o">=</span> <span class="n">n_childs</span><span class="p">[</span><span class="n">n_childs</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
-</span><span id="Skeleton.save_swc-199"><a href="#Skeleton.save_swc-199"><span class="linenos">199</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bp</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-</span><span id="Skeleton.save_swc-200"><a href="#Skeleton.save_swc-200"><span class="linenos">200</span></a>
-</span><span id="Skeleton.save_swc-201"><a href="#Skeleton.save_swc-201"><span class="linenos">201</span></a>        <span class="c1"># Add radius if missing</span>
-</span><span id="Skeleton.save_swc-202"><a href="#Skeleton.save_swc-202"><span class="linenos">202</span></a>        <span class="k">if</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">swc</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-</span><span id="Skeleton.save_swc-203"><a href="#Skeleton.save_swc-203"><span class="linenos">203</span></a>            <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="Skeleton.save_swc-204"><a href="#Skeleton.save_swc-204"><span class="linenos">204</span></a>
-</span><span id="Skeleton.save_swc-205"><a href="#Skeleton.save_swc-205"><span class="linenos">205</span></a>        <span class="c1"># Get things in order</span>
-</span><span id="Skeleton.save_swc-206"><a href="#Skeleton.save_swc-206"><span class="linenos">206</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span><span class="p">[[</span><span class="s1">&#39;node_id&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_id&#39;</span><span class="p">]]</span>
-</span><span id="Skeleton.save_swc-207"><a href="#Skeleton.save_swc-207"><span class="linenos">207</span></a>
-</span><span id="Skeleton.save_swc-208"><a href="#Skeleton.save_swc-208"><span class="linenos">208</span></a>        <span class="c1"># Adjust column titles</span>
-</span><span id="Skeleton.save_swc-209"><a href="#Skeleton.save_swc-209"><span class="linenos">209</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PointNo&#39;</span><span class="p">,</span> <span class="s1">&#39;Label&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Radius&#39;</span><span class="p">,</span> <span class="s1">&#39;Parent&#39;</span><span class="p">]</span>
-</span><span id="Skeleton.save_swc-210"><a href="#Skeleton.save_swc-210"><span class="linenos">210</span></a>
-</span><span id="Skeleton.save_swc-211"><a href="#Skeleton.save_swc-211"><span class="linenos">211</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-</span><span id="Skeleton.save_swc-212"><a href="#Skeleton.save_swc-212"><span class="linenos">212</span></a>            <span class="c1"># Write header</span>
-</span><span id="Skeleton.save_swc-213"><a href="#Skeleton.save_swc-213"><span class="linenos">213</span></a>            <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
-</span><span id="Skeleton.save_swc-214"><a href="#Skeleton.save_swc-214"><span class="linenos">214</span></a>
-</span><span id="Skeleton.save_swc-215"><a href="#Skeleton.save_swc-215"><span class="linenos">215</span></a>            <span class="c1"># Write data</span>
-</span><span id="Skeleton.save_swc-216"><a href="#Skeleton.save_swc-216"><span class="linenos">216</span></a>            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-</span><span id="Skeleton.save_swc-217"><a href="#Skeleton.save_swc-217"><span class="linenos">217</span></a>            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.save_swc-238"><a href="#Skeleton.save_swc-238"><span class="linenos">238</span></a>    <span class="k">def</span> <span class="nf">save_swc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
+</span><span id="Skeleton.save_swc-239"><a href="#Skeleton.save_swc-239"><span class="linenos">239</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save skeleton in SWC format.</span>
+</span><span id="Skeleton.save_swc-240"><a href="#Skeleton.save_swc-240"><span class="linenos">240</span></a>
+</span><span id="Skeleton.save_swc-241"><a href="#Skeleton.save_swc-241"><span class="linenos">241</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton.save_swc-242"><a href="#Skeleton.save_swc-242"><span class="linenos">242</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton.save_swc-243"><a href="#Skeleton.save_swc-243"><span class="linenos">243</span></a><span class="sd">        filepath :      path-like</span>
+</span><span id="Skeleton.save_swc-244"><a href="#Skeleton.save_swc-244"><span class="linenos">244</span></a><span class="sd">                        Filepath to save SWC to.</span>
+</span><span id="Skeleton.save_swc-245"><a href="#Skeleton.save_swc-245"><span class="linenos">245</span></a>
+</span><span id="Skeleton.save_swc-246"><a href="#Skeleton.save_swc-246"><span class="linenos">246</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton.save_swc-247"><a href="#Skeleton.save_swc-247"><span class="linenos">247</span></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+</span><span id="Skeleton.save_swc-248"><a href="#Skeleton.save_swc-248"><span class="linenos">248</span></a><span class="s2">        # SWC format file</span>
+</span><span id="Skeleton.save_swc-249"><a href="#Skeleton.save_swc-249"><span class="linenos">249</span></a><span class="s2">        # based on specifications at http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html</span>
+</span><span id="Skeleton.save_swc-250"><a href="#Skeleton.save_swc-250"><span class="linenos">250</span></a><span class="s2">        # Created on </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2"> using skeletor (https://github.com/navis-org/skeletor)</span>
+</span><span id="Skeleton.save_swc-251"><a href="#Skeleton.save_swc-251"><span class="linenos">251</span></a><span class="s2">        # PointNo Label X Y Z Radius Parent</span>
+</span><span id="Skeleton.save_swc-252"><a href="#Skeleton.save_swc-252"><span class="linenos">252</span></a><span class="s2">        # Labels:</span>
+</span><span id="Skeleton.save_swc-253"><a href="#Skeleton.save_swc-253"><span class="linenos">253</span></a><span class="s2">        # 0 = undefined, 1 = soma, 5 = fork point, 6 = end point</span>
+</span><span id="Skeleton.save_swc-254"><a href="#Skeleton.save_swc-254"><span class="linenos">254</span></a><span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+</span><span id="Skeleton.save_swc-255"><a href="#Skeleton.save_swc-255"><span class="linenos">255</span></a>
+</span><span id="Skeleton.save_swc-256"><a href="#Skeleton.save_swc-256"><span class="linenos">256</span></a>        <span class="c1"># Make copy of SWC table</span>
+</span><span id="Skeleton.save_swc-257"><a href="#Skeleton.save_swc-257"><span class="linenos">257</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="Skeleton.save_swc-258"><a href="#Skeleton.save_swc-258"><span class="linenos">258</span></a>
+</span><span id="Skeleton.save_swc-259"><a href="#Skeleton.save_swc-259"><span class="linenos">259</span></a>        <span class="c1"># Set all labels to undefined</span>
+</span><span id="Skeleton.save_swc-260"><a href="#Skeleton.save_swc-260"><span class="linenos">260</span></a>        <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="Skeleton.save_swc-261"><a href="#Skeleton.save_swc-261"><span class="linenos">261</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">parent_id</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>
+</span><span id="Skeleton.save_swc-262"><a href="#Skeleton.save_swc-262"><span class="linenos">262</span></a>        <span class="n">n_childs</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;parent_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+</span><span id="Skeleton.save_swc-263"><a href="#Skeleton.save_swc-263"><span class="linenos">263</span></a>        <span class="n">bp</span> <span class="o">=</span> <span class="n">n_childs</span><span class="p">[</span><span class="n">n_childs</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+</span><span id="Skeleton.save_swc-264"><a href="#Skeleton.save_swc-264"><span class="linenos">264</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bp</span><span class="p">),</span> <span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+</span><span id="Skeleton.save_swc-265"><a href="#Skeleton.save_swc-265"><span class="linenos">265</span></a>
+</span><span id="Skeleton.save_swc-266"><a href="#Skeleton.save_swc-266"><span class="linenos">266</span></a>        <span class="c1"># Add radius if missing</span>
+</span><span id="Skeleton.save_swc-267"><a href="#Skeleton.save_swc-267"><span class="linenos">267</span></a>        <span class="k">if</span> <span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">swc</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="Skeleton.save_swc-268"><a href="#Skeleton.save_swc-268"><span class="linenos">268</span></a>            <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="Skeleton.save_swc-269"><a href="#Skeleton.save_swc-269"><span class="linenos">269</span></a>
+</span><span id="Skeleton.save_swc-270"><a href="#Skeleton.save_swc-270"><span class="linenos">270</span></a>        <span class="c1"># Get things in order</span>
+</span><span id="Skeleton.save_swc-271"><a href="#Skeleton.save_swc-271"><span class="linenos">271</span></a>        <span class="n">swc</span> <span class="o">=</span> <span class="n">swc</span><span class="p">[[</span><span class="s1">&#39;node_id&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_id&#39;</span><span class="p">]]</span>
+</span><span id="Skeleton.save_swc-272"><a href="#Skeleton.save_swc-272"><span class="linenos">272</span></a>
+</span><span id="Skeleton.save_swc-273"><a href="#Skeleton.save_swc-273"><span class="linenos">273</span></a>        <span class="c1"># Adjust column titles</span>
+</span><span id="Skeleton.save_swc-274"><a href="#Skeleton.save_swc-274"><span class="linenos">274</span></a>        <span class="n">swc</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PointNo&#39;</span><span class="p">,</span> <span class="s1">&#39;Label&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;Radius&#39;</span><span class="p">,</span> <span class="s1">&#39;Parent&#39;</span><span class="p">]</span>
+</span><span id="Skeleton.save_swc-275"><a href="#Skeleton.save_swc-275"><span class="linenos">275</span></a>
+</span><span id="Skeleton.save_swc-276"><a href="#Skeleton.save_swc-276"><span class="linenos">276</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+</span><span id="Skeleton.save_swc-277"><a href="#Skeleton.save_swc-277"><span class="linenos">277</span></a>            <span class="c1"># Write header</span>
+</span><span id="Skeleton.save_swc-278"><a href="#Skeleton.save_swc-278"><span class="linenos">278</span></a>            <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+</span><span id="Skeleton.save_swc-279"><a href="#Skeleton.save_swc-279"><span class="linenos">279</span></a>
+</span><span id="Skeleton.save_swc-280"><a href="#Skeleton.save_swc-280"><span class="linenos">280</span></a>            <span class="c1"># Write data</span>
+</span><span id="Skeleton.save_swc-281"><a href="#Skeleton.save_swc-281"><span class="linenos">281</span></a>            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+</span><span id="Skeleton.save_swc-282"><a href="#Skeleton.save_swc-282"><span class="linenos">282</span></a>            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">swc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1390,28 +1583,28 @@ Filepath to save SWC to.</li>
 
     </div>
     <a class="headerlink" href="#Skeleton.scene"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.scene-219"><a href="#Skeleton.scene-219"><span class="linenos">219</span></a>    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Skeleton.scene-220"><a href="#Skeleton.scene-220"><span class="linenos">220</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
-</span><span id="Skeleton.scene-221"><a href="#Skeleton.scene-221"><span class="linenos">221</span></a>
-</span><span id="Skeleton.scene-222"><a href="#Skeleton.scene-222"><span class="linenos">222</span></a><span class="sd">        Returns</span>
-</span><span id="Skeleton.scene-223"><a href="#Skeleton.scene-223"><span class="linenos">223</span></a><span class="sd">        -------</span>
-</span><span id="Skeleton.scene-224"><a href="#Skeleton.scene-224"><span class="linenos">224</span></a><span class="sd">        scene :     trimesh.scene.scene.Scene</span>
-</span><span id="Skeleton.scene-225"><a href="#Skeleton.scene-225"><span class="linenos">225</span></a><span class="sd">                    Contains the skeleton and optionally the mesh.</span>
-</span><span id="Skeleton.scene-226"><a href="#Skeleton.scene-226"><span class="linenos">226</span></a>
-</span><span id="Skeleton.scene-227"><a href="#Skeleton.scene-227"><span class="linenos">227</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton.scene-228"><a href="#Skeleton.scene-228"><span class="linenos">228</span></a>        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
-</span><span id="Skeleton.scene-229"><a href="#Skeleton.scene-229"><span class="linenos">229</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
-</span><span id="Skeleton.scene-230"><a href="#Skeleton.scene-230"><span class="linenos">230</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
-</span><span id="Skeleton.scene-231"><a href="#Skeleton.scene-231"><span class="linenos">231</span></a>
-</span><span id="Skeleton.scene-232"><a href="#Skeleton.scene-232"><span class="linenos">232</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
-</span><span id="Skeleton.scene-233"><a href="#Skeleton.scene-233"><span class="linenos">233</span></a>
-</span><span id="Skeleton.scene-234"><a href="#Skeleton.scene-234"><span class="linenos">234</span></a>            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
-</span><span id="Skeleton.scene-235"><a href="#Skeleton.scene-235"><span class="linenos">235</span></a>            <span class="c1"># the original meshes</span>
-</span><span id="Skeleton.scene-236"><a href="#Skeleton.scene-236"><span class="linenos">236</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="Skeleton.scene-237"><a href="#Skeleton.scene-237"><span class="linenos">237</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="Skeleton.scene-238"><a href="#Skeleton.scene-238"><span class="linenos">238</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="Skeleton.scene-239"><a href="#Skeleton.scene-239"><span class="linenos">239</span></a>
-</span><span id="Skeleton.scene-240"><a href="#Skeleton.scene-240"><span class="linenos">240</span></a>        <span class="k">return</span> <span class="n">sc</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.scene-284"><a href="#Skeleton.scene-284"><span class="linenos">284</span></a>    <span class="k">def</span> <span class="nf">scene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="Skeleton.scene-285"><a href="#Skeleton.scene-285"><span class="linenos">285</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Scene object containing the skeleton.</span>
+</span><span id="Skeleton.scene-286"><a href="#Skeleton.scene-286"><span class="linenos">286</span></a>
+</span><span id="Skeleton.scene-287"><a href="#Skeleton.scene-287"><span class="linenos">287</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton.scene-288"><a href="#Skeleton.scene-288"><span class="linenos">288</span></a><span class="sd">        -------</span>
+</span><span id="Skeleton.scene-289"><a href="#Skeleton.scene-289"><span class="linenos">289</span></a><span class="sd">        scene :     trimesh.scene.scene.Scene</span>
+</span><span id="Skeleton.scene-290"><a href="#Skeleton.scene-290"><span class="linenos">290</span></a><span class="sd">                    Contains the skeleton and optionally the mesh.</span>
+</span><span id="Skeleton.scene-291"><a href="#Skeleton.scene-291"><span class="linenos">291</span></a>
+</span><span id="Skeleton.scene-292"><a href="#Skeleton.scene-292"><span class="linenos">292</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton.scene-293"><a href="#Skeleton.scene-293"><span class="linenos">293</span></a>        <span class="k">if</span> <span class="n">mesh</span><span class="p">:</span>
+</span><span id="Skeleton.scene-294"><a href="#Skeleton.scene-294"><span class="linenos">294</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)):</span>
+</span><span id="Skeleton.scene-295"><a href="#Skeleton.scene-295"><span class="linenos">295</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Skeleton has no mesh.&#39;</span><span class="p">)</span>
+</span><span id="Skeleton.scene-296"><a href="#Skeleton.scene-296"><span class="linenos">296</span></a>
+</span><span id="Skeleton.scene-297"><a href="#Skeleton.scene-297"><span class="linenos">297</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">visual</span><span class="o">.</span><span class="n">face_colors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+</span><span id="Skeleton.scene-298"><a href="#Skeleton.scene-298"><span class="linenos">298</span></a>
+</span><span id="Skeleton.scene-299"><a href="#Skeleton.scene-299"><span class="linenos">299</span></a>            <span class="c1"># Note the copy(): without it the transform in show() changes</span>
+</span><span id="Skeleton.scene-300"><a href="#Skeleton.scene-300"><span class="linenos">300</span></a>            <span class="c1"># the original meshes</span>
+</span><span id="Skeleton.scene-301"><a href="#Skeleton.scene-301"><span class="linenos">301</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">()],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="Skeleton.scene-302"><a href="#Skeleton.scene-302"><span class="linenos">302</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Skeleton.scene-303"><a href="#Skeleton.scene-303"><span class="linenos">303</span></a>            <span class="n">sc</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">Scene</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="Skeleton.scene-304"><a href="#Skeleton.scene-304"><span class="linenos">304</span></a>
+</span><span id="Skeleton.scene-305"><a href="#Skeleton.scene-305"><span class="linenos">305</span></a>        <span class="k">return</span> <span class="n">sc</span>
 </span></pre></div>
 
 
@@ -1438,30 +1631,30 @@ Contains the skeleton and optionally the mesh.</li>
 
     </div>
     <a class="headerlink" href="#Skeleton.show"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.show-242"><a href="#Skeleton.show-242"><span class="linenos">242</span></a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Skeleton.show-243"><a href="#Skeleton.show-243"><span class="linenos">243</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
-</span><span id="Skeleton.show-244"><a href="#Skeleton.show-244"><span class="linenos">244</span></a>
-</span><span id="Skeleton.show-245"><a href="#Skeleton.show-245"><span class="linenos">245</span></a><span class="sd">        Parameters</span>
-</span><span id="Skeleton.show-246"><a href="#Skeleton.show-246"><span class="linenos">246</span></a><span class="sd">        ----------</span>
-</span><span id="Skeleton.show-247"><a href="#Skeleton.show-247"><span class="linenos">247</span></a><span class="sd">        mesh :      bool</span>
-</span><span id="Skeleton.show-248"><a href="#Skeleton.show-248"><span class="linenos">248</span></a><span class="sd">                    If True, will render transparent mesh on top of the</span>
-</span><span id="Skeleton.show-249"><a href="#Skeleton.show-249"><span class="linenos">249</span></a><span class="sd">                    skeleton.</span>
-</span><span id="Skeleton.show-250"><a href="#Skeleton.show-250"><span class="linenos">250</span></a>
-</span><span id="Skeleton.show-251"><a href="#Skeleton.show-251"><span class="linenos">251</span></a><span class="sd">        Returns</span>
-</span><span id="Skeleton.show-252"><a href="#Skeleton.show-252"><span class="linenos">252</span></a><span class="sd">        --------</span>
-</span><span id="Skeleton.show-253"><a href="#Skeleton.show-253"><span class="linenos">253</span></a><span class="sd">        scene :     trimesh.scene.Scene</span>
-</span><span id="Skeleton.show-254"><a href="#Skeleton.show-254"><span class="linenos">254</span></a><span class="sd">                    Scene with skeleton in it.</span>
-</span><span id="Skeleton.show-255"><a href="#Skeleton.show-255"><span class="linenos">255</span></a>
-</span><span id="Skeleton.show-256"><a href="#Skeleton.show-256"><span class="linenos">256</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Skeleton.show-257"><a href="#Skeleton.show-257"><span class="linenos">257</span></a>        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
-</span><span id="Skeleton.show-258"><a href="#Skeleton.show-258"><span class="linenos">258</span></a>
-</span><span id="Skeleton.show-259"><a href="#Skeleton.show-259"><span class="linenos">259</span></a>        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
-</span><span id="Skeleton.show-260"><a href="#Skeleton.show-260"><span class="linenos">260</span></a>        <span class="c1"># way to work around this is to apply a transform such that the</span>
-</span><span id="Skeleton.show-261"><a href="#Skeleton.show-261"><span class="linenos">261</span></a>        <span class="c1"># coordinates have -5 to +5 bounds</span>
-</span><span id="Skeleton.show-262"><a href="#Skeleton.show-262"><span class="linenos">262</span></a>        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-</span><span id="Skeleton.show-263"><a href="#Skeleton.show-263"><span class="linenos">263</span></a>        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
-</span><span id="Skeleton.show-264"><a href="#Skeleton.show-264"><span class="linenos">264</span></a>
-</span><span id="Skeleton.show-265"><a href="#Skeleton.show-265"><span class="linenos">265</span></a>        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Skeleton.show-307"><a href="#Skeleton.show-307"><span class="linenos">307</span></a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="Skeleton.show-308"><a href="#Skeleton.show-308"><span class="linenos">308</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the skeleton in an opengl window. Requires pyglet.</span>
+</span><span id="Skeleton.show-309"><a href="#Skeleton.show-309"><span class="linenos">309</span></a>
+</span><span id="Skeleton.show-310"><a href="#Skeleton.show-310"><span class="linenos">310</span></a><span class="sd">        Parameters</span>
+</span><span id="Skeleton.show-311"><a href="#Skeleton.show-311"><span class="linenos">311</span></a><span class="sd">        ----------</span>
+</span><span id="Skeleton.show-312"><a href="#Skeleton.show-312"><span class="linenos">312</span></a><span class="sd">        mesh :      bool</span>
+</span><span id="Skeleton.show-313"><a href="#Skeleton.show-313"><span class="linenos">313</span></a><span class="sd">                    If True, will render transparent mesh on top of the</span>
+</span><span id="Skeleton.show-314"><a href="#Skeleton.show-314"><span class="linenos">314</span></a><span class="sd">                    skeleton.</span>
+</span><span id="Skeleton.show-315"><a href="#Skeleton.show-315"><span class="linenos">315</span></a>
+</span><span id="Skeleton.show-316"><a href="#Skeleton.show-316"><span class="linenos">316</span></a><span class="sd">        Returns</span>
+</span><span id="Skeleton.show-317"><a href="#Skeleton.show-317"><span class="linenos">317</span></a><span class="sd">        --------</span>
+</span><span id="Skeleton.show-318"><a href="#Skeleton.show-318"><span class="linenos">318</span></a><span class="sd">        scene :     trimesh.scene.Scene</span>
+</span><span id="Skeleton.show-319"><a href="#Skeleton.show-319"><span class="linenos">319</span></a><span class="sd">                    Scene with skeleton in it.</span>
+</span><span id="Skeleton.show-320"><a href="#Skeleton.show-320"><span class="linenos">320</span></a>
+</span><span id="Skeleton.show-321"><a href="#Skeleton.show-321"><span class="linenos">321</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Skeleton.show-322"><a href="#Skeleton.show-322"><span class="linenos">322</span></a>        <span class="n">scene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>
+</span><span id="Skeleton.show-323"><a href="#Skeleton.show-323"><span class="linenos">323</span></a>
+</span><span id="Skeleton.show-324"><a href="#Skeleton.show-324"><span class="linenos">324</span></a>        <span class="c1"># I encountered some issues if object space is big and the easiest</span>
+</span><span id="Skeleton.show-325"><a href="#Skeleton.show-325"><span class="linenos">325</span></a>        <span class="c1"># way to work around this is to apply a transform such that the</span>
+</span><span id="Skeleton.show-326"><a href="#Skeleton.show-326"><span class="linenos">326</span></a>        <span class="c1"># coordinates have -5 to +5 bounds</span>
+</span><span id="Skeleton.show-327"><a href="#Skeleton.show-327"><span class="linenos">327</span></a>        <span class="n">fac</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">skeleton</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</span><span id="Skeleton.show-328"><a href="#Skeleton.show-328"><span class="linenos">328</span></a>        <span class="n">scene</span><span class="o">.</span><span class="n">apply_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="n">fac</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+</span><span id="Skeleton.show-329"><a href="#Skeleton.show-329"><span class="linenos">329</span></a>
+</span><span id="Skeleton.show-330"><a href="#Skeleton.show-330"><span class="linenos">330</span></a>        <span class="k">return</span> <span class="n">scene</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </span></pre></div>
 
 
