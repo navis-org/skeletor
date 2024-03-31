@@ -1,5 +1,12 @@
 # News
 
+## 1.3.0 (2023-03-31)
+
+New post-processing methods:
+- `skeletor.post.smooth` to smooth the skeleton
+- `skeletor.post.despike` remove spikes from skeleton
+- `skeletor.post.remove_bristles` to remove single-node bristles from the skeleton
+
 ## 1.2.0 (2022-04-03)
 
 This release mainly improves `skeletor.skeletonize.by_wavefront` but it also
