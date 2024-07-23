@@ -327,3 +327,89 @@ class Skeleton:
         scene.apply_transform(np.diag([fac, fac, fac, 1]))
 
         return scene.show(**kwargs)
+
+    def mend_breaks(self, dist_mult=5):
+        """Mend breaks in the skeleton using the original mesh.
+
+        This works by comparing the connectivity of the original mesh with that
+        of the skeleton. If the shortest path between two adjacent vertices on the mesh
+        is shorter than the distance between the nodes in the skeleton, a new edge
+        is added to the skeleton.
+
+        Parameters
+        ----------
+        dist_mult : float, optional
+                    Factor by which the new edge should be shorter than the
+                    current shortest path between two nodes to be added.
+                    Lower values = fewer false negatives; higher values = fewer
+                    false positive edges.
+
+        Returns
+        -------
+        edges :     (N, 2) array
+                    Edges connecting the skeleton nodes.
+        vertices :  (N, 3) array
+                    Positions of the skeleton nodes.
+
+        """
+        # We need `.mesh_map` and `mesh` to exist
+        if self.mesh_map is None:
+            raise ValueError('Skeleton must have a mesh_map to mend break.')
+        if self.mesh is None:
+            raise ValueError('Skeleton must have a mesh to mend break.')
+
+        # Make a copy of the mesh edges
+        edges = self.mesh.edges.copy()
+        # Map mesh vertices to skeleton vertices
+        edges[:, 0] = self.mesh_map[self.mesh.edges[:, 0]]
+        edges[:, 1] = self.mesh_map[self.mesh.edges[:, 1]]
+        # Deduplicate
+        edges = np.unique(edges, axis=0)
+        # Remove self edges
+        edges = edges[edges[:,0] != edges[:, 1]]
+
+        G = self.get_graph().to_undirected()
+
+        # Remove edges that are already in the skeleton
+        edges = np.array([e for e in edges if not G.has_edge(*e)])
+
+        # Calculate distance between these new edge candidates
+        dists = np.sqrt(((self.vertices[edges[:, 0]] - self.vertices[edges[:, 1]]) ** 2).sum(axis=1))
+
+        # Sort by distance (lowest first)
+        edges = edges[np.argsort(dists)]
+        dists = dists[np.argsort(dists)]
+
+        for e, d in zip(edges, dists):
+            # Check if the new path would be shorter
+            if nx.shortest_path_length(G, e[0], e[1]) > (d * dist_mult):
+                # Add edge
+                G.add_edge(*e, weight=d)
+
+        # The above may have introduced triangles which we should try to remove
+        # by removing the longest edge in the triangle
+        # First collect neighbors for each node
+        later_nbrs = {}
+        for node, neighbors in G.adjacency():
+            later_nbrs[node] = {n for n in neighbors if n not in later_nbrs and n != node}
+
+        # Go over each node
+        triangles = set()
+        for node1, neighbors in later_nbrs.items():
+            # Go over each neighbor
+            for node2 in neighbors:
+                # Check if there is a third node that is connected to both
+                third_nodes = neighbors & later_nbrs[node2]
+                for node3 in third_nodes:
+                    triangles.add(tuple(sorted([node1, node2, node3])))
+
+        # Remove longest edge in each triangle
+        for t in triangles:
+            e1, e2, e3 = t[:2], t[1:], t[::2]
+            # Make sure all edges still exist
+            if any(not G.has_edge(*e) for e in (e1, e2, e3)):
+                continue
+            # Remove the longest edge
+            G.remove_edge(*max((e1, e2, e3), key=lambda e: G.edges[e]['weight']))
+
+        return np.array(G.edges), self.vertices.copy()
