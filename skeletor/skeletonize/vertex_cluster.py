@@ -41,7 +41,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
 
     The algorithm traverses the mesh graph and groups vertices together that
     are within a given distance to each other. This uses the geodesic
-    (along-the-mesh) distance, not simply the Eucledian distance. Subsequently
+    (along-the-mesh) distance, not simply the Euclidean distance. Subsequently
     these groups of vertices are collapsed and re-connected respecting the
     topology of the input mesh.
 

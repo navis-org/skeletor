@@ -334,7 +334,7 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
                 Original mesh (e.g. before contraction). If not provided will
                 use the mesh associated with ``s``.
     max_dist :  "auto" | int | float
-                Maximum Eucledian distance allowed between leaf nodes for them
+                Maximum Euclidean distance allowed between leaf nodes for them
                 to be considered for collapsing. If "auto", will use the length
                 of the longest edge in skeleton as limit.
     inplace :   bool

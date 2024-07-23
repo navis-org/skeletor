@@ -73,7 +73,7 @@ def visualize_normals(mesh, le='auto', show=True):
 
 
 def _make_normals(mesh, le='auto'):
-    """Make path representing normals of the mesh."""
+    """Make path representing normals of the mesh for debugging."""
     if le == 'auto':
         le = mesh.edges_unique_length.mean()
 
@@ -96,7 +96,7 @@ def _make_normals(mesh, le='auto'):
 
 
 def _show_tangent_spheres(mesh, centers, radii, normals=False):
-    """Visualize tangent spheres (debuggin)."""
+    """Visualize tangent spheres for debugging."""
     mesh = make_trimesh(mesh, validate=False)
 
     fac = 5 / mesh.bounds[1].max()

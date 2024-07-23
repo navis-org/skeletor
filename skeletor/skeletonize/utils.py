@@ -47,7 +47,7 @@ def mst_over_mesh(mesh, verts, limit='auto'):
                 Use this to limit the distance for shortest path search
                 (``scipy.sparse.csgraph.dijkstra``). Can greatly speed up this
                 function at the risk of producing disconnected components. By
-                default (auto), we are using 3x the max observed Eucledian
+                default (auto), we are using 3x the max observed Euclidean
                 distance between ``verts``.
 
     Returns
