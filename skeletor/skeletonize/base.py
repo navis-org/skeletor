@@ -328,7 +328,7 @@ class Skeleton:
 
         return scene.show(**kwargs)
 
-    def mend_breaks(self, dist_mult=5):
+    def mend_breaks(self, dist_mult=5, dist_min=0, dist_max=np.inf):
         """Mend breaks in the skeleton using the original mesh.
 
         This works by comparing the connectivity of the original mesh with that
@@ -343,6 +343,12 @@ class Skeleton:
                     current shortest path between two nodes to be added.
                     Lower values = fewer false negatives; higher values = fewer
                     false positive edges.
+        dist_min :  float, optional
+                    Minimum distance between nodes to consider adding an edge.
+                    Use this to avoid adding very short edges.
+        dist_max :  float, optional
+                    Maximum distance between nodes to consider adding an edge.
+                    Use this to avoid adding very long edges.
 
         Returns
         -------
@@ -352,11 +358,11 @@ class Skeleton:
                     Positions of the skeleton nodes.
 
         """
-        # We need `.mesh_map` and `mesh` to exist
+        # We need `.mesh_map` and `.mesh` to exist
         if self.mesh_map is None:
-            raise ValueError('Skeleton must have a mesh_map to mend break.')
+            raise ValueError('Skeleton must have a `mesh_map` to mend breaks.')
         if self.mesh is None:
-            raise ValueError('Skeleton must have a mesh to mend break.')
+            raise ValueError('Skeleton must have a `mesh` to mend breaks.')
 
         # Make a copy of the mesh edges
         edges = self.mesh.edges.copy()
@@ -381,13 +387,22 @@ class Skeleton:
         dists = dists[np.argsort(dists)]
 
         for e, d in zip(edges, dists):
-            # Check if the new path would be shorter
-            if nx.shortest_path_length(G, e[0], e[1]) > (d * dist_mult):
-                # Add edge
-                G.add_edge(*e, weight=d)
+            # Check if the new path would be shorter than the current shortest path
+            if (d * dist_mult) < nx.shortest_path_length(G, e[0], e[1]):
+                continue
+            # Check if the distance is within bounds
+            elif d < dist_min:
+                continue
+            elif d > dist_max:
+                continue
+            # Add edge
+            G.add_edge(*e, weight=d)
 
-        # The above may have introduced triangles which we should try to remove
-        # by removing the longest edge in the triangle
+        # The above may have introduced small triangles which we should try to remove
+        # by removing the longest edge in a triangle. I have also spotted more
+        # complex cases of four or more nodes forming false-positive loops but
+        # these will be harder to detect and remove.
+
         # First collect neighbors for each node
         later_nbrs = {}
         for node, neighbors in G.adjacency():
@@ -398,15 +413,17 @@ class Skeleton:
         for node1, neighbors in later_nbrs.items():
             # Go over each neighbor
             for node2 in neighbors:
-                # Check if there is a third node that is connected to both
+                # Check if there is one or more third nodes that are connected to both
                 third_nodes = neighbors & later_nbrs[node2]
                 for node3 in third_nodes:
+                    # Add triangle (sort to deduplicate)
                     triangles.add(tuple(sorted([node1, node2, node3])))
 
         # Remove longest edge in each triangle
         for t in triangles:
             e1, e2, e3 = t[:2], t[1:], t[::2]
-            # Make sure all edges still exist
+            # Make sure all edges still exist (we may have already removed edges
+            # that were part of a previous triangle)
             if any(not G.has_edge(*e) for e in (e1, e2, e3)):
                 continue
             # Remove the longest edge
