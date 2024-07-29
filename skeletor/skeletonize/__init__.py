@@ -47,9 +47,10 @@ is a quick summary:
 from .edge_collapse import *
 from .vertex_cluster import *
 from .wave import *
+from .wave2 import *
 from .teasar import *
 from .tangent_ball import *
 
 __docformat__ = "numpy"
-__all__ = ['by_teasar', 'by_wavefront', 'by_vertex_clusters',
+__all__ = ['by_teasar', 'by_wavefront','by_wavefront_exact', 'by_vertex_clusters',
            'by_edge_collapse', 'by_tangent_ball']
