@@ -142,6 +142,7 @@ def by_wavefront(mesh,
 
     else:
         weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
+
     tree = G.spanning_tree(weights=1 / weights)
 
     # Create a directed acyclic and hierarchical graph
