@@ -95,7 +95,7 @@ class Skeleton:
         if 'radius' not in self.swc.columns:
             raise ValueError('No radius info found. Run `skeletor.post.radii()`'
                              ' to get them.')
-        return self.swc['radius'].values,
+        return self.swc['radius'].values
 
     @property
     def skeleton(self):
