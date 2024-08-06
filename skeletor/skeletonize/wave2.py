@@ -18,7 +18,7 @@ import igraph as ig
 import numpy as np
 import pandas as pd
 
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm, trange
 
 from ..utilities import make_trimesh
 from .base import Skeleton
@@ -121,7 +121,9 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     data = []
 
     # Go over each connected component
-    with tqdm(desc="Skeletonizing", total=len(G.vs), disable=not progress) as pbar:
+    with tqdm(
+        desc="Skeletonizing", total=len(G.vs), disable=not progress, leave=False
+    ) as pbar:
         for k, cc in enumerate(G.connected_components()):
             # Make a subgraph for this connected component
             SG = G.subgraph(cc)
@@ -247,7 +249,11 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     # This maps the step and the vertex ID to the index in the centers array
     step_id_map = {(step, id): i for i, (step, id) in enumerate(data[:, 1:])}
 
-    for i in range(1, data[:, 1].max()):
+    tree = G.spanning_tree()
+
+    for i in trange(
+        1, data[:, 1].max(), desc="Connecting", disable=not progress, leave=False
+    ):
         is_this_step = data[:, 1] == i  # All centers in this step
         is_prev_step = data[:, 1] == i - 1  # All centers in the previous step
 
@@ -264,8 +270,10 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
         )  # All track-vertices in the previous step
 
         # Get distances between current and previous track vertices
+        # Note to self: this step takes up about 60% of the time at the moment
+        # There should be a way to speed this up.
         d = np.array(
-            G.distances(
+            tree.distances(
                 source=this_step_track_verts,
                 target=prev_step_track_verts,
                 mode="all",
