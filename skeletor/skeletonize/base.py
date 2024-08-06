@@ -70,42 +70,42 @@ class Skeleton:
     def __repr__(self):
         """Return quick summary of the skeleton's geometry."""
         elements = []
-        if hasattr(self, 'vertices'):
-            elements.append(f'vertices={self.vertices.shape}')
-        if hasattr(self, 'edges'):
-            elements.append(f'edges={self.edges.shape}')
-        if hasattr(self, 'method'):
-            elements.append(f'method={self.method}')
+        if hasattr(self, "vertices"):
+            elements.append(f"vertices={self.vertices.shape}")
+        if hasattr(self, "edges"):
+            elements.append(f"edges={self.edges.shape}")
+        if hasattr(self, "method"):
+            elements.append(f"method={self.method}")
         return f'<Skeleton({", ".join(elements)})>'
 
     @property
     def edges(self):
         """Return skeleton edges."""
-        return self.swc.loc[self.swc.parent_id >= 0,
-                            ['node_id', 'parent_id']].values
+        return self.swc.loc[self.swc.parent_id >= 0, ["node_id", "parent_id"]].values
 
     @property
     def vertices(self):
         """Return skeleton vertices (nodes)."""
-        return self.swc[['x', 'y', 'z']].values
+        return self.swc[["x", "y", "z"]].values
 
     @property
     def radius(self):
         """Return radii."""
-        if 'radius' not in self.swc.columns:
-            raise ValueError('No radius info found. Run `skeletor.post.radii()`'
-                             ' to get them.')
-        return self.swc['radius'].values
+        if "radius" not in self.swc.columns:
+            raise ValueError(
+                "No radius info found. Run `skeletor.post.radii()`" " to get them."
+            )
+        return self.swc["radius"].values
 
     @property
     def skeleton(self):
         """Skeleton as trimesh Path3D."""
-        if not hasattr(self, '_skeleton'):
+        if not hasattr(self, "_skeleton"):
             lines = [tm.path.entities.Line(e) for e in self.edges]
 
-            self._skeleton = tm.path.Path3D(entities=lines,
-                                            vertices=self.vertices,
-                                            process=False)
+            self._skeleton = tm.path.Path3D(
+                entities=lines, vertices=self.vertices, process=False
+            )
         return self._skeleton
 
     @property
@@ -113,10 +113,18 @@ class Skeleton:
         """Skeleton vertex (nodes) to mesh vertices. Based on `mesh_map`."""
         if isinstance(self.mesh_map, type(None)):
             return None
-        return pd.DataFrame(self.mesh_map
-                            ).reset_index(drop=False
-                                          ).groupby(0)['index'].apply(np.array
-                                                                      ).values
+        return (
+            pd.DataFrame(self.mesh_map)
+            .reset_index(drop=False)
+            .groupby(0)["index"]
+            .apply(np.array)
+            .values
+        )
+
+    @property
+    def roots(self):
+        """Root node(s)."""
+        return self.swc.loc[self.swc.parent_id < 0].index.values
 
     @property
     def leafs(self):
@@ -141,11 +149,62 @@ class Skeleton:
         if not inplace:
             return x
 
+    def reroot(self, new_root):
+        """Reroot the skeleton.
+
+        Parameters
+        ----------
+        new_root :  int
+                    Index of node to use as new root. If the skeleton
+                    consists of multiple trees, only the tree containing the
+                    new root will be updated.
+
+        Returns
+        -------
+        Skeleton
+                    Skeleton with new root.
+
+        """
+        assert new_root in self.swc.index.values, f"Node index {new_root} not in skeleton."
+
+        # Make copy of self
+        x = self.copy()
+
+        # Check if the new root is already a root
+        if new_root in x.roots:
+            return x
+
+        # Get graph representation
+        G = x.get_graph()
+
+        # Get the path from the new root to the current root (of the same tree)
+        for r in x.roots:
+            try:
+                path = nx.shortest_path(G, source=new_root, target=r)
+                break
+            except nx.NetworkXNoPath:
+                continue
+
+        # Now we need to invert the path from the old root to the new root
+        new_parents = x.swc.set_index('node_id').parent_id.to_dict()
+        new_parents.update({c: p for p, c in zip(path[:-1], path[1:])})
+        new_parents[new_root] = -1
+
+        # Update the SWC table
+        x.swc["parent_id"] = x.swc.node_id.map(new_parents)
+
+        return x
+
     def copy(self):
         """Return copy of the skeleton."""
-        return Skeleton(swc=self.swc.copy() if not isinstance(self.swc, type(None)) else None,
-                        mesh=self.mesh.copy() if not isinstance(self.mesh, type(None)) else None,
-                        mesh_map=self.mesh_map.copy() if not isinstance(self.mesh_map, type(None)) else None)
+        return Skeleton(
+            swc=self.swc.copy() if not isinstance(self.swc, type(None)) else None,
+            mesh=self.mesh.copy() if not isinstance(self.mesh, type(None)) else None,
+            mesh_map=self.mesh_map.copy()
+            if not isinstance(self.mesh_map, type(None))
+            else None,
+            method=self.method,
+        )
 
     def get_graph(self):
         """Generate networkX representation of the skeletons.
@@ -159,20 +218,22 @@ class Skeleton:
         """
         not_root = self.swc.parent_id >= 0
         nodes = self.swc.loc[not_root]
-        parents = self.swc.set_index('node_id').loc[self.swc.loc[not_root, 'parent_id'].values]
+        parents = self.swc.set_index("node_id").loc[
+            self.swc.loc[not_root, "parent_id"].values
+        ]
 
-        dists = nodes[['x', 'y', 'z']].values - parents[['x', 'y', 'z']].values
-        dists = np.sqrt((dists ** 2).sum(axis=1))
+        dists = nodes[["x", "y", "z"]].values - parents[["x", "y", "z"]].values
+        dists = np.sqrt((dists**2).sum(axis=1))
 
         G = nx.DiGraph()
         G.add_nodes_from(self.swc.node_id.values)
-        G.add_weighted_edges_from(zip(nodes.node_id.values, nodes.parent_id.values, dists))
+        G.add_weighted_edges_from(
+            zip(nodes.node_id.values, nodes.parent_id.values, dists)
+        )
 
         return G
 
-    def get_segments(self,
-                     weight = 'weight',
-                     return_lengths = False):
+    def get_segments(self, weight="weight", return_lengths=False):
         """Generate a list of linear segments while maximizing segment lengths.
 
         Parameters
@@ -193,7 +254,7 @@ class Skeleton:
                     if `return_lengths` is True.
 
         """
-        assert weight in ('weight', None), f'Unable to use weight "{weight}"'
+        assert weight in ("weight", None), f'Unable to use weight "{weight}"'
 
         # Get graph representation
         G = self.get_graph()
@@ -256,28 +317,28 @@ class Skeleton:
         swc = self.swc.copy()
 
         # Set all labels to undefined
-        swc['label'] = 0
-        swc.loc[~swc.node_id.isin(swc.parent_id.values), 'label'] = 6
-        n_childs = swc.groupby('parent_id').size()
+        swc["label"] = 0
+        swc.loc[~swc.node_id.isin(swc.parent_id.values), "label"] = 6
+        n_childs = swc.groupby("parent_id").size()
         bp = n_childs[n_childs > 1].index.values
-        swc.loc[swc.node_id.isin(bp), 'label'] = 5
+        swc.loc[swc.node_id.isin(bp), "label"] = 5
 
         # Add radius if missing
-        if 'radius' not in swc.columns:
-            swc['radius'] = 0
+        if "radius" not in swc.columns:
+            swc["radius"] = 0
 
         # Get things in order
-        swc = swc[['node_id', 'label', 'x', 'y', 'z', 'radius', 'parent_id']]
+        swc = swc[["node_id", "label", "x", "y", "z", "radius", "parent_id"]]
 
         # Adjust column titles
-        swc.columns = ['PointNo', 'Label', 'X', 'Y', 'Z', 'Radius', 'Parent']
+        swc.columns = ["PointNo", "Label", "X", "Y", "Z", "Radius", "Parent"]
 
-        with open(filepath, 'w') as file:
+        with open(filepath, "w") as file:
             # Write header
             file.write(header)
 
             # Write data
-            writer = csv.writer(file, delimiter=' ')
+            writer = csv.writer(file, delimiter=" ")
             writer.writerows(swc.astype(str).values)
 
     def scene(self, mesh=False, **kwargs):
@@ -291,7 +352,7 @@ class Skeleton:
         """
         if mesh:
             if isinstance(self.mesh, type(None)):
-                raise ValueError('Skeleton has no mesh.')
+                raise ValueError("Skeleton has no mesh.")
 
             self.mesh.visual.face_colors = [100, 100, 100, 100]
 
@@ -360,9 +421,9 @@ class Skeleton:
         """
         # We need `.mesh_map` and `.mesh` to exist
         if self.mesh_map is None:
-            raise ValueError('Skeleton must have a `mesh_map` to mend breaks.')
+            raise ValueError("Skeleton must have a `mesh_map` to mend breaks.")
         if self.mesh is None:
-            raise ValueError('Skeleton must have a `mesh` to mend breaks.')
+            raise ValueError("Skeleton must have a `mesh` to mend breaks.")
 
         # Make a copy of the mesh edges
         edges = self.mesh.edges.copy()
@@ -372,7 +433,7 @@ class Skeleton:
         # Deduplicate
         edges = np.unique(edges, axis=0)
         # Remove self edges
-        edges = edges[edges[:,0] != edges[:, 1]]
+        edges = edges[edges[:, 0] != edges[:, 1]]
 
         G = self.get_graph().to_undirected()
 
@@ -380,7 +441,9 @@ class Skeleton:
         edges = np.array([e for e in edges if not G.has_edge(*e)])
 
         # Calculate distance between these new edge candidates
-        dists = np.sqrt(((self.vertices[edges[:, 0]] - self.vertices[edges[:, 1]]) ** 2).sum(axis=1))
+        dists = np.sqrt(
+            ((self.vertices[edges[:, 0]] - self.vertices[edges[:, 1]]) ** 2).sum(axis=1)
+        )
 
         # Sort by distance (lowest first)
         edges = edges[np.argsort(dists)]
@@ -406,7 +469,9 @@ class Skeleton:
         # First collect neighbors for each node
         later_nbrs = {}
         for node, neighbors in G.adjacency():
-            later_nbrs[node] = {n for n in neighbors if n not in later_nbrs and n != node}
+            later_nbrs[node] = {
+                n for n in neighbors if n not in later_nbrs and n != node
+            }
 
         # Go over each node
         triangles = set()
@@ -427,6 +492,6 @@ class Skeleton:
             if any(not G.has_edge(*e) for e in (e1, e2, e3)):
                 continue
             # Remove the longest edge
-            G.remove_edge(*max((e1, e2, e3), key=lambda e: G.edges[e]['weight']))
+            G.remove_edge(*max((e1, e2, e3), key=lambda e: G.edges[e]["weight"]))
 
         return np.array(G.edges), self.vertices.copy()
