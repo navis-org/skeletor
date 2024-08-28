@@ -84,4 +84,4 @@ class TestExamples:
         assert isinstance(skel.mesh_map, np.ndarray)
         assert skel.vertices.shape[1] == 3
         assert skel.edges.shape[1] == 2
-        assert skel.mesh_map.shape[0] == len(skel.vertices)
+        assert skel.mesh_map.shape[0] == len(skel.mesh.vertices)
