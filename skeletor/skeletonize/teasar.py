@@ -113,8 +113,8 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
             sp = SG.get_adjacency_sparse('weight')
 
             # Get lengths of paths to all nodes from root
-            paths = SG.shortest_paths(this_root, target=None, weights='weight',
-                                      mode='ALL')[0]
+            paths = SG.distances(this_root, target=None, weights='weight',
+                                 mode='ALL')[0]
             paths = np.array(paths)
 
             # Prep array for invalidation

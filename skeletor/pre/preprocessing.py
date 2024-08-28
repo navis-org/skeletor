@@ -92,7 +92,7 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
 
     if remove_degenerate_faces:
         mesh.update_faces(mesh.unique_faces())
-        mesh.update_faces(mesh.nondegenerate_faces())
+        mesh.remove_degenerate_faces()
 
     if remove_unreferenced_verts:
         mesh.remove_unreferenced_vertices()
@@ -160,7 +160,7 @@ def merge_vertices(mesh, dist='auto', inplace=False):
 
     # Remove degenerate and duplicate faces
     mesh.remove_degenerate_faces()
-    mesh.remove_duplicate_faces()
+    mesh.update_faces(mesh.unique_faces())
 
     # Fix normals
     mesh.fix_normals()
