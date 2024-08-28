@@ -71,3 +71,17 @@ class TestPostprocessing:
 
         rad_knn = sk.post.radii(s, method='knn')
         rad_ray = sk.post.radii(s, method='ray')
+
+
+class TestExamples:
+    def test_readme_example(self):
+        mesh = sk.example_mesh()
+        fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)
+        skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)
+
+        assert isinstance(skel.vertices, np.ndarray)
+        assert isinstance(skel.edges, np.ndarray)
+        assert isinstance(skel.mesh_map, np.ndarray)
+        assert skel.vertices.shape[1] == 3
+        assert skel.edges.shape[1] == 2
+        assert skel.mesh_map.shape[0] == len(skel.vertices)
