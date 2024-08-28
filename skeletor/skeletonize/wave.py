@@ -87,12 +87,15 @@ def by_wavefront(mesh,
                     visualization.
 
     """
-    agg_map = {'mean': np.mean, 'max': np.max, 'min': np.min,
-               'median': np.median,
-               'percentile75': lambda x: np.percentile(x, 75),
-               'percentile25': lambda x: np.percentile(x, 25)}
-    assert radius_agg in agg_map, f'Unknown `radius_agg`: "{radius_agg}"'
-    rad_agg_func = agg_map[radius_agg]
+    if not callable(radius_agg):
+        agg_map = {'mean': np.mean, 'max': np.max, 'min': np.min,
+                'median': np.median,
+                'percentile75': lambda x: np.percentile(x, 75),
+                'percentile25': lambda x: np.percentile(x, 25)}
+        assert radius_agg in agg_map, f'Unknown `radius_agg`: "{radius_agg}"'
+        rad_agg_func = agg_map[radius_agg]
+    else:
+        rad_agg_func = radius_agg
 
     mesh = make_trimesh(mesh, validate=False)
 
