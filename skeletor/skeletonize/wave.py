@@ -195,7 +195,7 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
 
     # Go over each connected component
     with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress) as pbar:
-        for cc in G.clusters():
+        for cc in G.connected_components():
             # Make a subgraph for this connected component
             SG = G.subgraph(cc)
             cc = np.array(cc)
@@ -225,7 +225,7 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
             seeds = seeds.astype(int)
 
             # Get the distance between the seeds and all other nodes
-            dist = np.array(SG.shortest_paths(source=seeds, target=None, mode='all'))
+            dist = np.array(SG.distances(source=seeds, target=None, mode='all'))
 
             if step_size > 1:
                 mx = dist.flatten()
@@ -241,7 +241,7 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
                     this_dist = this_wave == i
                     ix = np.where(this_dist)[0]
                     SG2 = SG.subgraph(ix)
-                    for cc2 in SG2.clusters():
+                    for cc2 in SG2.connected_components():
                         this_verts = cc[ix[cc2]]
                         this_center = mesh.vertices[this_verts].mean(axis=0)
                         this_radius = cdist(this_center.reshape(1, -1), mesh.vertices[this_verts])
