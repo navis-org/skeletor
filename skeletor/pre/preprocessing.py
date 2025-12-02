@@ -91,8 +91,8 @@ def fix_mesh(mesh, remote_infinite=True, merge_duplicate_verts=True,
         mesh.merge_vertices()
 
     if remove_degenerate_faces:
-        mesh.remove_duplicate_faces()
-        mesh.remove_degenerate_faces()
+        mesh.update_faces(mesh.unique_faces())
+        mesh.update_faces(mesh.nondegenerate_faces())
 
     if remove_unreferenced_verts:
         mesh.remove_unreferenced_vertices()
