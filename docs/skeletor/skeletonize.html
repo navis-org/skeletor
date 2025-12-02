@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 14.6.1"/>
+    <meta name="generator" content="pdoc 14.7.0"/>
     <title>skeletor.skeletonize API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -90,7 +90,7 @@ is a quick summary:</p>
 </thead>
 <tbody>
 <tr>
-  <td><code><a href="#by_wavefront">by_wavefront()</a></code></td>
+  <td><code><a href="#by_wavefront">skeletor.skeletonize.by_wavefront()</a></code></td>
   <td style="text-align:center;">+++</td>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">yes</td>
@@ -98,7 +98,7 @@ is a quick summary:</p>
   <td>works well for tubular meshes</td>
 </tr>
 <tr>
-  <td><code><a href="#by_vertex_clusters">by_vertex_clusters()</a></code></td>
+  <td><code><a href="#by_vertex_clusters">skeletor.skeletonize.by_vertex_clusters()</a></code></td>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">+</td>
   <td style="text-align:center;">no</td>
@@ -106,7 +106,7 @@ is a quick summary:</p>
   <td>best with contracted meshes <sup class="footnote-ref" id="fnref-1"><a href="#fn-1">3</a></sup></td>
 </tr>
 <tr>
-  <td><code><a href="#by_teasar">by_teasar()</a></code></td>
+  <td><code><a href="#by_teasar">skeletor.skeletonize.by_teasar()</a></code></td>
   <td style="text-align:center;">+</td>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">no</td>
@@ -114,7 +114,7 @@ is a quick summary:</p>
   <td>works on mesh surface</td>
 </tr>
 <tr>
-  <td><code><a href="#by_tangent_ball">by_tangent_ball()</a></code></td>
+  <td><code><a href="#by_tangent_ball">skeletor.skeletonize.by_tangent_ball()</a></code></td>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">0</td>
   <td style="text-align:center;">yes</td>
@@ -122,7 +122,7 @@ is a quick summary:</p>
   <td>works with mesh normals</td>
 </tr>
 <tr>
-  <td><code><a href="#by_edge_collapse">by_edge_collapse()</a></code></td>
+  <td><code><a href="#by_edge_collapse">skeletor.skeletonize.by_edge_collapse()</a></code></td>
   <td style="text-align:center;">-</td>
   <td style="text-align:center;">0</td>
   <td style="text-align:center;">no</td>
@@ -208,11 +208,11 @@ is a quick summary:</p>
 </span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>
 </span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="kn">from</span> <span class="nn">.edge_collapse</span> <span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="kn">from</span> <span class="nn">.vertex_cluster</span> <span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="kn">from</span> <span class="nn">.wave</span> <span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="kn">from</span> <span class="nn">.teasar</span> <span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="kn">from</span> <span class="nn">.tangent_ball</span> <span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.edge_collapse</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.vertex_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wave</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.teasar</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.tangent_ball</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
 </span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
 </span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;by_teasar&#39;</span><span class="p">,</span> <span class="s1">&#39;by_wavefront&#39;</span><span class="p">,</span> <span class="s1">&#39;by_vertex_clusters&#39;</span><span class="p">,</span>
@@ -232,7 +232,7 @@ is a quick summary:</p>
 
     </div>
     <a class="headerlink" href="#by_teasar"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="by_teasar-39"><a href="#by_teasar-39"><span class="linenos"> 39</span></a><span class="k">def</span> <span class="nf">by_teasar</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">inv_dist</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_teasar-39"><a href="#by_teasar-39"><span class="linenos"> 39</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_teasar</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">inv_dist</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="by_teasar-40"><a href="#by_teasar-40"><span class="linenos"> 40</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Skeletonize a mesh mesh using the TEASAR algorithm [1].</span>
 </span><span id="by_teasar-41"><a href="#by_teasar-41"><span class="linenos"> 41</span></a>
 </span><span id="by_teasar-42"><a href="#by_teasar-42"><span class="linenos"> 42</span></a><span class="sd">    This algorithm finds the longest path from a root vertex, invalidates all</span>
@@ -456,7 +456,7 @@ visualization.</li>
 
     </div>
     <a class="headerlink" href="#by_wavefront"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="by_wavefront-39"><a href="#by_wavefront-39"><span class="linenos"> 39</span></a><span class="k">def</span> <span class="nf">by_wavefront</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_wavefront-39"><a href="#by_wavefront-39"><span class="linenos"> 39</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_wavefront</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span>
 </span><span id="by_wavefront-40"><a href="#by_wavefront-40"><span class="linenos"> 40</span></a>                 <span class="n">waves</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
 </span><span id="by_wavefront-41"><a href="#by_wavefront-41"><span class="linenos"> 41</span></a>                 <span class="n">origins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 </span><span id="by_wavefront-42"><a href="#by_wavefront-42"><span class="linenos"> 42</span></a>                 <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -646,7 +646,7 @@ visualization.</li>
 
     </div>
     <a class="headerlink" href="#by_vertex_clusters"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="by_vertex_clusters-40"><a href="#by_vertex_clusters-40"><span class="linenos"> 40</span></a><span class="k">def</span> <span class="nf">by_vertex_clusters</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">sampling_dist</span><span class="p">,</span> <span class="n">cluster_pos</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_vertex_clusters-40"><a href="#by_vertex_clusters-40"><span class="linenos"> 40</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_vertex_clusters</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">sampling_dist</span><span class="p">,</span> <span class="n">cluster_pos</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="by_vertex_clusters-41"><a href="#by_vertex_clusters-41"><span class="linenos"> 41</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Skeletonize a (contracted) mesh by clustering vertices.</span>
 </span><span id="by_vertex_clusters-42"><a href="#by_vertex_clusters-42"><span class="linenos"> 42</span></a>
 </span><span id="by_vertex_clusters-43"><a href="#by_vertex_clusters-43"><span class="linenos"> 43</span></a><span class="sd">    The algorithm traverses the mesh graph and groups vertices together that</span>
@@ -847,7 +847,7 @@ If True, will show progress bar.</li>
 <h6 id="examples">Examples</h6>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">skeletor</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sk</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cont</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">contract</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">vertex_cluster</span><span class="p">(</span><span class="n">cont</span><span class="p">)</span>
@@ -876,7 +876,7 @@ visualization.</li>
 
     </div>
     <a class="headerlink" href="#by_edge_collapse"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="by_edge_collapse-38"><a href="#by_edge_collapse-38"><span class="linenos"> 38</span></a><span class="k">def</span> <span class="nf">by_edge_collapse</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">shape_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_edge_collapse-38"><a href="#by_edge_collapse-38"><span class="linenos"> 38</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_edge_collapse</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">shape_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="by_edge_collapse-39"><a href="#by_edge_collapse-39"><span class="linenos"> 39</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Skeletonize a (contracted) mesh by iteratively collapsing edges.</span>
 </span><span id="by_edge_collapse-40"><a href="#by_edge_collapse-40"><span class="linenos"> 40</span></a>
 </span><span id="by_edge_collapse-41"><a href="#by_edge_collapse-41"><span class="linenos"> 41</span></a><span class="sd">    This algorithm (described in [1]) iteratively collapses edges that are part</span>
@@ -1258,7 +1258,7 @@ visualization.</li>
 
     </div>
     <a class="headerlink" href="#by_tangent_ball"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="by_tangent_ball-125"><a href="#by_tangent_ball-125"><span class="linenos">125</span></a><span class="k">def</span> <span class="nf">by_tangent_ball</span><span class="p">(</span><span class="n">mesh</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_tangent_ball-125"><a href="#by_tangent_ball-125"><span class="linenos">125</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_tangent_ball</span><span class="p">(</span><span class="n">mesh</span><span class="p">):</span>
 </span><span id="by_tangent_ball-126"><a href="#by_tangent_ball-126"><span class="linenos">126</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Skeletonize a mesh by finding the maximal tangent ball.</span>
 </span><span id="by_tangent_ball-127"><a href="#by_tangent_ball-127"><span class="linenos">127</span></a>
 </span><span id="by_tangent_ball-128"><a href="#by_tangent_ball-128"><span class="linenos">128</span></a><span class="sd">    This algorithm casts a ray from every mesh vertex along its inverse normals</span>
@@ -1450,7 +1450,7 @@ visualization.</li>
 <h6 id="examples">Examples</h6>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">skeletor</span> <span class="k">as</span> <span class="nn">sk</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">skeletor</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sk</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">fixed</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">fix_mesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">fix_normals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_disconnected</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">skel</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_tangent_ball</span><span class="p">(</span><span class="n">fixed</span><span class="p">)</span>
