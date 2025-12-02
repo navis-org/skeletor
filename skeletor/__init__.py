@@ -263,8 +263,8 @@ tucked away into submodules (see side-bar or above table).
 
 """
 
-__version__ = "1.3.0"
-__version_vector__ = (1, 3, 0)
+__version__ = "1.3.1"
+__version_vector__ = (1, 3, 1)
 
 from . import skeletonize
 from . import pre
