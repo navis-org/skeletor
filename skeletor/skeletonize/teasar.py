@@ -130,7 +130,8 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
                                              weights='weight', mode='ALL')[0]
 
                 # Get IDs of edges along the path
-                if getattr(ig, '__version_info__', (0, 0, 0))[1] >= 10:
+                ig_vers = getattr(ig, '__version_info__', (0, 0, 0))
+                if ig_vers[0] > 0 or ig_vers[1] >= 10:
                     pairs = zip(path[:-1], path[1:])
                     eids = SG.get_eids(pairs, directed=False)
                 else:
