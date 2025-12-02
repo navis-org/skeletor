@@ -10,9 +10,9 @@ jobs:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@5
     - name: Set up Python 3.11
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v6
       with:
         python-version: 3.11
     - name: Install wheel and setuptools
@@ -30,6 +30,6 @@ jobs:
         sdist
         bdist_wheel
     - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1.13.0
       with:
         password: ${{ secrets.pypi_password }}
