@@ -18,8 +18,7 @@ import igraph as ig
 import numpy as np
 import pandas as pd
 
-from scipy.spatial import Delaunay
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
 from itertools import combinations
 
 from ..utilities import make_trimesh
@@ -32,12 +31,14 @@ except ModuleNotFoundError:
 
 
 def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progress=True):
-    """Skeletonize a mesh using wave fronts.
+    """Skeletonize a mesh using wave fronts with an exact step size.
 
-    This is the _exact_ version of the `by_wavefront` function meaning that each wave front
-    moves _exactly_ the given distance (see `step_size` parameter) along the mesh, instead
-    of hoping from vertex to vertex. This is computationally more expensive but also more
-    accurate.
+    This is a version of the `by_wavefront` function in which the wave front
+    moves _exactly_ the given distance along the mesh (see `step_size` parameter) instead
+    of hopping from vertex to vertex. This can give better results on meshes with a
+    low vertex density but is computationally more expensive. The difference between
+    the two methods depends heavily on the mesh and the step size, but as a rule of thumb,
+    the exact version is about 3-4x slower than the non-exact version.
 
     Parameters
     ----------
@@ -48,7 +49,9 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
                     dictionary ``{'vertices': vertices, 'faces': faces}``.
     step_size :     float | int (>0)
                     The distance each the wave fronts move along the mesh
-                    in each step.
+                    in each step. To get a feel for what a good value might be,
+                    you can check the average edge length of the mesh
+                    (see example).
     origins :       int | list of ints, optional
                     Vertex ID(s) where the wave(s) are initialized. If there
                     is no origin for a given connected component, will fall
@@ -65,6 +68,16 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
                     Holds results of the skeletonization and enables quick
                     visualization.
 
+    Example
+    -------
+    >>> import skeletor as sk
+    >>> mesh = sk.example_mesh()
+    >>> # Check the average edge length
+    >>> mesh.edges_unique_length.mean()
+    119.325
+    >>> # A good step size is usually a good bit smaller than the average edge length
+    >>> skeleton = sk.skeletonize.by_wavefront_exact(mesh, step_size=50)
+
     """
     agg_map = {
         "mean": np.mean,
@@ -79,7 +92,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
 
     mesh = make_trimesh(mesh, validate=False)
 
-    centers_final, radii_final, parents = _cast_waves2(
+    centers_final, radii_final, parents = _cast_waves(
         mesh,
         step_size=step_size,
         origins=origins,
@@ -87,8 +100,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
         progress=progress,
     )
 
-    # Map radii for individual vertices to the collapsed nodes
-    # Using pandas is the fastest way here
+    # Initialize the SWC dataframe
     swc = pd.DataFrame()
     swc["node_id"] = np.arange(0, len(centers_final))
     swc["parent_id"] = parents
@@ -122,202 +134,11 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     G = ig.Graph(edges=mesh.edges_unique, directed=False)
     G.es["weight"] = mesh.edges_unique_length
 
-    # Prepare empty array to fill with centers
-    centers = []
-    radii = []
-    data = []
-
-    # Go over each connected component
-    with tqdm(
-        desc="Skeletonizing", total=len(G.vs), disable=not progress, leave=False
-    ) as pbar:
-        for k, cc in enumerate(G.connected_components()):
-            # Make a subgraph for this connected component
-            SG = G.subgraph(cc)
-            cc = np.array(cc)
-
-            # Select seeds according to the number of waves
-            pot_seeds = np.arange(len(cc))
-            np.random.seed(1985)  # make seeds predictable
-            # See if we can use any origins
-            if len(origins):
-                # Get those origins in this cc
-                in_cc = np.isin(origins, cc)
-                if any(in_cc):
-                    # Map origins into cc
-                    cc_map = dict(zip(cc, np.arange(0, len(cc))))
-                    seed = np.array([cc_map[o] for o in origins[in_cc]])[0]
-                else:
-                    seed = np.random.choice(pot_seeds)
-            else:
-                seed = np.random.choice(pot_seeds)
-
-            # Get the distance between the seed and all other nodes
-            dist = np.array(
-                SG.distances(source=seed, target=None, mode="all", weights="weight")
-            )[0]
-
-            # What's the max distance we can reach?
-            mx = dist[dist < float("inf")].max()
-
-            # To keep track of which vertices we have already processed and can be
-            # safely ignored
-            is_inside_vert = np.zeros(len(dist)).astype(bool)
-
-            # Collect groups
-            for i, d in enumerate(np.arange(0, mx, step_size)):
-                # Inner verts are all vertices that are within the current distance
-                # (minus those that we have already processed)
-                inside_verts = np.where((dist <= d) & ~is_inside_vert)[0]
-
-                # To get the outer edge, we need to (1) find the neighbors of the inner edge
-                neighbors = [
-                    np.array(nn) for nn in SG.neighborhood(vertices=inside_verts)
-                ]
-                # (2) only keep those whose distance is above the current distance (i.e. those going outwards)
-                outer_verts = [nn[dist[nn] > d] for nn in neighbors]
-
-                # Inside vertices that are not part of the inner ring(s) have no neighbors outside
-                is_inside_edge = np.array([len(ov) > 0 for ov in outer_verts])
-                inner_verts = inside_verts[is_inside_edge]
-                outer_verts = [
-                    ov for ov, is_iv in zip(outer_verts, is_inside_edge) if is_iv
-                ]
-
-                # To avoid doing the same work twice, we will mark inner vertices
-                is_inside_vert[inside_verts[~is_inside_edge]] = True
-
-                # For each edge between inner-vertices and their outer neighbors calculate the
-                # exact position for the exact step_size distance
-                in_out_edges = np.array(
-                    [
-                        [iv, ov]
-                        for iv, ovs in zip(inner_verts, outer_verts)
-                        for ov in ovs
-                    ]
-                )
-                in_pos = mesh.vertices[cc[in_out_edges[:, 0]]]
-                out_pos = mesh.vertices[cc[in_out_edges[:, 1]]]
-
-                # The distance between the inner and outer vertices
-                in_out_dist = in_out_dist = np.sqrt(
-                    ((in_pos - out_pos) ** 2).sum(axis=1)
-                )
-
-                # For each in_out_edge the remaining distance
-                d_left = d - dist[in_out_edges[:, 0]]
-
-                # Move along the edges until we hit the target distance
-                new_verts = (
-                    in_pos + (out_pos - in_pos) * (d_left / in_out_dist)[:, None]
-                )
-
-                # To group vertices into rings we need to first determine which vertices
-                # are part of the same ring. We do this by checking which outer vertices
-                # are in connected components
-                outer_verts_unique = np.unique(np.concatenate(outer_verts))
-                for cc2 in SG.subgraph(outer_verts_unique).connected_components():
-                    # Translate this connected components back to the vertex IDs in SG
-                    outer_verts_cc2 = outer_verts_unique[cc2]
-
-                    # Get the new vertices that are part of this connected component
-                    this_new_verts = new_verts[
-                        np.isin(in_out_edges[:, 1], outer_verts_cc2)
-                    ]
-
-                    # Get the center of this connected component
-                    this_center = this_new_verts.mean(axis=0)
-
-                    # Calculate the radius of this connected component
-                    this_radius = rad_agg_func(
-                        np.sqrt((this_new_verts - this_center) ** 2).sum(axis=1)
-                    )
-
-                    centers.append(this_center)  # Store the center
-                    radii.append(this_radius)  # Store the radius
-                    data.append(
-                        (k, i, cc[outer_verts_cc2[0]])
-                    )  # Track the connected component, the step and a vertex from the outer ring for this center
-
-                # pbar.update(len(cc))
-                # Update progress bar based on the number of vertices we have invalidated
-                pbar.update((~is_inside_edge).sum())
-
-    centers = np.vstack(centers)
-    radii = np.array(radii)
-    data = np.array(data)
-
-    # Next we have to reconstruct the parent-child relationships
-    # For each center, we know _a_ vertex that is part of the (outer) ring
-    # With that information we can ask, for each center, which center in the
-    # previous step is closest to it (as per distance along the mesh)
-    parents = np.full(len(centers), fill_value=-1, dtype=int)
-
-    # This maps the step and the vertex ID to the index in the centers array
-    step_id_map = {(step, id): i for i, (step, id) in enumerate(data[:, 1:])}
-
-    # tree = G.spanning_tree()
-
-    for i in trange(
-        1, data[:, 1].max(), desc="Connecting", disable=not progress, leave=False
-    ):
-        is_this_step = data[:, 1] == i  # All centers in this step
-        is_prev_step = data[:, 1] == i - 1  # All centers in the previous step
-
-        # If there is only one center in the previous step, we can just go on and connect these
-        if is_prev_step.sum() == 1:
-            parents[is_this_step] = np.where(is_prev_step)[0][0]
-            continue
-
-        this_step_track_verts = np.unique(
-            data[is_this_step, 2]
-        )  # All track-vertices in this step
-        prev_step_track_verts = np.unique(
-            data[is_prev_step, 2]
-        )  # All track-vertices in the previous step
-
-        # Get distances between current and previous track vertices
-        # Note to self: this step takes up about 60% of the time at the moment
-        # There should be a way to speed this up.
-        d = np.array(
-            G.distances(
-                source=this_step_track_verts,
-                target=prev_step_track_verts,
-                mode="all",
-                weights="weight",
-            )
-        )
-
-        # Get the closest previous track-vertex for each current track-vertex
-        closest_prev_track_verts = prev_step_track_verts[d.argmin(axis=1)]
-
-        for this, prev in zip(this_step_track_verts, closest_prev_track_verts):
-            parents[is_this_step & (data[:, 2] == this)] = step_id_map[(i - 1, prev)]
-
-    return centers, radii, parents
-
-
-def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=True):
-    """Cast waves across mesh."""
-    if not isinstance(origins, type(None)):
-        if isinstance(origins, int):
-            origins = [origins]
-        elif not isinstance(origins, (set, list)):
-            raise TypeError(
-                "`origins` must be vertex ID (int) or list "
-                f'thereof, got "{type(origins)}"'
-            )
-        origins = np.asarray(origins).astype(int)
-    else:
-        origins = np.array([])
-
-    # Step size must be positive
-    if step_size <= 0:
-        raise ValueError("`step_size` must be > 0")
-
-    # Generate Graph (must be undirected)
-    G = ig.Graph(edges=mesh.edges_unique, directed=False)
-    G.es["weight"] = mesh.edges_unique_length
+    # For each edge, track which faces in the mesh it belong to
+    edge2face = {}
+    for i, f in enumerate(mesh.faces_unique_edges):
+        edge2face.update({e: [i] + edge2face.get(e, []) for e in f})
+    G.es['faces'] = [edge2face[i] for i in range(len(G.es))]
 
     # Prepare empty array to fill with centers
     centers = []
@@ -348,7 +169,11 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
                     seed = np.random.choice(pot_seeds)
             else:
                 # Use the vertex with the "peakiest" vertex degree as seed
-                seed = mesh.vertex_degree.argmin()
+                seed = np.argmin(SG.degree())
+
+            # Track the seed
+            SG.vs["is_seed"] = False
+            SG.vs[seed]["is_seed"] = True
 
             # Get the distance between the seed and all other nodes
             dist = np.array(
@@ -370,12 +195,17 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
 
             # A dictionary to keep track of which vertices are at which `step_size`` distance
             nodes_at_stepsize = {d: set() for d in np.arange(0, mx, step_size)}
+            nodes_at_stepsize[0].add(seed)
+
+            # A dictionary to track, for each new vertex, which face it belongs to
+            new_verts_faces = {}
 
             # Iterate over all edge and see if we need to insert a new vertex along the edge
             edges_to_delete = []  # edges we need to remove
             edges_to_add = []  # edges we need to add
             new_vertices = []  # vertices we need to add
-            for i, (v1, v2) in enumerate(SG.get_edgelist()):
+            for i, edge in enumerate(SG.es):
+                v1, v2 = edge.source, edge.target
                 # Figure out which vertex is proximal and which one is distal wrt the seed
                 if dist[v1] < dist[v2]:
                     prox, distal = v1, v2
@@ -402,6 +232,8 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
                         dist[distal],
                         step_size,
                     )
+                    # Note to self: this block is currently the most expensive step in the whole function.
+                    #
                     if len(this_to_add):
                         # Calculate the unit vector along the edge
                         prox_pos = mesh.vertices[cc[prox]]
@@ -414,13 +246,16 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
                             d_along_edge = d - dist[prox]
                             new_v_ix = len(cc) + len(new_vertices)  # new vertex ID
                             new_v_pos = prox_pos + vect_norm * d_along_edge
-                            edges_to_add.append((start, new_v_ix, d_along_edge))
+                            edges_to_add.append((start, new_v_ix, d_along_edge, edge['faces']))
                             nodes_at_stepsize[d].add(new_v_ix)
                             new_vertices.append(new_v_pos)
+
+                            new_verts_faces[new_v_ix] = edge['faces']
+
                             start = new_v_ix  # update start for next iteration
 
                         # Add the last edge (from the last inserted vertex to the distal vertex)
-                        edges_to_add.append((new_v_ix, distal, dist[distal] - d))
+                        edges_to_add.append((new_v_ix, distal, dist[distal] - d, edge['faces']))
 
             # Turn the new vertices into an array
             new_vertices = np.array(new_vertices)
@@ -428,156 +263,69 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
             # Add the new vertices to the graph
             SG.add_vertices(len(new_vertices))
 
+            # Set is_seed to False for all new vertices
+            # (this avoids having "None" value for this attribute which will cause problems during the vertex contraction step)
+            SG.vs[len(cc) :]["is_seed"] = False
+
             # Delete the old edges
             SG.delete_edges(edges_to_delete)
 
             # Add new edges
             SG.add_edges(
                 [(e[0], e[1]) for e in edges_to_add],
-                attributes={"weight": [e[2] for e in edges_to_add]},
+                attributes={"weight": [e[2] for e in edges_to_add], "faces": [e[3] for e in edges_to_add]},
             )
 
-            # To extract collect groups of new vertices, we need to first re-triangulate the faces using scipy's Delaunay
-            all_vertices = np.vstack([mesh.vertices[cc], new_vertices])
-
-            # Uncomment to debug the new vertices
-            # return {d: all_vertices[list(nodes)] for d, nodes in nodes_at_stepsize.items()}
-
-            # Get all faces and their normals belonging to this connected component
-            selection = np.isin(mesh.faces[:, 0], cc)
-            cc_faces = mesh.faces[selection]
-            cc_face_normals = mesh.face_normals[selection]
-
-            # Translate vertex to node indices
-            vert2cc = dict(zip(cc, np.arange(0, len(cc))))
-
-            if fastremap:
-                cc_faces_nodes = fastremap.remap(cc_faces, vert2cc)
-            else:
-                cc_faces_nodes = np.array([[vert2cc[v] for v in f] for f in cc_faces])
-
-            # Note to self: this seems to take up the majority of the time
-            # Check if we can speed this up!
+            # To collect groups of new vertices that make up a wavefront, we need to connect new vertices
+            # that are on the same face and have the same step distance from the seed.
             edges_to_add = []
-            for f, n in zip(cc_faces_nodes, cc_face_normals):
-                # Get the path around this face
-                paths = [
-                    SG.get_shortest_path(f[0], f[1]),
-                    SG.get_shortest_path(f[1], f[2]),
-                    SG.get_shortest_path(f[2], f[0]),
-                ]
+            for d_, nodes_ in nodes_at_stepsize.items():
+                if d_ == 0:
+                    continue # skip the seed
 
-                # Flatten
-                path = np.unique([p for path in paths for p in path])
+                # Collect the faces we need to connect across
+                faces_to_connect = {}
+                for n in nodes_:
+                    for face in new_verts_faces[n]:
+                        if face not in faces_to_connect:
+                            faces_to_connect[face] = []
+                        faces_to_connect[face].append(n)
 
-                # If path contains only 3 vertices, we don't need to triangluate
-                if len(path) == 3:
-                    continue
-                elif len(path) < 3:
-                    raise ValueError("Something went wrong")
+                # Collect edges
+                for nodes_on_face in faces_to_connect.values():
+                    if len(nodes_on_face) <= 1:
+                        continue
+                    for i, j in combinations(nodes_on_face, 2):
+                        edges_to_add.append((i, j))
 
-                # Get the coordinates for these points
-                points = all_vertices[path]
+            # Add edges (note we're setting non-sense weights here because we don't really need it anyome)
+            SG.add_edges(edges_to_add, attributes={"weight": [1.0] * len(edges_to_add)})
 
-                # The points are all on a face, so they are coplanar
-                # For the Delaunay to be a triangulation (i.e. a 2d convex hull)
-                # we need to project the points onto a plane.
-                points_2d = project_to_2d(points, n, normalize=False)
-
-                # Triangulate the points
-                # The "QJ" option is used to ensure all points are represented
-                # in the simplices
-                tri = Delaunay(points_2d, qhull_options="QJ")
-
-                # Add the new edges
-                for s in path[tri.simplices]:
-                    edges_to_add.append((s[0], s[1]))
-                    edges_to_add.append((s[1], s[2]))
-                    edges_to_add.append((s[2], s[0]))
-
-            # Add new edges
-            SG.add_edges(edges_to_add)
-
-            # Because this will have introduces duplicate edges, we will do one round of simplification
+            # Remove duplicate edges
             SG = SG.simplify()
 
-            # At this point we want to excise all original, non-step vertices and directly connect the
-            # step vertices wherever we remove a non-step vertex
+            # Array with all vertex coordinates (old + new)
+            all_vertices = np.vstack([mesh.vertices[cc], new_vertices])
+
+            # Now we need a graph containing only step-vertices
             all_step_nodes = np.concatenate(
                 [list(s) for s in nodes_at_stepsize.values()]
             )
-            SG.vs["is_step_node"] = is_step_node = np.isin(
+            SG.vs["is_step_node"] = np.isin(
                 np.arange(0, len(SG.vs)), all_step_nodes
             )
 
-            # while True:
-            #     edges_to_add = []
-            #     edges_to_delete = []
-            #     for v in SG.vs.select(is_step_node=False):
-            #         # Directly connect all neighbors of this vertex
-            #         for v1, v2 in combinations(v.neighbors(), 2):
-            #             edges_to_add.append((v1.index, v2.index))
-
-            #         # Delete all edges connected to this vertex
-            #         # (_source works both ways because the graph is undirected)
-            #         edges_to_delete.extend(SG.es.select(_source=v.index))
-
-            #     if len(edges_to_add) == 0:
-            #         break
-
-            #     SG.add_edges(edges_to_add)
-            #     SG.delete_edges(edges_to_delete)
-            #     SG.simplify()
-
-            # Other idea:
-            # Assign non-step nodes to the closest step distance (round?) and
-
-            # # This runs in a loop until we can't simplify anymore
-            # # If this turns out to be expensive, we can just find a shortest path from each non-step node
-            # # to a step node and collapse along that path
-            # while True:
-            #     was_simplified = False
-            #     new_mapping = np.arange(0, len(SG.vs))
-            #     for e in SG.es:
-            #         if (
-            #             not SG.vs[e.source]["is_step_node"]
-            #             and SG.vs[e.target]["is_step_node"]
-            #         ):
-            #             was_simplified = True
-            #             new_mapping[e.source] = e.target
-            #         elif (
-            #             SG.vs[e.source]["is_step_node"]
-            #             and not SG.vs[e.target]["is_step_node"]
-            #         ):
-            #             was_simplified = True
-            #             new_mapping[e.target] = e.source
-
-            #     # If we didn't simplify anything in this round, we can stop
-            #     if not was_simplified:
-            #         break
-
-            #     # Contract vertices. This will not remove any vertices but instead will remap
-            #     # only vertex IDs in edges.
-            #     SG.contract_vertices(new_mapping)
-
-            #     # Contraction will have dropped the `is_step_node` attribute, so we need to re-add it
-            #     SG.vs["is_step_node"] = is_step_node
-
-            #     # One round of simplification to get rid of duplicate edges and self-loops
-            #     SG = SG.simplify()
-
-            # Now the graph has only have edges between nodes that are at `step_size` distance
-            # Next, we need to collapse these nodes into their center.
             # First generate a graph where there are no edges between nodes of a different distance from the seed
             SG_no_across = SG.copy()
 
-            # Delete all edges that connect nodes of different distances
+            # Map nodes to their step distance
             nodes2step = {n: d for d, nodes in nodes_at_stepsize.items() for n in nodes}
 
-            # Assign non-step nodes to the closest step distance (round?)
+            # Assign non-step nodes to the closest step distance by rounding
             dist_round = np.round(dist / step_size) * step_size
             nodes2step.update(dict(zip(np.arange(len(dist_round)), dist_round)))
 
+            # Delete all edges that connect nodes of different distances
             SG_no_across.delete_edges(
                 [
                     e.index
@@ -586,19 +334,18 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
                 ]
             )
 
-            # Check for weakly connected components. Something like this:
-            # 0 - 1   5 - 7
-            # |   |   |   |
-            # 2 - 3 - 4 - 6
-            # where we would want to remove the connections between 3 and 4
-            # In practice this can lead to lots of side branches though
             if False:
+                # Check for weakly connected components. Something like this:
+                # 0 - 1   5 - 7
+                # |   |   |   |
+                # 2 - 3 - 4 - 6
+                # where we would want to remove the connections between 3 and 4
+                # In practice this can lead to lots of side branches though
+                # which is why we are not doing this for now.
                 SG_no_across.delete_edges(SG_no_across.bridges())
 
-            # return SG_no_across
-
             # Because there should only be within-layer edges, we can iterate over all
-            # connected components in SG_no_across and collapse them into a single node
+            # connected components in `SG_no_across` and collapse them into a single node
             # at the center of the connected component
             new_mapping = np.arange(
                 0, len(SG.vs)
@@ -607,11 +354,11 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
             this_radii = {}
             edges_to_delete = []
             for cc2 in SG_no_across.connected_components():
-                # Subset cc2 to only step nodes
+                # Subset cc2 to only step nodes (i.e. remove the "rounded" original nodes)
                 cc2_step = [n for n in cc2 if SG_no_across.vs[n]["is_step_node"]]
 
                 if not len(cc2_step):
-                    # Connected components without a step node happen when there is are normal
+                    # Connected components without a step node happen when there are normal
                     # nodes (typically just one or two) furher out than the last step node.
                     # We will manually disconnect these nodes.
                     for n in cc2:
@@ -639,13 +386,22 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
             SG.delete_edges(np.unique(edges_to_delete))
 
             # Contract vertices
-            SG.contract_vertices(new_mapping)
+            # Note that we're trying to mak sure to preserve the is_seed status:
+            # if any of the vertices in the connected component is a seed, the resulting vertex will be a seed.
+            # We're using a function because the built-in functions ("max", "first", etc.) run into issues
+            # with e.g. None values or empty lists.
+            def combine_is_seed(values):
+                if any(values):
+                    return True
+                else:
+                    return False
+
+            SG.contract_vertices(new_mapping, combine_attrs={"is_seed": combine_is_seed})
             SG = SG.simplify()
 
             # Add properties before we delete vertices
             SG.vs["center"] = [this_centers.get(v.index, None) for v in SG.vs]
             SG.vs["radius"] = [this_radii.get(v.index, None) for v in SG.vs]
-            SG.vs[seed]["seed"] = True  # Mark the seed
 
             # For debugging:
             SG.vs["has_center"] = [v.index in this_centers for v in SG.vs]
@@ -674,7 +430,9 @@ def _cast_waves2(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=T
             # 0 - 1  2 - 3
             #     | /
             #     4
-            _, _, this_parents = SG.bfs(SG.vs.select(seed=True)[0].index)
+            # Also note that we're looking up the seed instead of using the original `seed`.
+            # That's because the index may have changed due to the vertex contractions.
+            _, _, this_parents = SG.bfs(SG.vs.find(is_seed=True))
 
             this_parents = np.array(this_parents)
             this_parents[this_parents >= 0] += len(centers)  # offset parents
@@ -729,19 +487,3 @@ def calc_projection(normals, normalize=True):
     n2 = np.cross(normals, n1)
 
     return np.stack([n1, n2], axis=1)
-
-
-def project_to_2d_proj(points, proj):
-    # Find two orthogonal vectors on the plane
-    if np.abs(normal[0]) > 0.9:
-        n1 = nA
-    else:
-        n1 = nB
-
-    n1 = n1 - np.dot(n1, normal) * normal
-    n1 = n1 / np.linalg.norm(n1)
-
-    n2 = np.cross(normal, n1)
-
-    # Project points onto the plane and return
-    return np.dot(points, proj)
