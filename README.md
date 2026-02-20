@@ -51,10 +51,6 @@ For the impatient a quick example:
 >>> # mesh = tm.load_mesh('mesh.obj')
 >>> fixed = sk.pre.fix_mesh(mesh, remove_disconnected=5, inplace=False)
 >>> skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)
->>> # Optional strict inside-constrained mode:
->>> # skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1,
->>> #                                    inside_mode='nodes_edges',
->>> #                                    center_mode='inside_mean')
 >>> skel
 <Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)>
 ```
