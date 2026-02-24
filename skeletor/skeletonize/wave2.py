@@ -30,13 +30,16 @@ except ModuleNotFoundError:
     fastremap = None
 
 
+__all__ = ["by_wavefront_exact"]
+
+
 def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progress=True):
     """Skeletonize a mesh using wave fronts with an exact step size.
 
     This is a version of the `by_wavefront` function in which the wave front
     moves _exactly_ the given distance along the mesh (see `step_size` parameter) instead
     of hopping from vertex to vertex. This can give better results on meshes with a
-    low vertex density but is computationally more expensive. The difference between
+    low vertex density but is computationally more expensive: the difference between
     the two methods depends heavily on the mesh and the step size, but as a rule of thumb,
     the exact version is about 3-4x slower than the non-exact version.
 
@@ -61,6 +64,13 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
                     vertices forming a ring that we collapse to its center).
     progress :      bool
                     If True, will show progress bar.
+
+    See Also
+    --------
+    `skeletor.skeletonize.by_wavefront()`
+                    This is the original `by_wavefront` function in which the wave front
+                    jumps from vertex to vertex. This is much faster but can give bad
+                    results on low-resolution meshes.
 
     Returns
     -------
@@ -422,11 +432,11 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
 
             # Generate a directed tree from the root
             # We need to use breadth-first because depth-first messes up branch points
-            # Instead of this:
+            # We want this:
             # 0 - 1 - 2 - 3
             #     |
             #     4
-            # We might get this:
+            # But depth-first might get us this:
             # 0 - 1  2 - 3
             #     | /
             #     4

@@ -80,6 +80,14 @@ def by_wavefront(mesh,
     progress :      bool
                     If True, will show progress bar.
 
+    See Also
+    --------
+    `skeletor.skeletonize.by_wavefront_exact()`
+                    This is a version of the `by_wavefront` function in which the wave front
+                    moves _exactly_ the given distance along the mesh (see `step_size` parameter)
+                    instead of hopping from vertex to vertex. This can give better results on
+                    meshes with a low vertex density but is computationally more expensive.
+
     Returns
     -------
     skeletor.Skeleton
@@ -127,17 +135,18 @@ def by_wavefront(mesh,
     el = np.array(G.get_edgelist())
 
     if PRESERVE_BACKBONE:
-        # Use the minimum radius between vertices in an edge
+        # Use the mean radius between vertices in an edge
         weights_rad = np.vstack((node_radii[el[:, 0]],
                                  node_radii[el[:, 1]])).mean(axis=0)
 
-        # For each node generate a vector based on its immediate neighbors
+        # For each edge generate a vector based on its immediate neighbors
         vect, alpha = dotprops(node_centers)
         weights_alpha = np.vstack((alpha[el[:, 0]],
                                    alpha[el[:, 1]])).mean(axis=0)
 
         # Combine both which means we are most likely to cut at small branches
         # outside of the backbone
+        # Lower weights = more likely to be cut
         weights = weights_rad * weights_alpha
 
         # MST doesn't like 0 for weights
@@ -146,6 +155,7 @@ def by_wavefront(mesh,
     else:
         weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
 
+    # We need this to orient all edges towards the root
     tree = G.spanning_tree(weights=1 / weights)
 
     # Create a directed acyclic and hierarchical graph
