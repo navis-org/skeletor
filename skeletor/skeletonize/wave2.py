@@ -14,6 +14,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
+import math
+
 import igraph as ig
 import numpy as np
 import pandas as pd
@@ -145,10 +147,11 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     G.es["weight"] = mesh.edges_unique_length
 
     # For each edge, track which faces in the mesh it belong to
-    edge2face = {}
+    edge2face = [[] for _ in range(len(mesh.edges_unique))]
     for i, f in enumerate(mesh.faces_unique_edges):
-        edge2face.update({e: [i] + edge2face.get(e, []) for e in f})
-    G.es['faces'] = [edge2face[i] for i in range(len(G.es))]
+        for e in f:
+            edge2face[e].append(i)
+    G.es["faces"] = [edge2face[i] for i in range(len(G.es))]
 
     # Prepare empty array to fill with centers
     centers = []
@@ -210,6 +213,24 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # A dictionary to track, for each new vertex, which face it belongs to
             new_verts_faces = {}
 
+            # Prepare some data (trying to serialise as much as possible to speed up the loop below)
+            edges_srt = np.array(SG.get_edgelist())
+            dist_srt = np.argsort(dist[edges_srt], axis=1)
+            edges_srt = np.vstack(
+                (
+                    edges_srt[np.arange(edges_srt.shape[0]), dist_srt[:, 0]],
+                    edges_srt[np.arange(edges_srt.shape[0]), dist_srt[:, 1]],
+                )
+            ).T
+
+            # For each edge calculate the unit vector from proximal -> distal vertex
+            edges_prox_pos = mesh.vertices[cc][edges_srt[:, 0]]
+            edges_distal_pos = mesh.vertices[cc][edges_srt[:, 1]]
+            edges_vect_norm = edges_distal_pos - edges_prox_pos
+            edges_vect_norm = (
+                edges_vect_norm / np.linalg.norm(edges_vect_norm, axis=1)[:, None]
+            )
+
             # Iterate over all edge and see if we need to insert a new vertex along the edge
             edges_to_delete = []  # edges we need to remove
             edges_to_add = []  # edges we need to add
@@ -217,20 +238,19 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             for i, edge in enumerate(SG.es):
                 v1, v2 = edge.source, edge.target
                 # Figure out which vertex is proximal and which one is distal wrt the seed
-                if dist[v1] < dist[v2]:
-                    prox, distal = v1, v2
-                else:
-                    prox, distal = v2, v1
+                prox, distal = edges_srt[i]
 
                 # If the proximal vertex is at a distance that is a multiple of the step size
                 # we can start inserting new vertices at the next multiple of the step size + 1
                 # In reality this really onla happens for the seed vertex
                 if dist_is_step[prox]:
                     nodes_at_stepsize[dist[prox]].add(prox)
-                    start_inserting = (np.ceil(dist[prox] / step_size) + 1) * step_size
+                    start_inserting = (
+                        math.ceil(dist[prox] / step_size) + 1
+                    ) * step_size
                 # If not, we need to start inserting at the next multiple of the step size
                 else:
-                    start_inserting = np.ceil(dist[prox] / step_size) * step_size
+                    start_inserting = math.ceil(dist[prox] / step_size) * step_size
 
                 # If the distal vertex is further away than the start_inserting, we need to insert
                 if dist[distal] > start_inserting:
@@ -243,29 +263,32 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                         step_size,
                     )
                     # Note to self: this block is currently the most expensive step in the whole function.
-                    #
+                    # I tried vectorising this but unless we split every edge many times, the overhead is
+                    # not worth it. We could try vectorising outside the loop but that would get complicated.
                     if len(this_to_add):
                         # Calculate the unit vector along the edge
-                        prox_pos = mesh.vertices[cc[prox]]
-                        distal_pos = mesh.vertices[cc[distal]]
-                        vect = distal_pos - prox_pos
-                        vect_norm = vect / np.linalg.norm(vect)
+                        vect_norm = edges_vect_norm[i]
+                        edges_prox_pos_ = edges_prox_pos[i]
 
                         # Add the new vertices along that vector
                         for d in this_to_add:
                             d_along_edge = d - dist[prox]
                             new_v_ix = len(cc) + len(new_vertices)  # new vertex ID
-                            new_v_pos = prox_pos + vect_norm * d_along_edge
-                            edges_to_add.append((start, new_v_ix, d_along_edge, edge['faces']))
+                            new_v_pos = edges_prox_pos_ + vect_norm * d_along_edge
+                            edges_to_add.append(
+                                (start, new_v_ix, d_along_edge, edge["faces"])
+                            )
                             nodes_at_stepsize[d].add(new_v_ix)
                             new_vertices.append(new_v_pos)
 
-                            new_verts_faces[new_v_ix] = edge['faces']
+                            new_verts_faces[new_v_ix] = edge["faces"]
 
                             start = new_v_ix  # update start for next iteration
 
                         # Add the last edge (from the last inserted vertex to the distal vertex)
-                        edges_to_add.append((new_v_ix, distal, dist[distal] - d, edge['faces']))
+                        edges_to_add.append(
+                            (new_v_ix, distal, dist[distal] - d, edge["faces"])
+                        )
 
             # Turn the new vertices into an array
             new_vertices = np.array(new_vertices)
@@ -283,7 +306,10 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # Add new edges
             SG.add_edges(
                 [(e[0], e[1]) for e in edges_to_add],
-                attributes={"weight": [e[2] for e in edges_to_add], "faces": [e[3] for e in edges_to_add]},
+                attributes={
+                    "weight": [e[2] for e in edges_to_add],
+                    "faces": [e[3] for e in edges_to_add],
+                },
             )
 
             # To collect groups of new vertices that make up a wavefront, we need to connect new vertices
@@ -291,7 +317,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             edges_to_add = []
             for d_, nodes_ in nodes_at_stepsize.items():
                 if d_ == 0:
-                    continue # skip the seed
+                    continue  # skip the seed
 
                 # Collect the faces we need to connect across
                 faces_to_connect = {}
@@ -321,9 +347,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             all_step_nodes = np.concatenate(
                 [list(s) for s in nodes_at_stepsize.values()]
             )
-            SG.vs["is_step_node"] = np.isin(
-                np.arange(0, len(SG.vs)), all_step_nodes
-            )
+            SG.vs["is_step_node"] = np.isin(np.arange(0, len(SG.vs)), all_step_nodes)
 
             # First generate a graph where there are no edges between nodes of a different distance from the seed
             SG_no_across = SG.copy()
@@ -338,9 +362,9 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # Delete all edges that connect nodes of different distances
             SG_no_across.delete_edges(
                 [
-                    e.index
-                    for e in SG_no_across.es
-                    if nodes2step[e.source] != nodes2step[e.target]
+                    i
+                    for i, e in enumerate(SG_no_across.get_edgelist())
+                    if nodes2step[e[0]] != nodes2step[e[1]]
                 ]
             )
 
@@ -372,7 +396,9 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                     # nodes (typically just one or two) furher out than the last step node.
                     # We will manually disconnect these nodes.
                     for n in cc2:
-                        edges_to_delete.extend([e.index for e in SG.es.select(_source=n)])
+                        edges_to_delete.extend(
+                            [e.index for e in SG.es.select(_source=n)]
+                        )
                     continue
 
                 # Get the center of all step nodes in this connected component
@@ -406,7 +432,9 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                 else:
                     return False
 
-            SG.contract_vertices(new_mapping, combine_attrs={"is_seed": combine_is_seed})
+            SG.contract_vertices(
+                new_mapping, combine_attrs={"is_seed": combine_is_seed}
+            )
             SG = SG.simplify()
 
             # Add properties before we delete vertices
@@ -422,7 +450,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             SG.delete_vertices([v.index for v in SG.vs if len(v.neighbors()) == 0])
 
             # Last but not least: remove edges that do not connect nodes across step_dist distances
-            edge_dists = np.array([SG.vs[e]['step_dist'] for e in SG.get_edgelist()])
+            edge_dists = np.array([SG.vs[e]["step_dist"] for e in SG.get_edgelist()])
             edge_dists_diff = np.abs(edge_dists[:, 0] - edge_dists[:, 1])
             edges_to_delete = np.where(edge_dists_diff != step_size)[0]
 
