@@ -21,6 +21,7 @@ import warnings
 import networkx as nx
 import numpy as np
 import scipy.spatial
+import pandas as pd
 
 from ..utilities import make_trimesh
 
@@ -237,18 +238,40 @@ def recenter_vertices(s, mesh=None, inplace=False):
     targets = sources - vnormals * 1e4
 
     # Cast rays
-    ix, loc, is_backface = coll.intersections(sources, targets)
+    hit_ix, loc, is_backface = coll.intersections(sources, targets)
 
-    # If no collisions
-    if len(loc) == 0:
-        return s
+    # center-point if ray hits, otherwise keep closest_vertex
+    final_pos = closest_vertex.copy()
 
-    # Get half-vector
-    halfvec = np.zeros(sources.shape)
-    halfvec[ix] = (loc - closest_vertex[ix]) / 2
+    if len(loc) != 0:
+        # Get half-vector
+        halfvec = np.zeros(sources.shape)
+        halfvec[hit_ix] = (loc - closest_vertex[hit_ix]) / 2
 
-    # Offset vertices
-    final_pos = closest_vertex + halfvec
+        # Offset vertices
+        candidate = closest_vertex + halfvec
+
+        # Keep only those that are properly inside the mesh
+        now_inside = coll.contains(candidate)
+        final_pos[now_inside] = candidate[now_inside]
+
+    # try harder to get strictly inside
+    still_outside = ~coll.contains(final_pos)
+    if still_outside.any():
+        push = mesh.edges_unique_length.mean() / 100 if mesh.edges_unique_length.size else 1e-4 # for high-res meshes
+        push = max(push, 1e-6)
+        
+        candidate_in = closest_vertex - vnormals * push
+        candidate_out = closest_vertex + vnormals * push
+
+        in_ok = coll.contains(candidate_in)
+        out_ok = coll.contains(candidate_out)
+
+        use_in = still_outside & in_ok
+        use_out = still_outside & ~in_ok & out_ok
+
+        final_pos[use_in] = candidate_in[use_in]
+        final_pos[use_out] = candidate_out[use_out]
 
     # Keep only those that are properly inside the mesh and fall back to the
     # closest vertex if that's not the case
@@ -314,6 +337,230 @@ def recenter_vertices(s, mesh=None, inplace=False):
 
     return s
 
+def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, eps=1e-6):
+    """Fix edges that cross outside the mesh boundary.
+
+    This function detects skeleton edges that intersect the mesh boundary and
+    fixes them by iteratively splitting crossing edges (inserting new vertices
+    along the edge) and then recentering any vertices that end up outside the 
+    mesh using `recenter_vertices()`.
+
+    NOTES:
+    - This will modify original vertices positions (via `recenter_vertices()`)
+    - Splitting edges inserts new skeleton nodes that are not represented in "skel_map".
+    Currently, this function invalidate "mesh_map" and  "skel_map" (sets it to None) to
+    avoid leaving an old mapping.
+    
+    TODO: We should add functions to update the mapping.
+
+    Parameters
+    ----------
+    s :         skeletor.Skeleton
+    mesh :      trimesh.Trimesh
+                Original mesh. If mesh is None, will use the mesh associated with s (s.mesh).
+    inplace :   bool
+                If False will make and return a copy of the skeleton. If True,
+                will modify the `s` inplace.
+    max_iter :  int
+                Max split iterations for boundary-crossing edges.
+    smooth_iters : int
+                Number of smoothing iterations for degree-2 chain nodes.
+    eps :       float or {'auto'}
+                Ignore intersections within eps of either endpoint.
+                If "auto", uses mesh mean unique edge length * 1e-4.
+
+    Returns
+    -------
+    s :         skeletor.Skeleton
+    """
+    if isinstance(mesh, type(None)):
+        mesh = s.mesh
+    
+    if mesh is None:
+        raise ValueError(
+            "Mesh is required for fixing outside edges. Please provide a mesh or ensure s.mesh is set."
+        )
+
+    if not inplace:
+        s = s.copy()
+        
+    if s.swc is None or s.swc.empty:
+        return s
+
+    # determine eps (scale-aware)
+    if isinstance(eps, str):
+        if eps.lower() != 'auto':
+            raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
+        try:
+            mean_length = float(np.nanmean(mesh.edges_unique_length))
+        except Exception:
+            mean_length = np.nan
+        eps = mean_length * 1e-4 if (np.isfinite(mean_length) and mean_length > 0) else 1e-6
+    else:
+        eps = float(eps)
+
+    max_iter = int(max_iter)
+    if max_iter < 0:
+        raise ValueError('`max_iter` must be >= 0')
+
+    smooth_iters = int(smooth_iters)
+    if smooth_iters < 0:
+        raise ValueError('`smooth_iters` must be >= 0')
+
+    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+
+    # 1. recenter any nodes outside
+    coords = s.swc[['x', 'y', 'z']].values
+    if (~coll.contains(coords)).any():
+        recenter_vertices(s, mesh=mesh, inplace=True)
+
+    has_radius = 'radius' in s.swc.columns
+
+    # 2. iteratively split crossing edges
+    for _ in range(max_iter):
+        swc = s.swc
+        edge_rows = np.where(swc.parent_id.values >= 0)[0]
+        if edge_rows.size == 0:
+            break
+
+        sources = swc.loc[edge_rows, ['x', 'y', 'z']].values
+        parent_ids = swc.loc[edge_rows, 'parent_id'].values
+        targets = swc.set_index('node_id').loc[parent_ids, ['x', 'y', 'z']].values
+
+        ix, loc, _ = coll.intersections(sources, targets)
+
+        crossing = np.zeros(edge_rows.shape[0], dtype=bool)
+
+        if len(ix):
+            d_src = np.linalg.norm(loc - sources[ix], axis=1)
+            d_tgt = np.linalg.norm(loc - targets[ix], axis=1)
+            real_crossings = (d_src > eps) & (d_tgt > eps)
+            if real_crossings.any():
+                crossing[np.unique(ix[real_crossings])] = True
+
+        if not crossing.any():
+            break
+
+        to_split = edge_rows[crossing]
+        next_node_id = int(swc.node_id.max()) + 1
+
+        new_rows = []
+        nodes = swc.set_index('node_id')
+
+        # Cache arrays for cheap positional access inside the loop
+        node_id_arr = swc['node_id'].to_numpy(copy=False)
+        parent_id_arr = swc['parent_id'].to_numpy(copy=False)
+        parent_col = swc.columns.get_loc('parent_id')
+
+        xyz_arr = swc[['x', 'y', 'z']].to_numpy(copy=False)
+        if not np.issubdtype(xyz_arr.dtype, np.number):
+            xyz_arr = xyz_arr.astype(float)
+
+        for edge_row in to_split:
+            # edge_row is a positional row index (from np.where)
+            child_id = int(node_id_arr[edge_row])
+            parent_id = int(parent_id_arr[edge_row])
+            if parent_id < 0:
+                continue
+
+            # Midpoint (no projection; recenter will handle)
+            child_co = xyz_arr[edge_row].astype(float, copy=False)
+            parent_co = nodes.loc[parent_id, ['x', 'y', 'z']].values.astype(float, copy=False)
+            midpoint = (child_co + parent_co) / 2.0
+
+            # Rewire child -> new node (positional write; avoids boolean mask on node_id)
+            swc.iat[edge_row, parent_col] = next_node_id
+            parent_id_arr[edge_row] = next_node_id  # keep cached view consistent
+
+            # Create new node row
+            row = {col: np.nan for col in swc.columns}
+            row['node_id'] = next_node_id
+            row['parent_id'] = parent_id
+            row['x'], row['y'], row['z'] = midpoint
+
+            if has_radius:
+                child_r = pd.to_numeric(pd.Series([swc.at[edge_row, 'radius']]), errors='coerce').iloc[0]
+                parent_r = pd.to_numeric(pd.Series([nodes.loc[parent_id, 'radius']]), errors='coerce').iloc[0]
+                row['radius'] = np.nanmean(np.array([child_r, parent_r], dtype=float))
+
+            new_rows.append(row)
+            next_node_id += 1
+
+        if not new_rows:
+            break
+
+        swc = pd.concat([swc, pd.DataFrame(new_rows, columns=swc.columns)], ignore_index=True)
+        s.swc = swc
+
+        coords = s.swc[['x', 'y', 'z']].values
+        if (~coll.contains(coords)).any():
+            recenter_vertices(s, mesh=mesh, inplace=True)
+
+    # 3. smoothing (degree-2 chain nodes), then recenter
+    for _ in range(smooth_iters):
+        swc = s.swc
+
+        child_counts = swc[swc.parent_id >= 0].groupby('parent_id').size()
+        is_chain = (swc.parent_id >= 0) & (swc.node_id.map(child_counts).fillna(0).astype(int) == 1)
+        chain_nodes = swc.loc[is_chain, 'node_id'].values.astype(int)
+
+        if chain_nodes.size == 0:
+            break
+
+        only_child = swc[swc.parent_id >= 0].groupby('parent_id').node_id.first().to_dict()
+        nodes = swc.set_index('node_id')
+
+        parent_ids = nodes.loc[chain_nodes, 'parent_id'].values.astype(int)
+        child_ids = np.array([only_child[n] for n in chain_nodes], dtype=int)
+
+        parent_co = nodes.loc[parent_ids, ['x', 'y', 'z']].values.astype(float)
+        child_co = nodes.loc[child_ids, ['x', 'y', 'z']].values.astype(float)
+        smoothed = (parent_co + child_co) / 2.0
+
+
+        swc.loc[is_chain, ['x', 'y', 'z']] = smoothed
+        s.swc = swc
+
+        coords = s.swc[['x', 'y', 'z']].values
+        if (~coll.contains(coords)).any():
+            recenter_vertices(s, mesh=mesh, inplace=True)
+
+    swc = s.swc
+    edge_rows = np.where(swc.parent_id.values >= 0)[0]
+    remaining_crossings = 0
+    # detect crossing edges again for double-checking
+    if edge_rows.size:
+        sources = swc.loc[edge_rows, ['x', 'y', 'z']].values
+        parent_ids = swc.loc[edge_rows, 'parent_id'].values
+        nodes = swc.set_index('node_id')
+        try:
+            targets = nodes.loc[parent_ids, ['x', 'y', 'z']].values
+            ix, loc, _ = coll.intersections(sources, targets)
+            if len(ix):
+                d_src = np.linalg.norm(loc - sources[ix], axis=1)
+                d_tgt = np.linalg.norm(loc - targets[ix], axis=1)
+                real = (d_src > eps) & (d_tgt > eps)
+                if np.any(real):
+                    crossing = np.zeros(edge_rows.shape[0], dtype=bool)
+                    crossing[np.unique(ix[real])] = True
+                    remaining_crossings = int(crossing.sum())
+        except KeyError:
+            remaining_crossings = 0
+
+    if remaining_crossings > 0:
+        warnings.warn(
+            f'{remaining_crossings} crossing edges remain after {max_iter} '
+            'fix iteration(s); returning best-effort result. Consider increasing '
+            '`max_iter`, adjusting `eps`, and/or running `post.clean_up` / '
+            '`post.remove_bristles` first. Also check mesh quality (e.g. non-watertight '
+            'or degenerate faces).',
+            RuntimeWarning
+        )
+
+    # Invalidate mesh_map
+    s.mesh_map = None
+
+    return s
 
 def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
     """Collapse twigs that are in line of sight to each other.

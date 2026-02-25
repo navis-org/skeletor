@@ -87,6 +87,7 @@ Here is a complete list of available functions:
 | `skeletor.post.smooth()`                    | smooth the skeleton                                         |
 | `skeletor.post.remove_bristles()`           | remove single-node bristles from the skeleton               |
 | `skeletor.post.despike()`                   | smooth out jumps in the skeleton                            |
+| `skeletor.post.fix_outside_edges()`         | fix edges that cross outside the mesh boundary              |
 
 ------
 
