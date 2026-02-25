@@ -338,7 +338,7 @@ def recenter_vertices(s, mesh=None, inplace=False):
     return s
 
 def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, eps=1e-6):
-    """Fix edges that cross outside of the mesh boundary.
+    """Fix edges that cross outside the mesh boundary.
 
     This function detects skeleton edges that intersect the mesh boundary and
     fixes them by iteratively splitting crossing edges (inserting new vertices
@@ -365,7 +365,7 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
                 Max split iterations for boundary-crossing edges.
     smooth_iters : int
                 Number of smoothing iterations for degree-2 chain nodes.
-    eps :       float or {'auto',}
+    eps :       float or {'auto'}
                 Ignore intersections within eps of either endpoint.
                 If "auto", uses mesh mean unique edge length * 1e-4.
 
@@ -373,29 +373,31 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
     -------
     s :         skeletor.Skeleton
     """
-    if s.swc.empty:
-        return s
-
     if isinstance(mesh, type(None)):
         mesh = s.mesh
     
     if mesh is None:
-        raise ValueError("Mesh is required for fixing outside edges. Please provide a mesh or ensure s.mesh is set.")
-
-    # determine eps (scale-aware)
-    if isinstance(eps, str):
-        if eps.lower() not in {'auto'}:
-            raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
-        mean_length = float(np.nanmean(mesh.edges_unique_length))
-        if np.isfinite(mean_length) and mean_length > 0:
-            eps = mean_length * 1e-4
-        else: #fallback
-            eps = 1e-6
-    else:
-        eps = float(eps)
+        raise ValueError(
+            "Mesh is required for fixing outside edges. Please provide a mesh or ensure s.mesh is set."
+        )
 
     if not inplace:
         s = s.copy()
+        
+    if s.swc is None or s.swc.empty:
+        return s
+
+    # determine eps (scale-aware)
+    if isinstance(eps, str):
+        if eps.lower() != 'auto':
+            raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
+        try:
+            mean_length = float(np.nanmean(mesh.edges_unique_length))
+        except Exception:
+            mean_length = np.nan
+        eps = mean_length * 1e-4 if (np.isfinite(mean_length) and mean_length > 0) else 1e-6
+    else:
+        eps = float(eps)
 
     max_iter = int(max_iter)
     if max_iter < 0:
@@ -445,20 +447,30 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
         new_rows = []
         nodes = swc.set_index('node_id')
 
-        for edge_row in to_split:
-            child_id = int(swc.iloc[edge_row].node_id)
-            parent_id = int(swc.iloc[edge_row].parent_id)
+        # Cache arrays for cheap positional access inside the loop
+        node_id_arr = swc['node_id'].to_numpy(copy=False)
+        parent_id_arr = swc['parent_id'].to_numpy(copy=False)
+        parent_col = swc.columns.get_loc('parent_id')
 
+        xyz_arr = swc[['x', 'y', 'z']].to_numpy(copy=False)
+        if not np.issubdtype(xyz_arr.dtype, np.number):
+            xyz_arr = xyz_arr.astype(float)
+
+        for edge_row in to_split:
+            # edge_row is a positional row index (from np.where)
+            child_id = int(node_id_arr[edge_row])
+            parent_id = int(parent_id_arr[edge_row])
             if parent_id < 0:
                 continue
 
             # Midpoint (no projection; recenter will handle)
-            child_co = nodes.loc[child_id, ['x', 'y', 'z']].values.astype(float)
-            parent_co = nodes.loc[parent_id, ['x', 'y', 'z']].values.astype(float)
+            child_co = xyz_arr[edge_row].astype(float, copy=False)
+            parent_co = nodes.loc[parent_id, ['x', 'y', 'z']].values.astype(float, copy=False)
             midpoint = (child_co + parent_co) / 2.0
 
-            # Rewire child -> new node
-            swc.loc[swc.node_id == child_id, 'parent_id'] = next_node_id
+            # Rewire child -> new node (positional write; avoids boolean mask on node_id)
+            swc.iat[edge_row, parent_col] = next_node_id
+            parent_id_arr[edge_row] = next_node_id  # keep cached view consistent
 
             # Create new node row
             row = {col: np.nan for col in swc.columns}
@@ -467,7 +479,7 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
             row['x'], row['y'], row['z'] = midpoint
 
             if has_radius:
-                child_r = pd.to_numeric(pd.Series([nodes.loc[child_id, 'radius']]), errors='coerce').iloc[0]
+                child_r = pd.to_numeric(pd.Series([swc.at[edge_row, 'radius']]), errors='coerce').iloc[0]
                 parent_r = pd.to_numeric(pd.Series([nodes.loc[parent_id, 'radius']]), errors='coerce').iloc[0]
                 row['radius'] = np.nanmean(np.array([child_r, parent_r], dtype=float))
 
@@ -505,8 +517,8 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
         child_co = nodes.loc[child_ids, ['x', 'y', 'z']].values.astype(float)
         smoothed = (parent_co + child_co) / 2.0
 
-        swc.loc[is_chain, ['x', 'y', 'z']] = smoothed
 
+        swc.loc[is_chain, ['x', 'y', 'z']] = smoothed
         s.swc = swc
 
         coords = s.swc[['x', 'y', 'z']].values
