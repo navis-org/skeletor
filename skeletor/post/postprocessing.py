@@ -337,27 +337,30 @@ def recenter_vertices(s, mesh=None, inplace=False):
 
     return s
 
-def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, eps=1e-6):
+
+def fix_outside_edges(
+    s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, eps=1e-6
+):
     """Fix edges that cross outside the mesh boundary.
 
     This function detects skeleton edges that intersect the mesh boundary and
     fixes them by iteratively splitting crossing edges (inserting new vertices
-    along the edge) and then recentering any vertices that end up outside the 
+    along the edge) and then recentering any vertices that end up outside the
     mesh using `recenter_vertices()`.
 
-    NOTES:
-    - This will modify original vertices positions (via `recenter_vertices()`)
-    - Splitting edges inserts new skeleton nodes that are not represented in "skel_map".
-    Currently, this function invalidate "mesh_map" and  "skel_map" (sets it to None) to
-    avoid leaving an old mapping.
-    
-    TODO: We should add functions to update the mapping.
+    Notes
+    -----
+    This will also modify original vertices positions (via `skeletor.post.recenter_vertices()`).
+    Splitting edges inserts new skeleton nodes that are not represented in "skel_map". Currently,
+    we invalidate any existing "mesh_map" and "skel_map" (setting it to `None`). In the
+    future, we may add functionality to update the mapping instead.
 
     Parameters
     ----------
     s :         skeletor.Skeleton
     mesh :      trimesh.Trimesh
-                Original mesh. If mesh is None, will use the mesh associated with s (s.mesh).
+                Original mesh. If mesh is None, will use the mesh associated with input
+                skeleton (`s.mesh`).
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
@@ -372,6 +375,7 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
     Returns
     -------
     s :         skeletor.Skeleton
+
     """
     if isinstance(mesh, type(None)):
         mesh = s.mesh
