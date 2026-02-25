@@ -1,5 +1,16 @@
 # News
 
+## 1.5.0 (2026-02-25)
+- new skeletonization method: `skeletor.skeletonize.by_wavefront_exact`
+- new post-processing methods: `skeletor.post.recenter_vertices` and `skeletor.post.fix_outside_edges` (by @zyx287)
+- a number of small fixes
+
+## 1.4.0 (2025-12-02)
+- new method: `Skeleton.mend_breaks`
+- fix `Skeleton.radius`
+- follow changes in `igraph` and `trimesh`
+- a large number of small fixes
+
 ## 1.3.0 (2023-03-31)
 
 New post-processing methods:
