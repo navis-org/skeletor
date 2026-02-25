@@ -338,13 +338,26 @@ def recenter_vertices(s, mesh=None, inplace=False):
     return s
 
 def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, eps=1e-6):
-    """Split edges that cross outside the mesh boundary (best-effort).
+    """Fix edges that cross outside of the mesh boundary.
+
+    This function detects skeleton edges that intersect the mesh boundary and
+    fixes them by iteratively splitting crossing edges (inserting new vertices
+    along the edge) and then recentering any vertices that end up outside the 
+    mesh using `recenter_vertices()`.
+
+    NOTES:
+    - This will modify original vertices positions (via `recenter_vertices()`)
+    - Splitting edges inserts new skeleton nodes that are not represented in "skel_map".
+    Currently, this function invalidate "mesh_map" and  "skel_map" (sets it to None) to
+    avoid leaving an old mapping.
+    
+    TODO: We should add functions to update the mapping.
 
     Parameters
     ----------
     s :         skeletor.Skeleton
     mesh :      trimesh.Trimesh
-                Original mesh.
+                Original mesh. If mesh is None, will use the mesh associated with s (s.mesh).
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
@@ -352,15 +365,34 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
                 Max split iterations for boundary-crossing edges.
     smooth_iters : int
                 Number of smoothing iterations for degree-2 chain nodes.
-    eps :       float
+    eps :       float or {'auto',}
                 Ignore intersections within eps of either endpoint.
+                If "auto", uses mesh mean unique edge length * 1e-4.
 
     Returns
     -------
     s :         skeletor.Skeleton
     """
+    if s.swc.empty:
+        return s
+
     if isinstance(mesh, type(None)):
         mesh = s.mesh
+    
+    if mesh is None:
+        raise ValueError("Mesh is required for fixing outside edges. Please provide a mesh or ensure s.mesh is set.")
+
+    # determine eps (scale-aware)
+    if isinstance(eps, str):
+        if eps.lower() not in {'auto'}:
+            raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
+        mean_length = float(np.nanmean(mesh.edges_unique_length))
+        if np.isfinite(mean_length) and mean_length > 0:
+            eps = mean_length * 1e-4
+        else: #fallback
+            eps = 1e-6
+    else:
+        eps = float(eps)
 
     if not inplace:
         s = s.copy()
@@ -408,7 +440,7 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
             break
 
         to_split = edge_rows[crossing]
-        next_node_id = int(swc.node_id.max()) + 1 if not swc.empty else 0
+        next_node_id = int(swc.node_id.max()) + 1
 
         new_rows = []
         nodes = swc.set_index('node_id')
@@ -455,8 +487,6 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
     # 3. smoothing (degree-2 chain nodes), then recenter
     for _ in range(smooth_iters):
         swc = s.swc
-        if swc.empty:
-            break
 
         child_counts = swc[swc.parent_id >= 0].groupby('parent_id').size()
         is_chain = (swc.parent_id >= 0) & (swc.node_id.map(child_counts).fillna(0).astype(int) == 1)
@@ -475,8 +505,7 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
         child_co = nodes.loc[child_ids, ['x', 'y', 'z']].values.astype(float)
         smoothed = (parent_co + child_co) / 2.0
 
-        for node_id, xyz in zip(chain_nodes, smoothed):
-            swc.loc[swc.node_id == node_id, ['x', 'y', 'z']] = xyz
+        swc.loc[is_chain, ['x', 'y', 'z']] = smoothed
 
         s.swc = swc
 
@@ -514,8 +543,9 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
             RuntimeWarning
         )
 
-    if not inplace:
-        s.swc = s.swc.copy()
+    # Invalidate mesh_map
+    s.mesh_map = None
+
     return s
 
 def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
