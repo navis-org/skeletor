@@ -81,7 +81,7 @@ def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
         s = s.copy()
 
     # Drop parallel twigs
-    _ = drop_parallel_twigs(s, theta=kwargs.get('theta', 0.01), inplace=True)
+    _ = drop_parallel_twigs(s, theta=kwargs.get("theta", 0.01), inplace=True)
 
     # Recenter vertices
     _ = recenter_vertices(s, mesh, inplace=True)
@@ -122,7 +122,7 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
         s = s.copy()
 
     # Find branch points
-    pcount = s.swc[s.swc.parent_id >= 0].groupby('parent_id').size()
+    pcount = s.swc[s.swc.parent_id >= 0].groupby("parent_id").size()
     bp = pcount[pcount > 1].index
 
     # Find terminal twigs
@@ -137,12 +137,13 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
         coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
         # Remove twigs that aren't inside the volume
-        twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
+        twigs = twigs[coll.contains(twigs[["x", "y", "z"]].values)]
 
         # Generate rays between all pairs and their parents
-        sources = twigs[['x', 'y', 'z']].values
-        targets = s.swc.set_index('node_id').loc[twigs.parent_id,
-                                                ['x', 'y', 'z']].values
+        sources = twigs[["x", "y", "z"]].values
+        targets = (
+            s.swc.set_index("node_id").loc[twigs.parent_id, ["x", "y", "z"]].values
+        )
 
         # Get intersections: `ix` points to index of line segment; `loc` is the
         #  x/y/z coordinate of the intersection and `is_backface` is True if
@@ -160,7 +161,7 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
     s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)].copy()
 
     # Update the mesh map
-    mesh_map = getattr(s, 'mesh_map', None)
+    mesh_map = getattr(s, "mesh_map", None)
     if not isinstance(mesh_map, type(None)):
         for t in to_remove.itertuples():
             mesh_map[mesh_map == t.node_id] = t.parent_id
@@ -258,9 +259,13 @@ def recenter_vertices(s, mesh=None, inplace=False):
     # try harder to get strictly inside
     still_outside = ~coll.contains(final_pos)
     if still_outside.any():
-        push = mesh.edges_unique_length.mean() / 100 if mesh.edges_unique_length.size else 1e-4 # for high-res meshes
+        push = (
+            mesh.edges_unique_length.mean() / 100
+            if mesh.edges_unique_length.size
+            else 1e-4
+        )  # for high-res meshes
         push = max(push, 1e-6)
-        
+
         candidate_in = closest_vertex - vnormals * push
         candidate_out = closest_vertex + vnormals * push
 
@@ -279,9 +284,9 @@ def recenter_vertices(s, mesh=None, inplace=False):
     final_pos[~now_inside] = closest_vertex[~now_inside]
 
     # Replace coordinates
-    s.swc.loc[outside, 'x'] = final_pos[:, 0]
-    s.swc.loc[outside, 'y'] = final_pos[:, 1]
-    s.swc.loc[outside, 'z'] = final_pos[:, 2]
+    s.swc.loc[outside, "x"] = final_pos[:, 0]
+    s.swc.loc[outside, "y"] = final_pos[:, 1]
+    s.swc.loc[outside, "z"] = final_pos[:, 2]
 
     # At this point we may have nodes that snapped to the same vertex and
     # therefore end up at the same position. We will collapse those nodes
@@ -319,7 +324,7 @@ def recenter_vertices(s, mesh=None, inplace=False):
         # Only mess with the skeleton if there were nodes to be merged
         if rewire:
             # Rewire
-            s.swc['parent_id'] = s.swc.parent_id.map(lambda x: rewire.get(x, x))
+            s.swc["parent_id"] = s.swc.parent_id.map(lambda x: rewire.get(x, x))
 
             # Drop nodes that were collapsed
             s.swc = s.swc.loc[~s.swc.node_id.isin(rewire)]
@@ -379,57 +384,60 @@ def fix_outside_edges(
     """
     if isinstance(mesh, type(None)):
         mesh = s.mesh
-    
+
     if mesh is None:
         raise ValueError(
-            "Mesh is required for fixing outside edges. Please provide a mesh or ensure s.mesh is set."
+            "Mesh is required for fixing outside edges. Please provide a mesh or ensure `s.mesh` is set."
         )
 
     if not inplace:
         s = s.copy()
-        
+
     if s.swc is None or s.swc.empty:
         return s
 
-    # determine eps (scale-aware)
+    # Determine eps (scale-aware)
     if isinstance(eps, str):
-        if eps.lower() != 'auto':
+        if eps.lower() != "auto":
             raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
         try:
             mean_length = float(np.nanmean(mesh.edges_unique_length))
         except Exception:
             mean_length = np.nan
-        eps = mean_length * 1e-4 if (np.isfinite(mean_length) and mean_length > 0) else 1e-6
+        eps = (
+            mean_length * 1e-4
+            if (np.isfinite(mean_length) and mean_length > 0)
+            else 1e-6
+        )
     else:
         eps = float(eps)
 
     max_iter = int(max_iter)
     if max_iter < 0:
-        raise ValueError('`max_iter` must be >= 0')
+        raise ValueError("`max_iter` must be >= 0")
 
     smooth_iters = int(smooth_iters)
     if smooth_iters < 0:
-        raise ValueError('`smooth_iters` must be >= 0')
+        raise ValueError("`smooth_iters` must be >= 0")
 
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
-    # 1. recenter any nodes outside
-    coords = s.swc[['x', 'y', 'z']].values
-    if (~coll.contains(coords)).any():
+    # 1. Recenter any nodes outside the mesh
+    if (~coll.contains(s.vertices)).any():
         recenter_vertices(s, mesh=mesh, inplace=True)
 
-    has_radius = 'radius' in s.swc.columns
+    has_radius = "radius" in s.swc.columns
 
-    # 2. iteratively split crossing edges
+    # 2. Iteratively split crossing edges
     for _ in range(max_iter):
         swc = s.swc
         edge_rows = np.where(swc.parent_id.values >= 0)[0]
         if edge_rows.size == 0:
             break
 
-        sources = swc.loc[edge_rows, ['x', 'y', 'z']].values
-        parent_ids = swc.loc[edge_rows, 'parent_id'].values
-        targets = swc.set_index('node_id').loc[parent_ids, ['x', 'y', 'z']].values
+        sources = swc.loc[edge_rows, ["x", "y", "z"]].values
+        parent_ids = swc.loc[edge_rows, "parent_id"].values
+        targets = swc.set_index("node_id").loc[parent_ids, ["x", "y", "z"]].values
 
         ix, loc, _ = coll.intersections(sources, targets)
 
@@ -449,13 +457,13 @@ def fix_outside_edges(
         next_node_id = int(swc.node_id.max()) + 1
 
         new_rows = []
-        nodes = swc.set_index('node_id')
+        nodes = swc.set_index("node_id")
 
         # Cache arrays for cheap positional access inside the loop
         parent_id_arr = swc["parent_id"].to_numpy(copy=True)
         parent_col = swc.columns.get_loc("parent_id")
 
-        xyz_arr = swc[['x', 'y', 'z']].to_numpy(copy=False)
+        xyz_arr = swc[["x", "y", "z"]].to_numpy(copy=False)
         if not np.issubdtype(xyz_arr.dtype, np.number):
             xyz_arr = xyz_arr.astype(float)
 
@@ -478,14 +486,18 @@ def fix_outside_edges(
 
             # Create new node row
             row = {col: np.nan for col in swc.columns}
-            row['node_id'] = next_node_id
-            row['parent_id'] = parent_id
-            row['x'], row['y'], row['z'] = midpoint
+            row["node_id"] = next_node_id
+            row["parent_id"] = parent_id
+            row["x"], row["y"], row["z"] = midpoint
 
             if has_radius:
-                child_r = pd.to_numeric(pd.Series([swc.at[edge_row, 'radius']]), errors='coerce').iloc[0]
-                parent_r = pd.to_numeric(pd.Series([nodes.loc[parent_id, 'radius']]), errors='coerce').iloc[0]
-                row['radius'] = np.nanmean(np.array([child_r, parent_r], dtype=float))
+                child_r = pd.to_numeric(
+                    pd.Series([swc.at[edge_row, "radius"]]), errors="coerce"
+                ).iloc[0]
+                parent_r = pd.to_numeric(
+                    pd.Series([nodes.loc[parent_id, "radius"]]), errors="coerce"
+                ).iloc[0]
+                row["radius"] = np.nanmean(np.array([child_r, parent_r], dtype=float))
 
             new_rows.append(row)
             next_node_id += 1
@@ -493,52 +505,57 @@ def fix_outside_edges(
         if not new_rows:
             break
 
-        swc = pd.concat([swc, pd.DataFrame(new_rows, columns=swc.columns)], ignore_index=True)
+        swc = pd.concat(
+            [swc, pd.DataFrame(new_rows, columns=swc.columns)], ignore_index=True
+        )
         s.swc = swc
 
-        coords = s.swc[['x', 'y', 'z']].values
+        coords = s.swc[["x", "y", "z"]].values
         if (~coll.contains(coords)).any():
             recenter_vertices(s, mesh=mesh, inplace=True)
 
-    # 3. smoothing (degree-2 chain nodes), then recenter
+    # 3. Smoothing (degree-2 chain nodes), then recenter
     for _ in range(smooth_iters):
         swc = s.swc
 
-        child_counts = swc[swc.parent_id >= 0].groupby('parent_id').size()
-        is_chain = (swc.parent_id >= 0) & (swc.node_id.map(child_counts).fillna(0).astype(int) == 1)
-        chain_nodes = swc.loc[is_chain, 'node_id'].values.astype(int)
+        child_counts = swc[swc.parent_id >= 0].groupby("parent_id").size()
+        is_chain = (swc.parent_id >= 0) & (
+            swc.node_id.map(child_counts).fillna(0).astype(int) == 1
+        )
+        chain_nodes = swc.loc[is_chain, "node_id"].values.astype(int)
 
         if chain_nodes.size == 0:
             break
 
-        only_child = swc[swc.parent_id >= 0].groupby('parent_id').node_id.first().to_dict()
-        nodes = swc.set_index('node_id')
+        only_child = (
+            swc[swc.parent_id >= 0].groupby("parent_id").node_id.first().to_dict()
+        )
+        nodes = swc.set_index("node_id")
 
-        parent_ids = nodes.loc[chain_nodes, 'parent_id'].values.astype(int)
+        parent_ids = nodes.loc[chain_nodes, "parent_id"].values.astype(int)
         child_ids = np.array([only_child[n] for n in chain_nodes], dtype=int)
 
-        parent_co = nodes.loc[parent_ids, ['x', 'y', 'z']].values.astype(float)
-        child_co = nodes.loc[child_ids, ['x', 'y', 'z']].values.astype(float)
+        parent_co = nodes.loc[parent_ids, ["x", "y", "z"]].values.astype(float)
+        child_co = nodes.loc[child_ids, ["x", "y", "z"]].values.astype(float)
         smoothed = (parent_co + child_co) / 2.0
 
-
-        swc.loc[is_chain, ['x', 'y', 'z']] = smoothed
+        swc.loc[is_chain, ["x", "y", "z"]] = smoothed
         s.swc = swc
 
-        coords = s.swc[['x', 'y', 'z']].values
+        coords = s.swc[["x", "y", "z"]].values
         if (~coll.contains(coords)).any():
             recenter_vertices(s, mesh=mesh, inplace=True)
 
     swc = s.swc
     edge_rows = np.where(swc.parent_id.values >= 0)[0]
     remaining_crossings = 0
-    # detect crossing edges again for double-checking
+    # Detect crossing edges again for double-checking
     if edge_rows.size:
-        sources = swc.loc[edge_rows, ['x', 'y', 'z']].values
-        parent_ids = swc.loc[edge_rows, 'parent_id'].values
-        nodes = swc.set_index('node_id')
+        sources = swc.loc[edge_rows, ["x", "y", "z"]].values
+        parent_ids = swc.loc[edge_rows, "parent_id"].values
+        nodes = swc.set_index("node_id")
         try:
-            targets = nodes.loc[parent_ids, ['x', 'y', 'z']].values
+            targets = nodes.loc[parent_ids, ["x", "y", "z"]].values
             ix, loc, _ = coll.intersections(sources, targets)
             if len(ix):
                 d_src = np.linalg.norm(loc - sources[ix], axis=1)
@@ -553,12 +570,12 @@ def fix_outside_edges(
 
     if remaining_crossings > 0:
         warnings.warn(
-            f'{remaining_crossings} crossing edges remain after {max_iter} '
-            'fix iteration(s); returning best-effort result. Consider increasing '
-            '`max_iter`, adjusting `eps`, and/or running `post.clean_up` / '
-            '`post.remove_bristles` first. Also check mesh quality (e.g. non-watertight '
-            'or degenerate faces).',
-            RuntimeWarning
+            f"{remaining_crossings} crossing edges remain after {max_iter} "
+            "fix iteration(s); returning best-effort result. Consider increasing "
+            "`max_iter`, adjusting `eps`, and/or running `post.clean_up` / "
+            "`post.remove_bristles` first. Also check mesh quality (e.g. non-watertight "
+            "or degenerate faces).",
+            RuntimeWarning,
         )
 
     # Invalidate mesh_map
@@ -566,7 +583,8 @@ def fix_outside_edges(
 
     return s
 
-def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
+
+def drop_line_of_sight_twigs(s, mesh=None, max_dist="auto", inplace=False):
     """Collapse twigs that are in line of sight to each other.
 
     Note that this only removes 1 layer of twigs (i.e. only the actual leaf
@@ -603,16 +621,19 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
         s = s.copy()
 
     # Add distance to parents
-    s.swc['parent_dist'] = 0
+    s.swc["parent_dist"] = 0
     not_root = s.swc.parent_id >= 0
-    co1 = s.swc.loc[not_root, ['x', 'y', 'z']].values
-    co2 = s.swc.set_index('node_id').loc[s.swc.loc[not_root, 'parent_id'],
-                                         ['x', 'y', 'z']].values
-    s.swc.loc[not_root, 'parent_dist'] = np.sqrt(np.sum((co1 - co2)**2, axis=1))
+    co1 = s.swc.loc[not_root, ["x", "y", "z"]].values
+    co2 = (
+        s.swc.set_index("node_id")
+        .loc[s.swc.loc[not_root, "parent_id"], ["x", "y", "z"]]
+        .values
+    )
+    s.swc.loc[not_root, "parent_dist"] = np.sqrt(np.sum((co1 - co2) ** 2, axis=1))
 
     # If max dist is 'auto', we will use the longest child->parent edge in the
     # skeleton as limit
-    if max_dist == 'auto':
+    if max_dist == "auto":
         max_dist = s.swc.parent_dist.max()
 
     # Initialize ncollpyde Volume
@@ -622,16 +643,20 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
     twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id)]
 
     # Remove twigs that aren't inside the volume
-    twigs = twigs[coll.contains(twigs[['x', 'y', 'z']].values)]
+    twigs = twigs[coll.contains(twigs[["x", "y", "z"]].values)]
 
     # Generate rays between all pairs of twigs
-    twigs_co = twigs[['x', 'y', 'z']].values
+    twigs_co = twigs[["x", "y", "z"]].values
     sources = np.repeat(twigs_co, twigs.shape[0], axis=0)
     targets = np.tile(twigs_co, (twigs.shape[0], 1))
 
     # Keep track of indices
-    pairs = np.stack((np.repeat(twigs.node_id, twigs.shape[0]),
-                      np.tile(twigs.node_id, twigs.shape[0]))).T
+    pairs = np.stack(
+        (
+            np.repeat(twigs.node_id, twigs.shape[0]),
+            np.tile(twigs.node_id, twigs.shape[0]),
+        )
+    ).T
 
     # If max distance, drop pairs that are too far appart
     if max_dist:
@@ -667,7 +692,7 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
     # winning twig. For this we will use the twig lengths. In theory we ought to
     # be more fancy and ask for the distance to the root but that's more
     # expensive and it's unclear if it'll work any better.
-    seg_lengths = twigs.set_index('node_id').parent_dist.to_dict()
+    seg_lengths = twigs.set_index("node_id").parent_dist.to_dict()
     to_remove = []
     seen = set()
     for nodes in clusters:
@@ -690,7 +715,7 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist='auto', inplace=False):
             to_remove += loosers
 
     # Drop the tips we flagged for removal and the new column we added
-    s.swc = s.swc[~s.swc.node_id.isin(to_remove)].drop('parent_dist', axis=1)
+    s.swc = s.swc[~s.swc.node_id.isin(to_remove)].drop("parent_dist", axis=1)
 
     # Clean up node/vertex order
     s.reindex(inplace=True)
@@ -735,52 +760,60 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
 
     # Find branch points - we ignore roots that are also branch points because
     # that would cause headaches with tangent vectors further down
-    cnt = s.swc.groupby('parent_id').node_id.count()
+    cnt = s.swc.groupby("parent_id").node_id.count()
     bp = s.swc[s.swc.node_id.isin((cnt >= 2).index) & ~s.swc.node_id.isin(roots)]
     # Find 1-node twigs
-    twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id) & s.swc.parent_id.isin(bp.node_id)]
+    twigs = s.swc[
+        ~s.swc.node_id.isin(s.swc.parent_id) & s.swc.parent_id.isin(bp.node_id)
+    ]
 
     # Produce parent -> child tangent vectors for each node
     # Note that root nodes will have a NaN parent tangent vector
-    coords = s.swc.set_index('node_id')[['x', 'y', 'z']]
-    tangents = (s.swc[['x', 'y', 'z']].values - coords.reindex(s.swc.parent_id).values)
+    coords = s.swc.set_index("node_id")[["x", "y", "z"]]
+    tangents = s.swc[["x", "y", "z"]].values - coords.reindex(s.swc.parent_id).values
     tangents /= np.sqrt(np.sum(tangents**2, axis=1)).reshape(tangents.shape[0], 1)
-    s.swc['tangent_x'] = tangents[:, 0]
-    s.swc['tangent_y'] = tangents[:, 1]
-    s.swc['tangent_z'] = tangents[:, 2]
+    s.swc["tangent_x"] = tangents[:, 0]
+    s.swc["tangent_y"] = tangents[:, 1]
+    s.swc["tangent_z"] = tangents[:, 2]
 
     # For each node calculate a child vector
-    child_tangent = s.swc[s.swc.parent_id >= 0].groupby('parent_id')
-    child_tangent = child_tangent[['tangent_x', 'tangent_y', 'tangent_z']].sum()
+    child_tangent = s.swc[s.swc.parent_id >= 0].groupby("parent_id")
+    child_tangent = child_tangent[["tangent_x", "tangent_y", "tangent_z"]].sum()
 
     # Combine into a final vector and normalize again
-    comb_tangent = s.swc[['tangent_x', 'tangent_y', 'tangent_y']].fillna(0).values \
+    comb_tangent = (
+        s.swc[["tangent_x", "tangent_y", "tangent_y"]].fillna(0).values
         + child_tangent.reindex(s.swc.node_id).fillna(0).values
+    )
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        comb_tangent /= np.sqrt(np.sum(comb_tangent**2, axis=1)).reshape(comb_tangent.shape[0], 1)
+        comb_tangent /= np.sqrt(np.sum(comb_tangent**2, axis=1)).reshape(
+            comb_tangent.shape[0], 1
+        )
 
     # Replace tangent vectors in SWC dataframe
-    s.swc['tangent_x'] = comb_tangent[:, 0]
-    s.swc['tangent_y'] = comb_tangent[:, 1]
-    s.swc['tangent_z'] = comb_tangent[:, 2]
+    s.swc["tangent_x"] = comb_tangent[:, 0]
+    s.swc["tangent_y"] = comb_tangent[:, 1]
+    s.swc["tangent_z"] = comb_tangent[:, 2]
 
     # Now get the dotproducts of the twigs' and their parent's tangent vectors
-    twig_tangents = s.swc.set_index('node_id').loc[twigs.node_id,
-                                                   ['tangent_x',
-                                                    'tangent_y',
-                                                    'tangent_z']].values
-    parent_tangents = s.swc.set_index('node_id').loc[twigs.parent_id,
-                                                     ['tangent_x',
-                                                      'tangent_y',
-                                                      'tangent_z']].values
+    twig_tangents = (
+        s.swc.set_index("node_id")
+        .loc[twigs.node_id, ["tangent_x", "tangent_y", "tangent_z"]]
+        .values
+    )
+    parent_tangents = (
+        s.swc.set_index("node_id")
+        .loc[twigs.parent_id, ["tangent_x", "tangent_y", "tangent_z"]]
+        .values
+    )
 
     # Drop the tangent columns we made
-    s.swc.drop(['tangent_x', 'tangent_y', 'tangent_z'], axis=1, inplace=True)
+    s.swc.drop(["tangent_x", "tangent_y", "tangent_z"], axis=1, inplace=True)
 
     # Generate dotproducts
-    dot = np.einsum('ij,ij->i', twig_tangents, parent_tangents)
+    dot = np.einsum("ij,ij->i", twig_tangents, parent_tangents)
 
     # Basically we want to drop any twig for which the dotproduct is close to 1
     dot_diff = 1 - np.fabs(dot)
@@ -791,7 +824,7 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
         s.swc = s.swc[~s.swc.node_id.isin(to_remove.node_id)].copy()
 
         # Update the mesh map
-        mesh_map = getattr(s, 'mesh_map', None)
+        mesh_map = getattr(s, "mesh_map", None)
         if not isinstance(mesh_map, type(None)):
             for t in to_remove.itertuples():
                 mesh_map[mesh_map == t.node_id] = t.parent_id
@@ -801,10 +834,10 @@ def drop_parallel_twigs(s, theta=0.01, inplace=False):
 
     return s
 
-def smooth(s,
-           window: int = 3,
-           to_smooth: list = ['x', 'y', 'z'],
-           inplace: bool = False):
+
+def smooth(
+    s, window: int = 3, to_smooth: list = ["x", "y", "z"], inplace: bool = False
+):
     """Smooth skeleton using rolling windows.
 
     Parameters
@@ -831,12 +864,12 @@ def smooth(s,
         s = s.copy()
 
     # Prepare nodes (add parent_dist for later, set index)
-    nodes = s.swc.set_index('node_id', inplace=False).copy()
+    nodes = s.swc.set_index("node_id", inplace=False).copy()
 
     to_smooth = np.array(to_smooth)
     miss = to_smooth[~np.isin(to_smooth, nodes.columns)]
     if len(miss):
-        raise ValueError(f'Column(s) not found in node table: {miss}')
+        raise ValueError(f"Column(s) not found in node table: {miss}")
 
     # Go over each segment and smooth
     for seg in s.get_segments():
@@ -852,11 +885,8 @@ def smooth(s,
 
     return s
 
-def despike(s,
-            sigma = 5,
-            max_spike_length = 1,
-            inplace = False,
-            reverse = False):
+
+def despike(s, sigma=5, max_spike_length=1, inplace=False, reverse=False):
     r"""Remove spikes in skeleton.
 
     For each node A, the euclidean distance to its next successor (parent)
@@ -890,7 +920,7 @@ def despike(s,
         s = s.copy()
 
     # Index nodes table by node ID
-    this_nodes = s.swc.set_index('node_id', inplace=False)
+    this_nodes = s.swc.set_index("node_id", inplace=False)
 
     segments = s.get_segments()
     segs_to_walk = segments
@@ -904,28 +934,30 @@ def despike(s,
         # Go over all segments
         for seg in segs_to_walk:
             # Get nodes A, B and C of this segment
-            this_A = this_nodes.loc[seg[:-l - 1]]
+            this_A = this_nodes.loc[seg[: -l - 1]]
             this_B = this_nodes.loc[seg[l:-1]]
-            this_C = this_nodes.loc[seg[l + 1:]]
+            this_C = this_nodes.loc[seg[l + 1 :]]
 
             # Get coordinates
-            A = this_A[['x', 'y', 'z']].values
-            B = this_B[['x', 'y', 'z']].values
-            C = this_C[['x', 'y', 'z']].values
+            A = this_A[["x", "y", "z"]].values
+            B = this_B[["x", "y", "z"]].values
+            C = this_C[["x", "y", "z"]].values
 
             # Calculate euclidian distances A->B and A->C
             dist_AB = np.linalg.norm(A - B, axis=1)
             dist_AC = np.linalg.norm(A - C, axis=1)
 
             # Get the spikes
-            spikes_ix = np.where(np.divide(dist_AB, dist_AC, where=dist_AC != 0) > sigma)[0]
+            spikes_ix = np.where(
+                np.divide(dist_AB, dist_AC, where=dist_AC != 0) > sigma
+            )[0]
             spikes = this_B.iloc[spikes_ix]
 
             if not spikes.empty:
                 # Interpolate new position(s) between A and C
                 new_positions = A[spikes_ix] + (C[spikes_ix] - A[spikes_ix]) / 2
 
-                this_nodes.loc[spikes.index, ['x', 'y', 'z']] = new_positions
+                this_nodes.loc[spikes.index, ["x", "y", "z"]] = new_positions
 
     # Reassign node table
     s.swc = this_nodes.reset_index(drop=False, inplace=False)
