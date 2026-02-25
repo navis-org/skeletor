@@ -72,6 +72,11 @@ class TestPostprocessing:
         rad_knn = sk.post.radii(s, method='knn')
         rad_ray = sk.post.radii(s, method='ray')
 
+    def test_fix_outside_edges(self):
+        mesh = sk.example_mesh()
+        s = sk.skeletonize.by_wavefront(mesh, waves=1)
+        fixed = sk.post.fix_outside_edges(s, inplace=False, eps='auto')
+
 
 class TestExamples:
     def test_readme_example(self):
