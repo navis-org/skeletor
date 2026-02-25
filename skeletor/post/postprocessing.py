@@ -448,7 +448,6 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
         nodes = swc.set_index('node_id')
 
         # Cache arrays for cheap positional access inside the loop
-        node_id_arr = swc['node_id'].to_numpy(copy=False)
         parent_id_arr = swc["parent_id"].to_numpy(copy=True)
         parent_col = swc.columns.get_loc("parent_id")
 
@@ -458,7 +457,6 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
 
         for edge_row in to_split:
             # edge_row is a positional row index (from np.where)
-            child_id = int(node_id_arr[edge_row])
             parent_id = int(parent_id_arr[edge_row])
             if parent_id < 0:
                 continue
