@@ -42,6 +42,9 @@
                     <a class="function" href="#by_wavefront">by_wavefront</a>
             </li>
             <li>
+                    <a class="function" href="#by_wavefront_exact">by_wavefront_exact</a>
+            </li>
+            <li>
                     <a class="function" href="#by_vertex_clusters">by_vertex_clusters</a>
             </li>
             <li>
@@ -91,10 +94,18 @@ is a quick summary:</p>
 <tbody>
 <tr>
   <td><code><a href="#by_wavefront">skeletor.skeletonize.by_wavefront()</a></code></td>
-  <td style="text-align:center;">+++</td>
+  <td style="text-align:center;">++++</td>
   <td style="text-align:center;">++</td>
   <td style="text-align:center;">yes</td>
   <td style="text-align:center;">yes</td>
+  <td>works well for tubular meshes</td>
+</tr>
+<tr>
+  <td><code><a href="#by_wavefront_exact">skeletor.skeletonize.by_wavefront_exact()</a></code></td>
+  <td style="text-align:center;">+++</td>
+  <td style="text-align:center;">++</td>
+  <td style="text-align:center;">yes</td>
+  <td style="text-align:center;">no</td>
   <td>works well for tubular meshes</td>
 </tr>
 <tr>
@@ -192,31 +203,33 @@ is a quick summary:</p>
 </span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
 </span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">| function                                    | speed | robust | radii [^2] | mesh map [^3] | description                                        |</span>
 </span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">| ------------------------------------------- | :---: | :----: | :--------: | :-----------: | ---------------------------------------------------|</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">| `skeletor.skeletonize.by_wavefront()`       | +++   | ++     | yes        | yes           | works well for tubular meshes                      |</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">| `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | yes           | best with contracted meshes [^1]                   |</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">| `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | yes           | works on mesh surface                              |</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | yes           | works with mesh normals                            |</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">| `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | no            | published with [1] - never got this to work well   |</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">[^1]: use `skeletor.pre.contract()`</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">[^2]: radii can also be added in postprocessing with `skeletor.post.radii()`</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">[^3]: a mapping from the meshes vertices to skeleton nodes</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">## References</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.edge_collapse</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.vertex_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wave</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.teasar</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.tangent_ball</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;by_teasar&#39;</span><span class="p">,</span> <span class="s1">&#39;by_wavefront&#39;</span><span class="p">,</span> <span class="s1">&#39;by_vertex_clusters&#39;</span><span class="p">,</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>           <span class="s1">&#39;by_edge_collapse&#39;</span><span class="p">,</span> <span class="s1">&#39;by_tangent_ball&#39;</span><span class="p">]</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">| `skeletor.skeletonize.by_wavefront()`       | ++++  | ++     | yes        | yes           | works well for tubular meshes                      |</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">| `skeletor.skeletonize.by_wavefront_exact()` | +++   | ++     | yes        | no            | works well for tubular meshes                      |</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">| `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | yes           | best with contracted meshes [^1]                   |</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">| `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | yes           | works on mesh surface                              |</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">| `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | yes           | works with mesh normals                            |</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">| `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | no            | published with [1] - never got this to work well   |</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">[^1]: use `skeletor.pre.contract()`</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">[^2]: radii can also be added in postprocessing with `skeletor.post.radii()`</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">[^3]: a mapping from the meshes vertices to skeleton nodes</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">## References</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.edge_collapse</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.vertex_cluster</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wave</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wave2</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.teasar</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.tangent_ball</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;numpy&quot;</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;by_teasar&#39;</span><span class="p">,</span> <span class="s1">&#39;by_wavefront&#39;</span><span class="p">,</span> <span class="s1">&#39;by_wavefront_exact&#39;</span><span class="p">,</span> <span class="s1">&#39;by_vertex_clusters&#39;</span><span class="p">,</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>           <span class="s1">&#39;by_edge_collapse&#39;</span><span class="p">,</span> <span class="s1">&#39;by_tangent_ball&#39;</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -295,7 +308,7 @@ is a quick summary:</p>
 </span><span id="by_teasar-99"><a href="#by_teasar-99"><span class="linenos"> 99</span></a>
 </span><span id="by_teasar-100"><a href="#by_teasar-100"><span class="linenos">100</span></a>    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Invalidating&#39;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">vs</span><span class="p">),</span>
 </span><span id="by_teasar-101"><a href="#by_teasar-101"><span class="linenos">101</span></a>              <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">progress</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
-</span><span id="by_teasar-102"><a href="#by_teasar-102"><span class="linenos">102</span></a>        <span class="k">for</span> <span class="n">cc</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">clusters</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="by_teasar-102"><a href="#by_teasar-102"><span class="linenos">102</span></a>        <span class="k">for</span> <span class="n">cc</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="by_teasar-103"><a href="#by_teasar-103"><span class="linenos">103</span></a>            <span class="c1"># Make a subgraph for this connected component</span>
 </span><span id="by_teasar-104"><a href="#by_teasar-104"><span class="linenos">104</span></a>            <span class="n">SG</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">subgraph</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
 </span><span id="by_teasar-105"><a href="#by_teasar-105"><span class="linenos">105</span></a>            <span class="n">cc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
@@ -310,8 +323,8 @@ is a quick summary:</p>
 </span><span id="by_teasar-114"><a href="#by_teasar-114"><span class="linenos">114</span></a>            <span class="n">sp</span> <span class="o">=</span> <span class="n">SG</span><span class="o">.</span><span class="n">get_adjacency_sparse</span><span class="p">(</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>
 </span><span id="by_teasar-115"><a href="#by_teasar-115"><span class="linenos">115</span></a>
 </span><span id="by_teasar-116"><a href="#by_teasar-116"><span class="linenos">116</span></a>            <span class="c1"># Get lengths of paths to all nodes from root</span>
-</span><span id="by_teasar-117"><a href="#by_teasar-117"><span class="linenos">117</span></a>            <span class="n">paths</span> <span class="o">=</span> <span class="n">SG</span><span class="o">.</span><span class="n">shortest_paths</span><span class="p">(</span><span class="n">this_root</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span>
-</span><span id="by_teasar-118"><a href="#by_teasar-118"><span class="linenos">118</span></a>                                      <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;ALL&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="by_teasar-117"><a href="#by_teasar-117"><span class="linenos">117</span></a>            <span class="n">paths</span> <span class="o">=</span> <span class="n">SG</span><span class="o">.</span><span class="n">distances</span><span class="p">(</span><span class="n">this_root</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span>
+</span><span id="by_teasar-118"><a href="#by_teasar-118"><span class="linenos">118</span></a>                                 <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;ALL&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 </span><span id="by_teasar-119"><a href="#by_teasar-119"><span class="linenos">119</span></a>            <span class="n">paths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
 </span><span id="by_teasar-120"><a href="#by_teasar-120"><span class="linenos">120</span></a>
 </span><span id="by_teasar-121"><a href="#by_teasar-121"><span class="linenos">121</span></a>            <span class="c1"># Prep array for invalidation</span>
@@ -502,86 +515,100 @@ visualization.</li>
 </span><span id="by_wavefront-81"><a href="#by_wavefront-81"><span class="linenos"> 81</span></a><span class="sd">    progress :      bool</span>
 </span><span id="by_wavefront-82"><a href="#by_wavefront-82"><span class="linenos"> 82</span></a><span class="sd">                    If True, will show progress bar.</span>
 </span><span id="by_wavefront-83"><a href="#by_wavefront-83"><span class="linenos"> 83</span></a>
-</span><span id="by_wavefront-84"><a href="#by_wavefront-84"><span class="linenos"> 84</span></a><span class="sd">    Returns</span>
-</span><span id="by_wavefront-85"><a href="#by_wavefront-85"><span class="linenos"> 85</span></a><span class="sd">    -------</span>
-</span><span id="by_wavefront-86"><a href="#by_wavefront-86"><span class="linenos"> 86</span></a><span class="sd">    skeletor.Skeleton</span>
-</span><span id="by_wavefront-87"><a href="#by_wavefront-87"><span class="linenos"> 87</span></a><span class="sd">                    Holds results of the skeletonization and enables quick</span>
-</span><span id="by_wavefront-88"><a href="#by_wavefront-88"><span class="linenos"> 88</span></a><span class="sd">                    visualization.</span>
-</span><span id="by_wavefront-89"><a href="#by_wavefront-89"><span class="linenos"> 89</span></a>
-</span><span id="by_wavefront-90"><a href="#by_wavefront-90"><span class="linenos"> 90</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="by_wavefront-91"><a href="#by_wavefront-91"><span class="linenos"> 91</span></a>    <span class="n">agg_map</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
-</span><span id="by_wavefront-92"><a href="#by_wavefront-92"><span class="linenos"> 92</span></a>               <span class="s1">&#39;median&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">,</span>
-</span><span id="by_wavefront-93"><a href="#by_wavefront-93"><span class="linenos"> 93</span></a>               <span class="s1">&#39;percentile75&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span>
-</span><span id="by_wavefront-94"><a href="#by_wavefront-94"><span class="linenos"> 94</span></a>               <span class="s1">&#39;percentile25&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">25</span><span class="p">)}</span>
-</span><span id="by_wavefront-95"><a href="#by_wavefront-95"><span class="linenos"> 95</span></a>    <span class="k">assert</span> <span class="n">radius_agg</span> <span class="ow">in</span> <span class="n">agg_map</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Unknown `radius_agg`: &quot;</span><span class="si">{</span><span class="n">radius_agg</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
-</span><span id="by_wavefront-96"><a href="#by_wavefront-96"><span class="linenos"> 96</span></a>    <span class="n">rad_agg_func</span> <span class="o">=</span> <span class="n">agg_map</span><span class="p">[</span><span class="n">radius_agg</span><span class="p">]</span>
+</span><span id="by_wavefront-84"><a href="#by_wavefront-84"><span class="linenos"> 84</span></a><span class="sd">    See Also</span>
+</span><span id="by_wavefront-85"><a href="#by_wavefront-85"><span class="linenos"> 85</span></a><span class="sd">    --------</span>
+</span><span id="by_wavefront-86"><a href="#by_wavefront-86"><span class="linenos"> 86</span></a><span class="sd">    `skeletor.skeletonize.by_wavefront_exact()`</span>
+</span><span id="by_wavefront-87"><a href="#by_wavefront-87"><span class="linenos"> 87</span></a><span class="sd">                    This is a version of the `by_wavefront` function in which the wave front</span>
+</span><span id="by_wavefront-88"><a href="#by_wavefront-88"><span class="linenos"> 88</span></a><span class="sd">                    moves _exactly_ the given distance along the mesh (see `step_size` parameter)</span>
+</span><span id="by_wavefront-89"><a href="#by_wavefront-89"><span class="linenos"> 89</span></a><span class="sd">                    instead of hopping from vertex to vertex. This can give better results on</span>
+</span><span id="by_wavefront-90"><a href="#by_wavefront-90"><span class="linenos"> 90</span></a><span class="sd">                    meshes with a low vertex density but is computationally more expensive.</span>
+</span><span id="by_wavefront-91"><a href="#by_wavefront-91"><span class="linenos"> 91</span></a>
+</span><span id="by_wavefront-92"><a href="#by_wavefront-92"><span class="linenos"> 92</span></a><span class="sd">    Returns</span>
+</span><span id="by_wavefront-93"><a href="#by_wavefront-93"><span class="linenos"> 93</span></a><span class="sd">    -------</span>
+</span><span id="by_wavefront-94"><a href="#by_wavefront-94"><span class="linenos"> 94</span></a><span class="sd">    skeletor.Skeleton</span>
+</span><span id="by_wavefront-95"><a href="#by_wavefront-95"><span class="linenos"> 95</span></a><span class="sd">                    Holds results of the skeletonization and enables quick</span>
+</span><span id="by_wavefront-96"><a href="#by_wavefront-96"><span class="linenos"> 96</span></a><span class="sd">                    visualization.</span>
 </span><span id="by_wavefront-97"><a href="#by_wavefront-97"><span class="linenos"> 97</span></a>
-</span><span id="by_wavefront-98"><a href="#by_wavefront-98"><span class="linenos"> 98</span></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="by_wavefront-99"><a href="#by_wavefront-99"><span class="linenos"> 99</span></a>
-</span><span id="by_wavefront-100"><a href="#by_wavefront-100"><span class="linenos">100</span></a>    <span class="n">centers_final</span><span class="p">,</span> <span class="n">radii_final</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">_cast_waves</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">waves</span><span class="o">=</span><span class="n">waves</span><span class="p">,</span>
-</span><span id="by_wavefront-101"><a href="#by_wavefront-101"><span class="linenos">101</span></a>                                                <span class="n">origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
-</span><span id="by_wavefront-102"><a href="#by_wavefront-102"><span class="linenos">102</span></a>                                                <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
-</span><span id="by_wavefront-103"><a href="#by_wavefront-103"><span class="linenos">103</span></a>                                                <span class="n">rad_agg_func</span><span class="o">=</span><span class="n">rad_agg_func</span><span class="p">,</span>
-</span><span id="by_wavefront-104"><a href="#by_wavefront-104"><span class="linenos">104</span></a>                                                <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span>
-</span><span id="by_wavefront-105"><a href="#by_wavefront-105"><span class="linenos">105</span></a>
-</span><span id="by_wavefront-106"><a href="#by_wavefront-106"><span class="linenos">106</span></a>    <span class="c1"># Collapse vertices into nodes</span>
-</span><span id="by_wavefront-107"><a href="#by_wavefront-107"><span class="linenos">107</span></a>    <span class="p">(</span><span class="n">node_centers</span><span class="p">,</span>
-</span><span id="by_wavefront-108"><a href="#by_wavefront-108"><span class="linenos">108</span></a>     <span class="n">vertex_to_node_map</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">centers_final</span><span class="p">,</span>
-</span><span id="by_wavefront-109"><a href="#by_wavefront-109"><span class="linenos">109</span></a>                                     <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="by_wavefront-98"><a href="#by_wavefront-98"><span class="linenos"> 98</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="by_wavefront-99"><a href="#by_wavefront-99"><span class="linenos"> 99</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">radius_agg</span><span class="p">):</span>
+</span><span id="by_wavefront-100"><a href="#by_wavefront-100"><span class="linenos">100</span></a>        <span class="n">agg_map</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
+</span><span id="by_wavefront-101"><a href="#by_wavefront-101"><span class="linenos">101</span></a>                <span class="s1">&#39;median&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">,</span>
+</span><span id="by_wavefront-102"><a href="#by_wavefront-102"><span class="linenos">102</span></a>                <span class="s1">&#39;percentile75&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span>
+</span><span id="by_wavefront-103"><a href="#by_wavefront-103"><span class="linenos">103</span></a>                <span class="s1">&#39;percentile25&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">25</span><span class="p">)}</span>
+</span><span id="by_wavefront-104"><a href="#by_wavefront-104"><span class="linenos">104</span></a>        <span class="k">assert</span> <span class="n">radius_agg</span> <span class="ow">in</span> <span class="n">agg_map</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Unknown `radius_agg`: &quot;</span><span class="si">{</span><span class="n">radius_agg</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+</span><span id="by_wavefront-105"><a href="#by_wavefront-105"><span class="linenos">105</span></a>        <span class="n">rad_agg_func</span> <span class="o">=</span> <span class="n">agg_map</span><span class="p">[</span><span class="n">radius_agg</span><span class="p">]</span>
+</span><span id="by_wavefront-106"><a href="#by_wavefront-106"><span class="linenos">106</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="by_wavefront-107"><a href="#by_wavefront-107"><span class="linenos">107</span></a>        <span class="n">rad_agg_func</span> <span class="o">=</span> <span class="n">radius_agg</span>
+</span><span id="by_wavefront-108"><a href="#by_wavefront-108"><span class="linenos">108</span></a>
+</span><span id="by_wavefront-109"><a href="#by_wavefront-109"><span class="linenos">109</span></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="by_wavefront-110"><a href="#by_wavefront-110"><span class="linenos">110</span></a>
-</span><span id="by_wavefront-111"><a href="#by_wavefront-111"><span class="linenos">111</span></a>    <span class="c1"># Map radii for individual vertices to the collapsed nodes</span>
-</span><span id="by_wavefront-112"><a href="#by_wavefront-112"><span class="linenos">112</span></a>    <span class="c1"># Using pandas is the fastest way here</span>
-</span><span id="by_wavefront-113"><a href="#by_wavefront-113"><span class="linenos">113</span></a>    <span class="n">node_radii</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-</span><span id="by_wavefront-114"><a href="#by_wavefront-114"><span class="linenos">114</span></a>    <span class="n">node_radii</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertex_to_node_map</span>
-</span><span id="by_wavefront-115"><a href="#by_wavefront-115"><span class="linenos">115</span></a>    <span class="n">node_radii</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radii_final</span>
-</span><span id="by_wavefront-116"><a href="#by_wavefront-116"><span class="linenos">116</span></a>    <span class="n">node_radii</span> <span class="o">=</span> <span class="n">node_radii</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;node_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">rad_agg_func</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
-</span><span id="by_wavefront-117"><a href="#by_wavefront-117"><span class="linenos">117</span></a>
-</span><span id="by_wavefront-118"><a href="#by_wavefront-118"><span class="linenos">118</span></a>    <span class="c1"># Contract vertices</span>
-</span><span id="by_wavefront-119"><a href="#by_wavefront-119"><span class="linenos">119</span></a>    <span class="n">G</span><span class="o">.</span><span class="n">contract_vertices</span><span class="p">(</span><span class="n">vertex_to_node_map</span><span class="p">)</span>
-</span><span id="by_wavefront-120"><a href="#by_wavefront-120"><span class="linenos">120</span></a>
-</span><span id="by_wavefront-121"><a href="#by_wavefront-121"><span class="linenos">121</span></a>    <span class="c1"># Remove self loops and duplicate edges</span>
-</span><span id="by_wavefront-122"><a href="#by_wavefront-122"><span class="linenos">122</span></a>    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
-</span><span id="by_wavefront-123"><a href="#by_wavefront-123"><span class="linenos">123</span></a>
-</span><span id="by_wavefront-124"><a href="#by_wavefront-124"><span class="linenos">124</span></a>    <span class="c1"># Generate hierarchical tree</span>
-</span><span id="by_wavefront-125"><a href="#by_wavefront-125"><span class="linenos">125</span></a>    <span class="n">el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">())</span>
-</span><span id="by_wavefront-126"><a href="#by_wavefront-126"><span class="linenos">126</span></a>
-</span><span id="by_wavefront-127"><a href="#by_wavefront-127"><span class="linenos">127</span></a>    <span class="k">if</span> <span class="n">PRESERVE_BACKBONE</span><span class="p">:</span>
-</span><span id="by_wavefront-128"><a href="#by_wavefront-128"><span class="linenos">128</span></a>        <span class="c1"># Use the minimum radius between vertices in an edge</span>
-</span><span id="by_wavefront-129"><a href="#by_wavefront-129"><span class="linenos">129</span></a>        <span class="n">weights_rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">node_radii</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span>
-</span><span id="by_wavefront-130"><a href="#by_wavefront-130"><span class="linenos">130</span></a>                                 <span class="n">node_radii</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="by_wavefront-111"><a href="#by_wavefront-111"><span class="linenos">111</span></a>    <span class="n">centers_final</span><span class="p">,</span> <span class="n">radii_final</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">_cast_waves</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">waves</span><span class="o">=</span><span class="n">waves</span><span class="p">,</span>
+</span><span id="by_wavefront-112"><a href="#by_wavefront-112"><span class="linenos">112</span></a>                                                <span class="n">origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
+</span><span id="by_wavefront-113"><a href="#by_wavefront-113"><span class="linenos">113</span></a>                                                <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+</span><span id="by_wavefront-114"><a href="#by_wavefront-114"><span class="linenos">114</span></a>                                                <span class="n">rad_agg_func</span><span class="o">=</span><span class="n">rad_agg_func</span><span class="p">,</span>
+</span><span id="by_wavefront-115"><a href="#by_wavefront-115"><span class="linenos">115</span></a>                                                <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span>
+</span><span id="by_wavefront-116"><a href="#by_wavefront-116"><span class="linenos">116</span></a>
+</span><span id="by_wavefront-117"><a href="#by_wavefront-117"><span class="linenos">117</span></a>    <span class="c1"># Collapse vertices into nodes</span>
+</span><span id="by_wavefront-118"><a href="#by_wavefront-118"><span class="linenos">118</span></a>    <span class="p">(</span><span class="n">node_centers</span><span class="p">,</span>
+</span><span id="by_wavefront-119"><a href="#by_wavefront-119"><span class="linenos">119</span></a>     <span class="n">vertex_to_node_map</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">centers_final</span><span class="p">,</span>
+</span><span id="by_wavefront-120"><a href="#by_wavefront-120"><span class="linenos">120</span></a>                                     <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="by_wavefront-121"><a href="#by_wavefront-121"><span class="linenos">121</span></a>
+</span><span id="by_wavefront-122"><a href="#by_wavefront-122"><span class="linenos">122</span></a>    <span class="c1"># Map radii for individual vertices to the collapsed nodes</span>
+</span><span id="by_wavefront-123"><a href="#by_wavefront-123"><span class="linenos">123</span></a>    <span class="c1"># Using pandas is the fastest way here</span>
+</span><span id="by_wavefront-124"><a href="#by_wavefront-124"><span class="linenos">124</span></a>    <span class="n">node_radii</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="by_wavefront-125"><a href="#by_wavefront-125"><span class="linenos">125</span></a>    <span class="n">node_radii</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertex_to_node_map</span>
+</span><span id="by_wavefront-126"><a href="#by_wavefront-126"><span class="linenos">126</span></a>    <span class="n">node_radii</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radii_final</span>
+</span><span id="by_wavefront-127"><a href="#by_wavefront-127"><span class="linenos">127</span></a>    <span class="n">node_radii</span> <span class="o">=</span> <span class="n">node_radii</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;node_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">rad_agg_func</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+</span><span id="by_wavefront-128"><a href="#by_wavefront-128"><span class="linenos">128</span></a>
+</span><span id="by_wavefront-129"><a href="#by_wavefront-129"><span class="linenos">129</span></a>    <span class="c1"># Contract vertices</span>
+</span><span id="by_wavefront-130"><a href="#by_wavefront-130"><span class="linenos">130</span></a>    <span class="n">G</span><span class="o">.</span><span class="n">contract_vertices</span><span class="p">(</span><span class="n">vertex_to_node_map</span><span class="p">)</span>
 </span><span id="by_wavefront-131"><a href="#by_wavefront-131"><span class="linenos">131</span></a>
-</span><span id="by_wavefront-132"><a href="#by_wavefront-132"><span class="linenos">132</span></a>        <span class="c1"># For each node generate a vector based on its immediate neighbors</span>
-</span><span id="by_wavefront-133"><a href="#by_wavefront-133"><span class="linenos">133</span></a>        <span class="n">vect</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">dotprops</span><span class="p">(</span><span class="n">node_centers</span><span class="p">)</span>
-</span><span id="by_wavefront-134"><a href="#by_wavefront-134"><span class="linenos">134</span></a>        <span class="n">weights_alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">alpha</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span>
-</span><span id="by_wavefront-135"><a href="#by_wavefront-135"><span class="linenos">135</span></a>                                   <span class="n">alpha</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="by_wavefront-136"><a href="#by_wavefront-136"><span class="linenos">136</span></a>
-</span><span id="by_wavefront-137"><a href="#by_wavefront-137"><span class="linenos">137</span></a>        <span class="c1"># Combine both which means we are most likely to cut at small branches</span>
-</span><span id="by_wavefront-138"><a href="#by_wavefront-138"><span class="linenos">138</span></a>        <span class="c1"># outside of the backbone</span>
-</span><span id="by_wavefront-139"><a href="#by_wavefront-139"><span class="linenos">139</span></a>        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights_rad</span> <span class="o">*</span> <span class="n">weights_alpha</span>
-</span><span id="by_wavefront-140"><a href="#by_wavefront-140"><span class="linenos">140</span></a>
-</span><span id="by_wavefront-141"><a href="#by_wavefront-141"><span class="linenos">141</span></a>        <span class="c1"># MST doesn&#39;t like 0 for weights</span>
-</span><span id="by_wavefront-142"><a href="#by_wavefront-142"><span class="linenos">142</span></a>        <span class="n">weights</span><span class="p">[</span><span class="n">weights</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">weights</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span>
-</span><span id="by_wavefront-143"><a href="#by_wavefront-143"><span class="linenos">143</span></a>
-</span><span id="by_wavefront-144"><a href="#by_wavefront-144"><span class="linenos">144</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="by_wavefront-145"><a href="#by_wavefront-145"><span class="linenos">145</span></a>        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">node_centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">node_centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="by_wavefront-146"><a href="#by_wavefront-146"><span class="linenos">146</span></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">spanning_tree</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">weights</span><span class="p">)</span>
+</span><span id="by_wavefront-132"><a href="#by_wavefront-132"><span class="linenos">132</span></a>    <span class="c1"># Remove self loops and duplicate edges</span>
+</span><span id="by_wavefront-133"><a href="#by_wavefront-133"><span class="linenos">133</span></a>    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
+</span><span id="by_wavefront-134"><a href="#by_wavefront-134"><span class="linenos">134</span></a>
+</span><span id="by_wavefront-135"><a href="#by_wavefront-135"><span class="linenos">135</span></a>    <span class="c1"># Generate hierarchical tree</span>
+</span><span id="by_wavefront-136"><a href="#by_wavefront-136"><span class="linenos">136</span></a>    <span class="n">el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">())</span>
+</span><span id="by_wavefront-137"><a href="#by_wavefront-137"><span class="linenos">137</span></a>
+</span><span id="by_wavefront-138"><a href="#by_wavefront-138"><span class="linenos">138</span></a>    <span class="k">if</span> <span class="n">PRESERVE_BACKBONE</span><span class="p">:</span>
+</span><span id="by_wavefront-139"><a href="#by_wavefront-139"><span class="linenos">139</span></a>        <span class="c1"># Use the mean radius between vertices in an edge</span>
+</span><span id="by_wavefront-140"><a href="#by_wavefront-140"><span class="linenos">140</span></a>        <span class="n">weights_rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">node_radii</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span>
+</span><span id="by_wavefront-141"><a href="#by_wavefront-141"><span class="linenos">141</span></a>                                 <span class="n">node_radii</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="by_wavefront-142"><a href="#by_wavefront-142"><span class="linenos">142</span></a>
+</span><span id="by_wavefront-143"><a href="#by_wavefront-143"><span class="linenos">143</span></a>        <span class="c1"># For each edge generate a vector based on its immediate neighbors</span>
+</span><span id="by_wavefront-144"><a href="#by_wavefront-144"><span class="linenos">144</span></a>        <span class="n">vect</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">dotprops</span><span class="p">(</span><span class="n">node_centers</span><span class="p">)</span>
+</span><span id="by_wavefront-145"><a href="#by_wavefront-145"><span class="linenos">145</span></a>        <span class="n">weights_alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">alpha</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span>
+</span><span id="by_wavefront-146"><a href="#by_wavefront-146"><span class="linenos">146</span></a>                                   <span class="n">alpha</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="by_wavefront-147"><a href="#by_wavefront-147"><span class="linenos">147</span></a>
-</span><span id="by_wavefront-148"><a href="#by_wavefront-148"><span class="linenos">148</span></a>    <span class="c1"># Create a directed acyclic and hierarchical graph</span>
-</span><span id="by_wavefront-149"><a href="#by_wavefront-149"><span class="linenos">149</span></a>    <span class="n">G_nx</span> <span class="o">=</span> <span class="n">edges_to_graph</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">()),</span>
-</span><span id="by_wavefront-150"><a href="#by_wavefront-150"><span class="linenos">150</span></a>                          <span class="n">nodes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">vs</span><span class="p">)),</span>
-</span><span id="by_wavefront-151"><a href="#by_wavefront-151"><span class="linenos">151</span></a>                          <span class="n">fix_tree</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># this makes sure graph is oriented</span>
-</span><span id="by_wavefront-152"><a href="#by_wavefront-152"><span class="linenos">152</span></a>                          <span class="n">drop_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="by_wavefront-153"><a href="#by_wavefront-153"><span class="linenos">153</span></a>
-</span><span id="by_wavefront-154"><a href="#by_wavefront-154"><span class="linenos">154</span></a>    <span class="c1"># Generate the SWC table</span>
-</span><span id="by_wavefront-155"><a href="#by_wavefront-155"><span class="linenos">155</span></a>    <span class="n">swc</span> <span class="o">=</span> <span class="n">make_swc</span><span class="p">(</span><span class="n">G_nx</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">node_centers</span><span class="p">,</span> <span class="n">reindex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="by_wavefront-156"><a href="#by_wavefront-156"><span class="linenos">156</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_radii</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
-</span><span id="by_wavefront-157"><a href="#by_wavefront-157"><span class="linenos">157</span></a>    <span class="n">_</span><span class="p">,</span> <span class="n">new_ids</span> <span class="o">=</span> <span class="n">reindex_swc</span><span class="p">(</span><span class="n">swc</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="by_wavefront-148"><a href="#by_wavefront-148"><span class="linenos">148</span></a>        <span class="c1"># Combine both which means we are most likely to cut at small branches</span>
+</span><span id="by_wavefront-149"><a href="#by_wavefront-149"><span class="linenos">149</span></a>        <span class="c1"># outside of the backbone</span>
+</span><span id="by_wavefront-150"><a href="#by_wavefront-150"><span class="linenos">150</span></a>        <span class="c1"># Lower weights = more likely to be cut</span>
+</span><span id="by_wavefront-151"><a href="#by_wavefront-151"><span class="linenos">151</span></a>        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights_rad</span> <span class="o">*</span> <span class="n">weights_alpha</span>
+</span><span id="by_wavefront-152"><a href="#by_wavefront-152"><span class="linenos">152</span></a>
+</span><span id="by_wavefront-153"><a href="#by_wavefront-153"><span class="linenos">153</span></a>        <span class="c1"># MST doesn&#39;t like 0 for weights</span>
+</span><span id="by_wavefront-154"><a href="#by_wavefront-154"><span class="linenos">154</span></a>        <span class="n">weights</span><span class="p">[</span><span class="n">weights</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">weights</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span>
+</span><span id="by_wavefront-155"><a href="#by_wavefront-155"><span class="linenos">155</span></a>
+</span><span id="by_wavefront-156"><a href="#by_wavefront-156"><span class="linenos">156</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="by_wavefront-157"><a href="#by_wavefront-157"><span class="linenos">157</span></a>        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">node_centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">node_centers</span><span class="p">[</span><span class="n">el</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="by_wavefront-158"><a href="#by_wavefront-158"><span class="linenos">158</span></a>
-</span><span id="by_wavefront-159"><a href="#by_wavefront-159"><span class="linenos">159</span></a>    <span class="c1"># Update vertex to node ID map</span>
-</span><span id="by_wavefront-160"><a href="#by_wavefront-160"><span class="linenos">160</span></a>    <span class="n">vertex_to_node_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">new_ids</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">vertex_to_node_map</span><span class="p">])</span>
+</span><span id="by_wavefront-159"><a href="#by_wavefront-159"><span class="linenos">159</span></a>    <span class="c1"># We need this to orient all edges towards the root</span>
+</span><span id="by_wavefront-160"><a href="#by_wavefront-160"><span class="linenos">160</span></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">spanning_tree</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">weights</span><span class="p">)</span>
 </span><span id="by_wavefront-161"><a href="#by_wavefront-161"><span class="linenos">161</span></a>
-</span><span id="by_wavefront-162"><a href="#by_wavefront-162"><span class="linenos">162</span></a>    <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span> <span class="n">mesh_map</span><span class="o">=</span><span class="n">vertex_to_node_map</span><span class="p">,</span>
-</span><span id="by_wavefront-163"><a href="#by_wavefront-163"><span class="linenos">163</span></a>                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;wavefront&#39;</span><span class="p">)</span>
+</span><span id="by_wavefront-162"><a href="#by_wavefront-162"><span class="linenos">162</span></a>    <span class="c1"># Create a directed acyclic and hierarchical graph</span>
+</span><span id="by_wavefront-163"><a href="#by_wavefront-163"><span class="linenos">163</span></a>    <span class="n">G_nx</span> <span class="o">=</span> <span class="n">edges_to_graph</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_edgelist</span><span class="p">()),</span>
+</span><span id="by_wavefront-164"><a href="#by_wavefront-164"><span class="linenos">164</span></a>                          <span class="n">nodes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">vs</span><span class="p">)),</span>
+</span><span id="by_wavefront-165"><a href="#by_wavefront-165"><span class="linenos">165</span></a>                          <span class="n">fix_tree</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># this makes sure graph is oriented</span>
+</span><span id="by_wavefront-166"><a href="#by_wavefront-166"><span class="linenos">166</span></a>                          <span class="n">drop_disconnected</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="by_wavefront-167"><a href="#by_wavefront-167"><span class="linenos">167</span></a>
+</span><span id="by_wavefront-168"><a href="#by_wavefront-168"><span class="linenos">168</span></a>    <span class="c1"># Generate the SWC table</span>
+</span><span id="by_wavefront-169"><a href="#by_wavefront-169"><span class="linenos">169</span></a>    <span class="n">swc</span> <span class="o">=</span> <span class="n">make_swc</span><span class="p">(</span><span class="n">G_nx</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">node_centers</span><span class="p">,</span> <span class="n">reindex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="by_wavefront-170"><a href="#by_wavefront-170"><span class="linenos">170</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_radii</span><span class="p">[</span><span class="n">swc</span><span class="o">.</span><span class="n">node_id</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+</span><span id="by_wavefront-171"><a href="#by_wavefront-171"><span class="linenos">171</span></a>    <span class="n">_</span><span class="p">,</span> <span class="n">new_ids</span> <span class="o">=</span> <span class="n">reindex_swc</span><span class="p">(</span><span class="n">swc</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="by_wavefront-172"><a href="#by_wavefront-172"><span class="linenos">172</span></a>
+</span><span id="by_wavefront-173"><a href="#by_wavefront-173"><span class="linenos">173</span></a>    <span class="c1"># Update vertex to node ID map</span>
+</span><span id="by_wavefront-174"><a href="#by_wavefront-174"><span class="linenos">174</span></a>    <span class="n">vertex_to_node_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">new_ids</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">vertex_to_node_map</span><span class="p">])</span>
+</span><span id="by_wavefront-175"><a href="#by_wavefront-175"><span class="linenos">175</span></a>
+</span><span id="by_wavefront-176"><a href="#by_wavefront-176"><span class="linenos">176</span></a>    <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span> <span class="n">mesh_map</span><span class="o">=</span><span class="n">vertex_to_node_map</span><span class="p">,</span>
+</span><span id="by_wavefront-177"><a href="#by_wavefront-177"><span class="linenos">177</span></a>                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;wavefront&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -626,12 +653,184 @@ vertices forming a ring that we collapse to its center).</li>
 If True, will show progress bar.</li>
 </ul>
 
+<h6 id="see-also">See Also</h6>
+
+<p><code><a href="#by_wavefront_exact">skeletor.skeletonize.by_wavefront_exact()</a>`
+This`, `is`, `a`, `version`, `of`, `the`,</code>by_wavefront<code>, `function`, `in`, `which`, `the`, `wave`, `front
+moves`, `_exactly_`, `the`, `given`, `distance`, `along`, `the`, `mesh`, `(see`,</code>step_size`<code>,</code>parameter)
+instead<code>,</code>of<code>,</code>hopping<code>,</code>from<code>,</code>vertex<code>,</code>to<code>,</code>vertex.<code>,</code>This<code>,</code>can<code>,</code>give<code>,</code>better<code>,</code>results<code>,</code>on
+meshes<code>,</code>with<code>,</code>a<code>,</code>low<code>,</code>vertex<code>,</code>density<code>,</code>but<code>,</code>is<code>,</code>computationally<code>,</code>more<code>,</code>expensive.`  </p>
+
 <h6 id="returns">Returns</h6>
 
 <ul>
 <li><strong><a href="../skeletor.html#Skeleton">skeletor.Skeleton</a></strong>: Holds results of the skeletonization and enables quick
 visualization.</li>
 </ul>
+</div>
+
+
+                </section>
+                <section id="by_wavefront_exact">
+                            <input id="by_wavefront_exact-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">by_wavefront_exact</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">mesh</span>, </span><span class="param"><span class="n">step_size</span>, </span><span class="param"><span class="n">origins</span><span class="o">=</span><span class="kc">None</span>, </span><span class="param"><span class="n">radius_agg</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span>, </span><span class="param"><span class="n">progress</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="by_wavefront_exact-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#by_wavefront_exact"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="by_wavefront_exact-39"><a href="#by_wavefront_exact-39"><span class="linenos"> 39</span></a><span class="k">def</span><span class="w"> </span><span class="nf">by_wavefront_exact</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">origins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">radius_agg</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="by_wavefront_exact-40"><a href="#by_wavefront_exact-40"><span class="linenos"> 40</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Skeletonize a mesh using wave fronts with an exact step size.</span>
+</span><span id="by_wavefront_exact-41"><a href="#by_wavefront_exact-41"><span class="linenos"> 41</span></a>
+</span><span id="by_wavefront_exact-42"><a href="#by_wavefront_exact-42"><span class="linenos"> 42</span></a><span class="sd">    This is a version of the `by_wavefront` function in which the wave front</span>
+</span><span id="by_wavefront_exact-43"><a href="#by_wavefront_exact-43"><span class="linenos"> 43</span></a><span class="sd">    moves _exactly_ the given distance along the mesh (see `step_size` parameter) instead</span>
+</span><span id="by_wavefront_exact-44"><a href="#by_wavefront_exact-44"><span class="linenos"> 44</span></a><span class="sd">    of hopping from vertex to vertex. This can give better results on meshes with a</span>
+</span><span id="by_wavefront_exact-45"><a href="#by_wavefront_exact-45"><span class="linenos"> 45</span></a><span class="sd">    low vertex density but is computationally more expensive: the difference between</span>
+</span><span id="by_wavefront_exact-46"><a href="#by_wavefront_exact-46"><span class="linenos"> 46</span></a><span class="sd">    the two methods depends heavily on the mesh and the step size, but as a rule of thumb,</span>
+</span><span id="by_wavefront_exact-47"><a href="#by_wavefront_exact-47"><span class="linenos"> 47</span></a><span class="sd">    the exact version is about 3-4x slower than the non-exact version.</span>
+</span><span id="by_wavefront_exact-48"><a href="#by_wavefront_exact-48"><span class="linenos"> 48</span></a>
+</span><span id="by_wavefront_exact-49"><a href="#by_wavefront_exact-49"><span class="linenos"> 49</span></a><span class="sd">    Parameters</span>
+</span><span id="by_wavefront_exact-50"><a href="#by_wavefront_exact-50"><span class="linenos"> 50</span></a><span class="sd">    ----------</span>
+</span><span id="by_wavefront_exact-51"><a href="#by_wavefront_exact-51"><span class="linenos"> 51</span></a><span class="sd">    mesh :          mesh obj</span>
+</span><span id="by_wavefront_exact-52"><a href="#by_wavefront_exact-52"><span class="linenos"> 52</span></a><span class="sd">                    The mesh to be skeletonize. Can an object that has</span>
+</span><span id="by_wavefront_exact-53"><a href="#by_wavefront_exact-53"><span class="linenos"> 53</span></a><span class="sd">                    ``.vertices`` and ``.faces`` properties  (e.g. a</span>
+</span><span id="by_wavefront_exact-54"><a href="#by_wavefront_exact-54"><span class="linenos"> 54</span></a><span class="sd">                    trimesh.Trimesh) or a tuple ``(vertices, faces)`` or a</span>
+</span><span id="by_wavefront_exact-55"><a href="#by_wavefront_exact-55"><span class="linenos"> 55</span></a><span class="sd">                    dictionary ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
+</span><span id="by_wavefront_exact-56"><a href="#by_wavefront_exact-56"><span class="linenos"> 56</span></a><span class="sd">    step_size :     float | int (&gt;0)</span>
+</span><span id="by_wavefront_exact-57"><a href="#by_wavefront_exact-57"><span class="linenos"> 57</span></a><span class="sd">                    The distance each the wave fronts move along the mesh</span>
+</span><span id="by_wavefront_exact-58"><a href="#by_wavefront_exact-58"><span class="linenos"> 58</span></a><span class="sd">                    in each step. To get a feel for what a good value might be,</span>
+</span><span id="by_wavefront_exact-59"><a href="#by_wavefront_exact-59"><span class="linenos"> 59</span></a><span class="sd">                    you can check the average edge length of the mesh</span>
+</span><span id="by_wavefront_exact-60"><a href="#by_wavefront_exact-60"><span class="linenos"> 60</span></a><span class="sd">                    (see example).</span>
+</span><span id="by_wavefront_exact-61"><a href="#by_wavefront_exact-61"><span class="linenos"> 61</span></a><span class="sd">    origins :       int | list of ints, optional</span>
+</span><span id="by_wavefront_exact-62"><a href="#by_wavefront_exact-62"><span class="linenos"> 62</span></a><span class="sd">                    Vertex ID(s) where the wave(s) are initialized. If there</span>
+</span><span id="by_wavefront_exact-63"><a href="#by_wavefront_exact-63"><span class="linenos"> 63</span></a><span class="sd">                    is no origin for a given connected component, will fall</span>
+</span><span id="by_wavefront_exact-64"><a href="#by_wavefront_exact-64"><span class="linenos"> 64</span></a><span class="sd">                    back to semi-random origin.</span>
+</span><span id="by_wavefront_exact-65"><a href="#by_wavefront_exact-65"><span class="linenos"> 65</span></a><span class="sd">    radius_agg :    &quot;mean&quot; | &quot;median&quot; | &quot;max&quot; | &quot;min&quot; | &quot;percentile75&quot; | &quot;percentile25&quot;</span>
+</span><span id="by_wavefront_exact-66"><a href="#by_wavefront_exact-66"><span class="linenos"> 66</span></a><span class="sd">                    Function used to aggregate radii over sample (i.e. the</span>
+</span><span id="by_wavefront_exact-67"><a href="#by_wavefront_exact-67"><span class="linenos"> 67</span></a><span class="sd">                    vertices forming a ring that we collapse to its center).</span>
+</span><span id="by_wavefront_exact-68"><a href="#by_wavefront_exact-68"><span class="linenos"> 68</span></a><span class="sd">    progress :      bool</span>
+</span><span id="by_wavefront_exact-69"><a href="#by_wavefront_exact-69"><span class="linenos"> 69</span></a><span class="sd">                    If True, will show progress bar.</span>
+</span><span id="by_wavefront_exact-70"><a href="#by_wavefront_exact-70"><span class="linenos"> 70</span></a>
+</span><span id="by_wavefront_exact-71"><a href="#by_wavefront_exact-71"><span class="linenos"> 71</span></a><span class="sd">    See Also</span>
+</span><span id="by_wavefront_exact-72"><a href="#by_wavefront_exact-72"><span class="linenos"> 72</span></a><span class="sd">    --------</span>
+</span><span id="by_wavefront_exact-73"><a href="#by_wavefront_exact-73"><span class="linenos"> 73</span></a><span class="sd">    `skeletor.skeletonize.by_wavefront()`</span>
+</span><span id="by_wavefront_exact-74"><a href="#by_wavefront_exact-74"><span class="linenos"> 74</span></a><span class="sd">                    This is the original `by_wavefront` function in which the wave front</span>
+</span><span id="by_wavefront_exact-75"><a href="#by_wavefront_exact-75"><span class="linenos"> 75</span></a><span class="sd">                    jumps from vertex to vertex. This is much faster but can give bad</span>
+</span><span id="by_wavefront_exact-76"><a href="#by_wavefront_exact-76"><span class="linenos"> 76</span></a><span class="sd">                    results on low-resolution meshes.</span>
+</span><span id="by_wavefront_exact-77"><a href="#by_wavefront_exact-77"><span class="linenos"> 77</span></a>
+</span><span id="by_wavefront_exact-78"><a href="#by_wavefront_exact-78"><span class="linenos"> 78</span></a><span class="sd">    Returns</span>
+</span><span id="by_wavefront_exact-79"><a href="#by_wavefront_exact-79"><span class="linenos"> 79</span></a><span class="sd">    -------</span>
+</span><span id="by_wavefront_exact-80"><a href="#by_wavefront_exact-80"><span class="linenos"> 80</span></a><span class="sd">    skeletor.Skeleton</span>
+</span><span id="by_wavefront_exact-81"><a href="#by_wavefront_exact-81"><span class="linenos"> 81</span></a><span class="sd">                    Holds results of the skeletonization and enables quick</span>
+</span><span id="by_wavefront_exact-82"><a href="#by_wavefront_exact-82"><span class="linenos"> 82</span></a><span class="sd">                    visualization.</span>
+</span><span id="by_wavefront_exact-83"><a href="#by_wavefront_exact-83"><span class="linenos"> 83</span></a>
+</span><span id="by_wavefront_exact-84"><a href="#by_wavefront_exact-84"><span class="linenos"> 84</span></a><span class="sd">    Example</span>
+</span><span id="by_wavefront_exact-85"><a href="#by_wavefront_exact-85"><span class="linenos"> 85</span></a><span class="sd">    -------</span>
+</span><span id="by_wavefront_exact-86"><a href="#by_wavefront_exact-86"><span class="linenos"> 86</span></a><span class="sd">    &gt;&gt;&gt; import skeletor as sk</span>
+</span><span id="by_wavefront_exact-87"><a href="#by_wavefront_exact-87"><span class="linenos"> 87</span></a><span class="sd">    &gt;&gt;&gt; mesh = sk.example_mesh()</span>
+</span><span id="by_wavefront_exact-88"><a href="#by_wavefront_exact-88"><span class="linenos"> 88</span></a><span class="sd">    &gt;&gt;&gt; # Check the average edge length</span>
+</span><span id="by_wavefront_exact-89"><a href="#by_wavefront_exact-89"><span class="linenos"> 89</span></a><span class="sd">    &gt;&gt;&gt; mesh.edges_unique_length.mean()</span>
+</span><span id="by_wavefront_exact-90"><a href="#by_wavefront_exact-90"><span class="linenos"> 90</span></a><span class="sd">    119.325</span>
+</span><span id="by_wavefront_exact-91"><a href="#by_wavefront_exact-91"><span class="linenos"> 91</span></a><span class="sd">    &gt;&gt;&gt; # A good step size is usually a good bit smaller than the average edge length</span>
+</span><span id="by_wavefront_exact-92"><a href="#by_wavefront_exact-92"><span class="linenos"> 92</span></a><span class="sd">    &gt;&gt;&gt; skeleton = sk.skeletonize.by_wavefront_exact(mesh, step_size=50)</span>
+</span><span id="by_wavefront_exact-93"><a href="#by_wavefront_exact-93"><span class="linenos"> 93</span></a>
+</span><span id="by_wavefront_exact-94"><a href="#by_wavefront_exact-94"><span class="linenos"> 94</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="by_wavefront_exact-95"><a href="#by_wavefront_exact-95"><span class="linenos"> 95</span></a>    <span class="n">agg_map</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="by_wavefront_exact-96"><a href="#by_wavefront_exact-96"><span class="linenos"> 96</span></a>        <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-97"><a href="#by_wavefront_exact-97"><span class="linenos"> 97</span></a>        <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-98"><a href="#by_wavefront_exact-98"><span class="linenos"> 98</span></a>        <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-99"><a href="#by_wavefront_exact-99"><span class="linenos"> 99</span></a>        <span class="s2">&quot;median&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-100"><a href="#by_wavefront_exact-100"><span class="linenos">100</span></a>        <span class="s2">&quot;percentile75&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span>
+</span><span id="by_wavefront_exact-101"><a href="#by_wavefront_exact-101"><span class="linenos">101</span></a>        <span class="s2">&quot;percentile25&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span>
+</span><span id="by_wavefront_exact-102"><a href="#by_wavefront_exact-102"><span class="linenos">102</span></a>    <span class="p">}</span>
+</span><span id="by_wavefront_exact-103"><a href="#by_wavefront_exact-103"><span class="linenos">103</span></a>    <span class="k">assert</span> <span class="n">radius_agg</span> <span class="ow">in</span> <span class="n">agg_map</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Unknown `radius_agg`: &quot;</span><span class="si">{</span><span class="n">radius_agg</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+</span><span id="by_wavefront_exact-104"><a href="#by_wavefront_exact-104"><span class="linenos">104</span></a>    <span class="n">rad_agg_func</span> <span class="o">=</span> <span class="n">agg_map</span><span class="p">[</span><span class="n">radius_agg</span><span class="p">]</span>
+</span><span id="by_wavefront_exact-105"><a href="#by_wavefront_exact-105"><span class="linenos">105</span></a>
+</span><span id="by_wavefront_exact-106"><a href="#by_wavefront_exact-106"><span class="linenos">106</span></a>    <span class="n">mesh</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="by_wavefront_exact-107"><a href="#by_wavefront_exact-107"><span class="linenos">107</span></a>
+</span><span id="by_wavefront_exact-108"><a href="#by_wavefront_exact-108"><span class="linenos">108</span></a>    <span class="n">centers_final</span><span class="p">,</span> <span class="n">radii_final</span><span class="p">,</span> <span class="n">parents</span> <span class="o">=</span> <span class="n">_cast_waves</span><span class="p">(</span>
+</span><span id="by_wavefront_exact-109"><a href="#by_wavefront_exact-109"><span class="linenos">109</span></a>        <span class="n">mesh</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-110"><a href="#by_wavefront_exact-110"><span class="linenos">110</span></a>        <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-111"><a href="#by_wavefront_exact-111"><span class="linenos">111</span></a>        <span class="n">origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-112"><a href="#by_wavefront_exact-112"><span class="linenos">112</span></a>        <span class="n">rad_agg_func</span><span class="o">=</span><span class="n">rad_agg_func</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-113"><a href="#by_wavefront_exact-113"><span class="linenos">113</span></a>        <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+</span><span id="by_wavefront_exact-114"><a href="#by_wavefront_exact-114"><span class="linenos">114</span></a>    <span class="p">)</span>
+</span><span id="by_wavefront_exact-115"><a href="#by_wavefront_exact-115"><span class="linenos">115</span></a>
+</span><span id="by_wavefront_exact-116"><a href="#by_wavefront_exact-116"><span class="linenos">116</span></a>    <span class="c1"># Initialize the SWC dataframe</span>
+</span><span id="by_wavefront_exact-117"><a href="#by_wavefront_exact-117"><span class="linenos">117</span></a>    <span class="n">swc</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+</span><span id="by_wavefront_exact-118"><a href="#by_wavefront_exact-118"><span class="linenos">118</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;node_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers_final</span><span class="p">))</span>
+</span><span id="by_wavefront_exact-119"><a href="#by_wavefront_exact-119"><span class="linenos">119</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;parent_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parents</span>
+</span><span id="by_wavefront_exact-120"><a href="#by_wavefront_exact-120"><span class="linenos">120</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">centers_final</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="by_wavefront_exact-121"><a href="#by_wavefront_exact-121"><span class="linenos">121</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">centers_final</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="by_wavefront_exact-122"><a href="#by_wavefront_exact-122"><span class="linenos">122</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;z&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">centers_final</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+</span><span id="by_wavefront_exact-123"><a href="#by_wavefront_exact-123"><span class="linenos">123</span></a>    <span class="n">swc</span><span class="p">[</span><span class="s2">&quot;radius&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radii_final</span>
+</span><span id="by_wavefront_exact-124"><a href="#by_wavefront_exact-124"><span class="linenos">124</span></a>
+</span><span id="by_wavefront_exact-125"><a href="#by_wavefront_exact-125"><span class="linenos">125</span></a>    <span class="k">return</span> <span class="n">Skeleton</span><span class="p">(</span><span class="n">swc</span><span class="o">=</span><span class="n">swc</span><span class="p">,</span> <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;wavefront_exact&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Skeletonize a mesh using wave fronts with an exact step size.</p>
+
+<p>This is a version of the <code><a href="#by_wavefront">by_wavefront</a></code> function in which the wave front
+moves _exactly_ the given distance along the mesh (see <code>step_size</code> parameter) instead
+of hopping from vertex to vertex. This can give better results on meshes with a
+low vertex density but is computationally more expensive: the difference between
+the two methods depends heavily on the mesh and the step size, but as a rule of thumb,
+the exact version is about 3-4x slower than the non-exact version.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>mesh</strong> (mesh obj):
+The mesh to be skeletonize. Can an object that has
+<code>.vertices</code> and <code>.faces</code> properties  (e.g. a
+trimesh.Trimesh) or a tuple <code>(vertices, faces)</code> or a
+dictionary <code>{'vertices': vertices, 'faces': faces}</code>.</li>
+<li><strong>step_size</strong> (float | int (&gt;0)):
+The distance each the wave fronts move along the mesh
+in each step. To get a feel for what a good value might be,
+you can check the average edge length of the mesh
+(see example).</li>
+<li><strong>origins</strong> (int | list of ints, optional):
+Vertex ID(s) where the wave(s) are initialized. If there
+is no origin for a given connected component, will fall
+back to semi-random origin.</li>
+<li><strong>radius_agg</strong> ("mean" | "median" | "max" | "min" | "percentile75" | "percentile25"):
+Function used to aggregate radii over sample (i.e. the
+vertices forming a ring that we collapse to its center).</li>
+<li><strong>progress</strong> (bool):
+If True, will show progress bar.</li>
+</ul>
+
+<h6 id="see-also">See Also</h6>
+
+<p><code><a href="#by_wavefront">skeletor.skeletonize.by_wavefront()</a>`
+This`, `is`, `the`, `original`,</code>by_wavefront`<code>,</code>function<code>,</code>in<code>,</code>which<code>,</code>the<code>,</code>wave<code>,</code>front
+jumps<code>,</code>from<code>,</code>vertex<code>,</code>to<code>,</code>vertex.<code>,</code>This<code>,</code>is<code>,</code>much<code>,</code>faster<code>,</code>but<code>,</code>can<code>,</code>give<code>,</code>bad
+results<code>,</code>on<code>,</code>low-resolution<code>,</code>meshes.`  </p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong><a href="../skeletor.html#Skeleton">skeletor.Skeleton</a></strong>: Holds results of the skeletonization and enables quick
+visualization.</li>
+</ul>
+
+<h6 id="example">Example</h6>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">skeletor</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sk</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">example_mesh</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Check the average edge length</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span><span class="o">.</span><span class="n">edges_unique_length</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="go">119.325</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># A good step size is usually a good bit smaller than the average edge length</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">skeleton</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">skeletonize</span><span class="o">.</span><span class="n">by_wavefront_exact</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</code></pre>
+</div>
 </div>
 
 
