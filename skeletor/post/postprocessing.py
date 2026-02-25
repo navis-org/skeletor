@@ -549,9 +549,11 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
 
     if remaining_crossings > 0:
         warnings.warn(
-            f'{remaining_crossings} crossing edges remain after '
-            f'{max_iter} fix iteration(s); returning best effort result. '
-            'Mesh might be non-watertight.',
+            f'{remaining_crossings} crossing edges remain after {max_iter} '
+            'fix iteration(s); returning best-effort result. Consider increasing '
+            '`max_iter`, adjusting `eps`, and/or running `post.clean_up` / '
+            '`post.remove_bristles` first. Also check mesh quality (e.g. non-watertight '
+            'or degenerate faces).',
             RuntimeWarning
         )
 
