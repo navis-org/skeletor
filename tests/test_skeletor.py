@@ -31,6 +31,13 @@ class TestSkeletonization:
             assert len(s.mesh_map) == len(s.mesh.vertices)
             assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
+    def test_wave_exact(self):
+        s = sk.skeletonize.by_wavefront_exact(sk.example_mesh(), step_size=50)
+
+        # Currently this method doesn't provide a mesh map
+        # assert len(s.mesh_map) == len(s.mesh.vertices)
+        # assert all(np.isin(s.mesh_map, s.swc.node_id.values))
+
     def test_vertex_cluster(self):
         s = sk.skeletonize.by_vertex_clusters(sk.example_mesh(),
                                               sampling_dist=100)

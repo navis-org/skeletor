@@ -77,6 +77,7 @@ Here is a complete list of available functions:
 | `skeletor.pre.contract()`                   | contract mesh to facilitate skeletonization [1]             |
 | **skeletonization**                         |                                                             |
 | `skeletor.skeletonize.by_wavefront()`       | very fast, works well for tubular meshes (like neurons)     |
+| `skeletor.skeletonize.by_wavefront_exact()` | fast, works well for tubular meshes (like neurons)          |
 | `skeletor.skeletonize.by_vertex_clusters()` | very fast but needs mesh to be contracted (see above)       |
 | `skeletor.skeletonize.by_edge_collapse()`   | presented in [1] but never got this to work well            |
 | `skeletor.skeletonize.by_teasar()`          | very fast and robust, works on mesh surface                 |
@@ -129,7 +130,7 @@ vertices, etc.):
 <trimesh.Trimesh(vertices.shape=(6213, 3), faces.shape=(12805, 3))>
 ```
 
-Now for tubular meshes like this neuron, the "wave front" skeletonization method
+For tubular meshes like this neuron, the "wave front" skeletonization method
 performs really well: it works by casting waves across the mesh and collapsing
 the resulting rings into a skeleton (kinda like when you throw a stone in a
 pond and track the expanding ripples).
@@ -138,6 +139,18 @@ pond and track the expanding ripples).
 >>> skel = sk.skeletonize.by_wavefront(fixed, waves=1, step_size=1)
 >>> skel
 <Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront)>
+```
+
+The standard implementation of the wave front method hops from vertex to vertex.
+This is very fast but can give bad results on low-resolution meshes.
+As alternative, you could use the `by_wavefront_exact()` function in which the
+wave front moves exactly a given distance:
+
+```Python
+>>> # Note `step_size` now represent actual distance rather than hops along vertices
+>>> skel = sk.skeletonize.by_wavefront_exact(fixed, step_size=50)
+>>> skel
+<Skeleton(vertices=(1258, 3), edges=(1194, 2), method=wavefront_exact)>
 ```
 
 All skeletonization methods return a `Skeleton` object. These are just
@@ -258,6 +271,7 @@ Some of the code in skeletor was modified from the
 addon created by #0K Srinivasan Ramachandran and published under GPL3.
 
 # Top-level functions and classes
+
 At top-level we only expose `example_mesh()` and the `Skeleton` class (which
 you probably won't ever need to touch manually). Everything else is neatly
 tucked away into submodules (see side-bar or above table).

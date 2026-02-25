@@ -159,8 +159,8 @@ def merge_vertices(mesh, dist='auto', inplace=False):
     mesh.update_vertices(~remove)
 
     # Remove degenerate and duplicate faces
-    mesh.remove_degenerate_faces()
-    mesh.remove_duplicate_faces()
+    mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.update_faces(mesh.unique_faces())
 
     # Fix normals
     mesh.fix_normals()

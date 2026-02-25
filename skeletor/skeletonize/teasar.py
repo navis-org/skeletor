@@ -98,7 +98,7 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
 
     with tqdm(desc='Invalidating', total=len(G.vs),
               disable=not progress, leave=False) as pbar:
-        for cc in sorted(G.clusters(), key=len, reverse=True):
+        for cc in sorted(G.connected_components(), key=len, reverse=True):
             # Make a subgraph for this connected component
             SG = G.subgraph(cc)
             cc = np.array(cc)
@@ -113,8 +113,8 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
             sp = SG.get_adjacency_sparse('weight')
 
             # Get lengths of paths to all nodes from root
-            paths = SG.shortest_paths(this_root, target=None, weights='weight',
-                                      mode='ALL')[0]
+            paths = SG.distances(this_root, target=None, weights='weight',
+                                 mode='ALL')[0]
             paths = np.array(paths)
 
             # Prep array for invalidation
