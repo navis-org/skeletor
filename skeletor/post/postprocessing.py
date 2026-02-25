@@ -449,8 +449,8 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
 
         # Cache arrays for cheap positional access inside the loop
         node_id_arr = swc['node_id'].to_numpy(copy=False)
-        parent_id_arr = swc['parent_id'].to_numpy(copy=False)
-        parent_col = swc.columns.get_loc('parent_id')
+        parent_id_arr = swc["parent_id"].to_numpy(copy=True)
+        parent_col = swc.columns.get_loc("parent_id")
 
         xyz_arr = swc[['x', 'y', 'z']].to_numpy(copy=False)
         if not np.issubdtype(xyz_arr.dtype, np.number):
@@ -465,7 +465,9 @@ def fix_outside_edges(s, mesh=None, inplace=False, max_iter=8, smooth_iters=1, e
 
             # Midpoint (no projection; recenter will handle)
             child_co = xyz_arr[edge_row].astype(float, copy=False)
-            parent_co = nodes.loc[parent_id, ['x', 'y', 'z']].values.astype(float, copy=False)
+            parent_co = nodes.loc[parent_id, ["x", "y", "z"]].values.astype(
+                float, copy=False
+            )
             midpoint = (child_co + parent_co) / 2.0
 
             # Rewire child -> new node (positional write; avoids boolean mask on node_id)
