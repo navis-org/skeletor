@@ -213,8 +213,14 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                 parents.append(-1)
                 continue
 
-            # A dictionary to keep track of which vertices are at which `step_size`` distance
-            nodes_at_stepsize = {d: set() for d in np.arange(0, mx, step_size)}
+            # A dictionary to keep track of which vertices are at which `step_size`` distance.
+            # We key by the integer step index (i.e. `round(distance / step_size)`) rather than
+            # by the float distance itself: the distances we insert below are computed via
+            # separate `np.arange` calls and floating point arithmetic means e.g. `3 * step_size`
+            # from one call is not bit-identical to `3 * step_size` from another, which would
+            # cause `KeyError`s on lookup. The integer index sidesteps that entirely.
+            n_steps = int(math.floor(mx / step_size)) + 1
+            nodes_at_stepsize = {k: set() for k in range(n_steps + 1)}
             nodes_at_stepsize[0].add(seed)
 
             # A dictionary to track, for each new vertex, which face it belongs to
@@ -251,7 +257,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                 # we can start inserting new vertices at the next multiple of the step size + 1
                 # In reality this really onla happens for the seed vertex
                 if dist_is_step[prox]:
-                    nodes_at_stepsize[dist[prox]].add(prox)
+                    nodes_at_stepsize[round(dist[prox] / step_size)].add(prox)
                     start_inserting = (
                         math.ceil(dist[prox] / step_size) + 1
                     ) * step_size
@@ -285,7 +291,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                             edges_to_add.append(
                                 (start, new_v_ix, d_along_edge, edge["faces"])
                             )
-                            nodes_at_stepsize[d].add(new_v_ix)
+                            nodes_at_stepsize[round(d / step_size)].add(new_v_ix)
                             new_vertices.append(new_v_pos)
 
                             new_verts_faces[new_v_ix] = edge["faces"]
@@ -367,11 +373,11 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # First generate a graph where there are no edges between nodes of a different distance from the seed
             SG_no_across = SG.copy()
 
-            # Map nodes to their step distance
+            # Map nodes to their step index (same integer indexing as `nodes_at_stepsize`)
             nodes2step = {n: d for d, nodes in nodes_at_stepsize.items() for n in nodes}
 
-            # Assign non-step nodes to the closest step distance by rounding
-            dist_round = np.round(dist / step_size) * step_size
+            # Assign non-step (original) nodes to the closest step index by rounding
+            dist_round = np.round(dist / step_size).astype(int)
             nodes2step.update(dict(zip(np.arange(len(dist_round)), dist_round)))
 
             # Delete all edges that connect nodes of different distances
@@ -470,10 +476,12 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # Drop disconnected nodes (nodes will be disconnected because they got contracted)
             SG.delete_vertices([v.index for v in SG.vs if len(v.neighbors()) == 0])
 
-            # Last but not least: remove edges that do not connect nodes across step_dist distances
+            # Last but not least: remove edges that do not connect nodes across adjacent
+            # step distances. `step_dist` is an integer step index (see `nodes2step` above),
+            # so neighbouring wavefronts differ by exactly 1.
             edge_dists = np.array([SG.vs[e]["step_dist"] for e in SG.get_edgelist()])
             edge_dists_diff = np.abs(edge_dists[:, 0] - edge_dists[:, 1])
-            edges_to_delete = np.where(edge_dists_diff != step_size)[0]
+            edges_to_delete = np.where(edge_dists_diff != 1)[0]
 
             # Make sure we don't break the connected components
             edges_to_delete = edges_to_delete[~np.isin(edges_to_delete, SG.bridges())]
