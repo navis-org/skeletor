@@ -31,6 +31,7 @@ is a quick summary:
 | `skeletor.skeletonize.by_wavefront()`       | ++++  | ++     | yes        | yes           | works well for tubular meshes                      |
 | `skeletor.skeletonize.by_wavefront_exact()` | +++   | ++     | yes        | yes           | works well for tubular meshes                      |
 | `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | yes           | best with contracted meshes [^1]                   |
+| `skeletor.skeletonize.by_mean_curvature()`  | +     | ++     | no         | yes           | mean curvature flow with remeshing [^4]            |
 | `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | yes           | works on mesh surface                              |
 | `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | yes           | works with mesh normals                            |
 | `skeletor.skeletonize.by_edge_collapse()`   | -     | 0      | no         | no            | published with [1] - never got this to work well   |
@@ -38,10 +39,13 @@ is a quick summary:
 [^1]: use `skeletor.pre.contract()`
 [^2]: radii can also be added in postprocessing with `skeletor.post.radii()`
 [^3]: a mapping from the meshes vertices to skeleton nodes
+[^4]: `by_mean_curvature()` runs the contraction internally - no separate `contract()` needed
 
 ## References
 
 `[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
+
+`[4] Tagliasacchi A, Alhashim I, Olson M, Zhang H. Mean Curvature Skeletons. Computer Graphics Forum (SGP). 2012;31(5):1735-1744.`
 
 """
 
@@ -51,7 +55,8 @@ from .wave import *
 from .wave2 import *
 from .teasar import *
 from .tangent_ball import *
+from .meancurvature import *
 
 __docformat__ = "numpy"
 __all__ = ['by_teasar', 'by_wavefront', 'by_wavefront_exact', 'by_vertex_clusters',
-           'by_edge_collapse', 'by_tangent_ball']
+           'by_edge_collapse', 'by_tangent_ball', 'by_mean_curvature']

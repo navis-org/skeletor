@@ -1,8 +1,9 @@
 [![Generic badge](https://img.shields.io/badge/Github-pages-green)](https://navis-org.github.io/skeletor/) [![Tests](https://github.com/navis-org/skeletor/actions/workflows/test-package.yml/badge.svg)](https://github.com/navis-org/skeletor/actions/workflows/test-package.yml) [![DOI](https://zenodo.org/badge/153085435.svg)](https://zenodo.org/badge/latestdoi/153085435)
 
 # Skeletor
-Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
-library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
+Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
+
+`skeletor` implements a number of different skeletonization methods, including mesh contraction, edge collapse, TEASAR, wavefront propagation and mean curvature skeletons -- see documentation and benchmarks below. We also provides a number of pre-/post-processing methods to clean up in- and outputs.
 
 _Please see the [changelog](https://github.com/navis-org/skeletor/blob/master/NEWS.md) for a summary of recent changes._
 
@@ -87,16 +88,16 @@ If you installed `pyglet` (see above) you can also use `trimesh`'s plotting capa
 >>> skel.show(mesh=True)
 ```
 
-![skeletor_example](https://github.com/navis-org/skeletor/raw/master/_static/example1.png)
+![skeletor_example](_static/example1.png)
 
 ## Benchmarks
-![skeletor_examples](https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png)
+![skeletor_examples](benchmarks/benchmark_2.png)
 
 Each panel highlights one method (data points + fit); the faint lines in the
 background are the fits for all the other methods, so you can compare them at a
 glance (note the shared, logarithmic time axis).
 
-[Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
+[Benchmarks](benchmarks/skeletor_benchmark.ipynb)
 were run on an Apple M3 Max (36 Gb memory) with the optional `fastremap`
 dependency installed. Note some of these functions (e.g. contraction and
 TEASAR/vertex cluster skeletonization) can vary a lot in speed based on
@@ -108,8 +109,7 @@ Pull requests are always welcome!
 ## References & Acknowledgments
 Mesh contraction and the edge collapse approach are based on this paper:
 `Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
-The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).
-Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&feature=youtu.be) YouTube video.
+
 
 Mean curvature skeletons are based on the following paper:
 `Tagliasacchi A, Alhashim I, Olson M, Zhang H. Mean Curvature Skeletons. Computer Graphics Forum (SGP). 2012;31(5):1735-1744.`
@@ -122,7 +122,6 @@ by:
 See also the Reeb graph framing in `Hilaga et al., Topology Matching for Fully
 Automatic Similarity Estimation of 3D Shapes, SIGGRAPH 2001` and `Ge et al.,
 Data Skeletonization via Reeb Graphs, NeurIPS 2011`.
-
 
 Some of the code in skeletor was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)

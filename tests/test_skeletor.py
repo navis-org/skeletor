@@ -81,6 +81,17 @@ class TestSkeletonization:
         assert len(s.mesh_map) == len(s.mesh.vertices)
         assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
+    def test_mean_curvature(self):
+        s = sk.skeletonize.by_mean_curvature(sk.example_mesh(), progress=False)
+
+        assert len(s.mesh_map) == len(s.mesh.vertices)
+        assert all(np.isin(s.mesh_map, s.swc.node_id.values))
+        # Skeleton must be valid: finite vertices that stay within the input
+        # bounding box (no spurious long jumps)
+        assert np.isfinite(s.vertices).all()
+        m = sk.example_mesh()
+        assert (s.vertices >= m.bounds[0]).all() and (s.vertices <= m.bounds[1]).all()
+
     def test_tangent(self):
         s = sk.skeletonize.by_tangent_ball(sk.example_mesh())
 
