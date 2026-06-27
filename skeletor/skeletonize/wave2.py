@@ -73,7 +73,9 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
     `skeletor.skeletonize.by_wavefront()`
                     This is the original `by_wavefront` function in which the wave front
                     jumps from vertex to vertex. This is much faster but can give bad
-                    results on low-resolution meshes.
+                    results on low-resolution meshes. See its docstring for
+                    references on the underlying (Reeb graph / geodesic level
+                    set) approach.
 
     Returns
     -------

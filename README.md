@@ -28,9 +28,10 @@ Automatically installed with `pip`:
 - `python-igraph`
 - `ncollpyde`
 
-Optional because not strictly required for the core functions but highly recommended:
-- [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`
+Optional because not strictly required for the core functions but  recommended:
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
+- [robust_laplacian](https://github.com/nmwsharp/robust-laplacians-py) for more robust Laplacian operators: `pip3 install robust_laplacian`
+- [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`
 
 ## Documentation
 Please see the [documentation](https://navis-org.github.io/skeletor/) for details.
@@ -80,8 +81,7 @@ array([ 157,  158, 1062, ...,  525,  474,  547])
 >>> skel.save_swc('skeleton.swc')
 ```
 
-If you installed `pyglet` (see above) you can also use `trimesh`'s plotting
-capabilities to inspect the results:
+If you installed `pyglet` (see above) you can also use `trimesh`'s plotting capabilities to inspect the results:
 
 ```Python
 >>> skel.show(mesh=True)
@@ -107,9 +107,22 @@ Pull requests are always welcome!
 
 ## References & Acknowledgments
 Mesh contraction and the edge collapse approach are based on this paper:
-`[1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
+`Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.`
 The abstract and the paper can be found [here](http://visgraph.cse.ust.hk/projects/skeleton/).
 Also see [this](https://www.youtube.com/watch?v=-H7n59YQCRM&feature=youtu.be) YouTube video.
+
+Mean curvature skeletons are based on the following paper:
+`Tagliasacchi A, Alhashim I, Olson M, Zhang H. Mean Curvature Skeletons. Computer Graphics Forum (SGP). 2012;31(5):1735-1744.`
+
+The wavefront approach corresponds to a Reeb graph of the geodesic distance
+function on the mesh: connected level sets of the distance field are collapsed
+to their centroids to form the skeleton. The core construction was described
+by:
+`Verroust A, Lazarus F. Extracting skeletal curves from 3D scattered data. The Visual Computer. 2000;16(1):15-25.`
+See also the Reeb graph framing in `Hilaga et al., Topology Matching for Fully
+Automatic Similarity Estimation of 3D Shapes, SIGGRAPH 2001` and `Ge et al.,
+Data Skeletonization via Reeb Graphs, NeurIPS 2011`.
+
 
 Some of the code in skeletor was modified from the
 [Py_BL_MeshSkeletonization](https://github.com/aalavandhaann/Py_BL_MeshSkeletonization)

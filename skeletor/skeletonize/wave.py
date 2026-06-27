@@ -50,6 +50,12 @@ def by_wavefront(mesh,
     vertices that are "hit" by the wave at the same time are considered rings
     and subsequently collapsed. By its nature this works best with tubular meshes.
 
+    This is conceptually equivalent to constructing the Reeb graph of the
+    geodesic distance function on the mesh: the "rings" are connected level sets
+    of that distance field and collapsing them to their centroid yields the
+    skeleton nodes. The same construction was described by Verroust & Lazarus
+    (see References below).
+
     Parameters
     ----------
     mesh :          mesh obj
@@ -93,6 +99,21 @@ def by_wavefront(mesh,
     skeletor.Skeleton
                     Holds results of the skeletonization and enables quick
                     visualization.
+
+    References
+    ----------
+    The wavefront approach is a Reeb graph of the geodesic distance function.
+    The core construction (geodesic level sets collapsed to their centroids,
+    organized into a tree) was described by:
+
+    Verroust A, Lazarus F. Extracting skeletal curves from 3D scattered data.
+    The Visual Computer. 2000;16(1):15-25.
+
+    For the Reeb graph framing more generally see e.g. Hilaga et al. (SIGGRAPH
+    2001) and Ge et al. ("Data Skeletonization via Reeb Graphs", NeurIPS 2011).
+    This implementation adds, among other things, the use of multiple
+    wavefronts from different seeds (averaged to reduce seed-dependence) and a
+    radius-/tangent-weighted MST to preserve the backbone when breaking cycles.
 
     """
     if not callable(radius_agg):
