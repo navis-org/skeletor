@@ -14,12 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-try:
-    import fastremap
-except ImportError:
-    fastremap = None
-except BaseException:
-    raise
+import heapq
 
 import numpy as np
 import scipy.sparse
@@ -146,9 +141,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     K = np.array(K)
 
     # Q for vertex i is then the sum of the products of (kT,k) for ALL edges
-    # connected to vertex i:
-    # Initialize matrix of correct shape
-    Q_array = np.zeros((4, 4, verts.shape[0]), dtype=np.float64)
+    # connected to vertex i.
 
     # Generate (kT, K)
     kT = np.transpose(K, axes=(1, 0, 2))
@@ -157,23 +150,16 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     # do some annoying transposes to get to (4, 4, len(edges))
     K_dot = np.matmul(K.T, kT.T).T
 
-    # Iterate over all vertices
-    for v in range(len(verts)):
-        # Find edges that contain this vertex
-        cond1 = edges[:, 0] == v
-        cond2 = edges[:, 1] == v
-        # Note that this does not take directionality of edges into account
-        # Not sure if that's intended?
-
-        # Get indices of these edges
-        indices = np.where(cond1 | cond2)[0]
-
-        # Get the products for all edges adjacent to mesh
-        Q = K_dot[:, :, indices]
-        # Sum over all edges
-        Q = Q.sum(axis=2)
-        # Add to Q array
-        Q_array[:, :, v] = Q
+    # Each edge contributes its K_dot matrix to BOTH of its endpoints. Rather
+    # than scanning all edges once per vertex (O(V*E)) we scatter-add each
+    # edge's contribution onto its two endpoints in a single O(E) pass.
+    # Directionality of the edge is intentionally ignored (matches the original
+    # implementation).
+    K_dot_e = np.moveaxis(K_dot, 2, 0)  # (E, 4, 4)
+    Q_vfirst = np.zeros((verts.shape[0], 4, 4), dtype=np.float64)
+    np.add.at(Q_vfirst, edges[:, 0], K_dot_e)
+    np.add.at(Q_vfirst, edges[:, 1], K_dot_e)
+    Q_array = np.moveaxis(Q_vfirst, 0, 2)  # (4, 4, V)
 
     # Edge collapse:
     # Determining which edge to collapse is a weighted sum of the shape and
@@ -208,16 +194,16 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     adj = adj + adj.T
     verts_lengths = np.array(adj.sum(axis=1)).flatten()
 
-    def collapse_costs(mask):
-        """Cost of collapsing the edges selected by `mask` (eq. 8).
+    def collapse_costs(idx):
+        """Cost of collapsing the edges at indices `idx` (eq. 8).
 
         Both collapse directions are considered and the cheaper one is kept;
         the edge is re-oriented in place so that column 0 is always the vertex
         that gets *removed* and column 1 the *survivor* (matching the collapse
         loop below). Returns the minimum total cost per edge.
         """
-        e = edges[mask]
-        el = edge_lengths[mask]
+        e = edges[idx]
+        el = edge_lengths[idx]
         # Combined error quadric of both endpoints (symmetric in u, v)
         Quv = Q_array[:, :, e[:, 0]] + Q_array[:, :, e[:, 1]]
         p0, p1 = verts_h[e[:, 0]], verts_h[e[:, 1]]
@@ -235,68 +221,97 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
         flip = costB < costA
         if flip.any():
             e[flip] = e[flip][:, ::-1]
-            edges[mask] = e
+            edges[idx] = e
         return np.minimum(costA, costB)
 
     # Total cost - weighted sum of shape and sample cost, equation 8 in paper
-    F_T = collapse_costs(np.ones(edges.shape[0], dtype=bool))
+    F_T = collapse_costs(np.arange(edges.shape[0]))
 
-    # Now start collapsing edges one at a time
-    face_count = face_edges.shape[0]  # keep track of face counts for progress bar
-    is_collapsed = np.full(edges.shape[0], False)
-    keep = np.full(edges.shape[0], False)
-    with tqdm(desc='Collapsing edges', total=face_count, disable=progress is False) as pbar:
-        while face_edges.size:
-            # Uncomment to get a more-or-less random edge collapse
-            # F_T[:] = 0
+    # Incidence structures so that each collapse only has to touch the survivor's
+    # local neighbourhood instead of rescanning the whole edge/face arrays. The
+    # previous implementation did several O(edges) / O(faces) passes per collapse
+    # (=> O(faces^2) overall); maintaining adjacency incrementally brings this
+    # down to roughly O(faces log faces).
+    #
+    #   vert2edges[w]  : set of alive edge indices incident to vertex w
+    #   edge2faces[e]  : set of alive face indices that still contain edge e
+    #
+    # `face_edges` stores indices into the (length-stable) `edges` array; an edge
+    # collapse never deletes rows, it only relabels vertices, so these indices
+    # stay valid throughout.
+    n_edges = edges.shape[0]
+    vert2edges = [set() for _ in range(verts.shape[0])]
+    for e in range(n_edges):
+        vert2edges[int(edges[e, 0])].add(e)
+        vert2edges[int(edges[e, 1])].add(e)
+    edge2faces = [set() for _ in range(n_edges)]
+    for f in range(face_edges.shape[0]):
+        for x in face_edges[f]:
+            edge2faces[int(x)].add(f)
 
-            # Update progress bar
-            pbar.update(face_count - face_edges.shape[0])
-            face_count = face_edges.shape[0]
+    alive_edge = np.ones(n_edges, dtype=bool)
+    alive_face = np.ones(face_edges.shape[0], dtype=bool)
+    keep = np.zeros(n_edges, dtype=bool)
+    n_faces_alive = int(face_edges.shape[0])
 
-            # This has to come at the beginning of the loop
-            # Set cost of collapsing edges without faces to infinite
-            F_T[keep] = np.inf
-            F_T[is_collapsed] = np.inf
+    # Lazy-deletion min-heap of (cost, edge index). We never remove entries when
+    # a cost changes; instead we push the new value and discard outdated entries
+    # on pop by checking them against the authoritative `F_T` plus the alive/keep
+    # flags. This replaces the old O(edges) `np.argmin` per iteration.
+    heap = [(float(F_T[e]), e) for e in range(n_edges) if np.isfinite(F_T[e])]
+    heapq.heapify(heap)
 
-            # Get the edge that we want to collapse
-            collapse_ix = np.argmin(F_T)
-            # If even the cheapest edge has infinite cost there is nothing left
-            # we can safely collapse (everything is collapsed, kept, or deferred
-            # by the link condition below). Stop - the MST reconstruction at the
-            # end will reconnect whatever vertices remain.
-            if not np.isfinite(F_T[collapse_ix]):
-                break
-            # Get the vertices this edge connects
-            u, v = edges[collapse_ix]
-            # Get all edges that contain these vertices:
-            # First, edges that are (uv, x)
-            connects_uv = np.isin(edges[:, 0], [u, v])
-            # Second, check if any (uv, x) edges are (uv, uv)
-            connects_uv[connects_uv] = np.isin(edges[connects_uv, 1], [u, v])
+    def push(idx):
+        for e in idx:
+            e = int(e)
+            c = F_T[e]
+            if np.isfinite(c):
+                heapq.heappush(heap, (float(c), e))
 
-            # Remove uu and vv edges
-            uuvv = edges[:, 0] == edges[:, 1]
-            connects_uv = connects_uv & ~uuvv
-            # Get the edge's indices
-            clps_edges = np.where(connects_uv)[0]
-
-            # Now find find the faces the collapsed edge is part of
-            # Note: splitting this into three conditions is marginally faster than
-            # np.any(np.isin(face_edges, clps_edges), axis=1)
-            uv0 = np.isin(face_edges[:, 0], clps_edges)
-            uv1 = np.isin(face_edges[:, 1], clps_edges)
-            uv2 = np.isin(face_edges[:, 2], clps_edges)
-            has_uv = uv0 | uv1 | uv2
-
-            # If these edges do not have adjacent faces anymore
-            if not np.any(has_uv):
-                # Track this edge as a keeper
-                keep[clps_edges] = True
+    with tqdm(desc='Collapsing edges', total=n_faces_alive,
+              disable=progress is False) as pbar:
+        last = n_faces_alive
+        while heap:
+            cost, e = heapq.heappop(heap)
+            # Skip stale / dead / kept heap entries. If the cheapest live entry
+            # has infinite cost there is nothing left we can safely collapse.
+            if not alive_edge[e] or keep[e] or cost != F_T[e]:
                 continue
 
-            # Get the collapsed faces [(e1, e2, e3), ...] for this edge
-            clps_faces = face_edges[has_uv]
+            pbar.update(last - n_faces_alive)
+            last = n_faces_alive
+
+            # Get the vertices this edge connects. Collapsing (u, v) merges u
+            # into v (u is removed, v survives), see the re-orientation in
+            # `collapse_costs`.
+            u, v = int(edges[e, 0]), int(edges[e, 1])
+            if u == v:
+                alive_edge[e] = False
+                F_T[e] = np.inf
+                continue
+
+            # All alive edges that connect u and v (parallel edges), excluding
+            # self-loops. An edge incident to *both* u and v necessarily has
+            # endpoints exactly {u, v}.
+            clps = {e2 for e2 in (vert2edges[u] & vert2edges[v])
+                    if edges[e2, 0] != edges[e2, 1]}
+            if not clps:
+                F_T[e] = np.inf
+                continue
+            clps_edges = np.fromiter(clps, dtype=np.int64)
+
+            # Alive faces incident to any of the collapsing edges
+            faces = set()
+            for e2 in clps:
+                faces |= edge2faces[e2]
+            faces = [f for f in faces if alive_face[f]]
+
+            # If these edges do not have adjacent faces anymore they become
+            # skeleton segments - track them as keepers.
+            if not faces:
+                keep[clps_edges] = True
+                F_T[clps_edges] = np.inf
+                continue
 
             # Link condition (optional): we may only collapse edge (u, v) if
             # every vertex adjacent to BOTH u and v also forms a triangle
@@ -305,53 +320,71 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
             # we find one, defer this edge (set its cost to infinity) and pick
             # another. Off by default - see the docstring for why.
             if link_condition:
-                inc = ~is_collapsed & ~uuvv
-                inc_u = inc & ((edges[:, 0] == u) | (edges[:, 1] == u))
-                inc_v = inc & ((edges[:, 0] == v) | (edges[:, 1] == v))
-                nbr_u = np.where(edges[inc_u, 0] == u, edges[inc_u, 1], edges[inc_u, 0])
-                nbr_v = np.where(edges[inc_v, 0] == v, edges[inc_v, 1], edges[inc_v, 0])
-                common = np.intersect1d(nbr_u, nbr_v)
-                common = common[(common != u) & (common != v)]
+                nbr_u = {(int(edges[e2, 0]) if int(edges[e2, 1]) == u
+                          else int(edges[e2, 1])) for e2 in vert2edges[u]}
+                nbr_v = {(int(edges[e2, 0]) if int(edges[e2, 1]) == v
+                          else int(edges[e2, 1])) for e2 in vert2edges[v]}
+                common = (nbr_u & nbr_v) - {u, v}
                 # Vertices that legitimately share a face with the edge (u, v)
-                face_k = np.unique(edges[clps_faces])
-                if np.setdiff1d(common, face_k).size:
+                face_k = set()
+                for f in faces:
+                    for x in face_edges[f]:
+                        face_k.add(int(edges[int(x), 0]))
+                        face_k.add(int(edges[int(x), 1]))
+                if common - face_k:
                     F_T[clps_edges] = np.inf
                     continue
 
-            # Remove the collapsed faces
-            face_edges = face_edges[~has_uv]
+            # Adjacent (non-collapsing) edges of each collapsing face as
+            # (win, loose) pairs, in face-column order. Each collapsing triangle
+            # has exactly one of its edges between u and v, so the two survivors
+            # collapse onto each other (loose -> win).
+            adj_pairs = []
+            for f in sorted(faces):
+                non = [int(x) for x in face_edges[f] if int(x) not in clps]
+                if len(non) == 2:
+                    adj_pairs.append((non[0], non[1]))
 
-            # Track these edges as collapsed
-            is_collapsed[clps_edges] = True
+            # Remove the collapsing faces
+            for f in faces:
+                alive_face[f] = False
+                for x in face_edges[f]:
+                    edge2faces[int(x)].discard(f)
+            n_faces_alive -= len(faces)
 
-            # Get the adjacent edges (i.e. non-uv edges)
-            adj_edges = clps_faces[~np.isin(clps_faces, clps_edges)].reshape(clps_faces.shape[0], 2)
+            # Track the collapsing edges as collapsed
+            for e2 in clps:
+                alive_edge[e2] = False
+                vert2edges[int(edges[e2, 0])].discard(e2)
+                vert2edges[int(edges[e2, 1])].discard(e2)
+                F_T[e2] = np.inf
 
-            # We have to do some sorting and finding unique edges to make sure
-            # remapping is done correctly further down
-            # NOTE: Not sure we really need this, so leaving it out for now
-            # adj_edges = np.unique(np.sort(adj_edges, axis=1), axis=0)
+            # Replace occurrences of the loosing edge with the winning edge in
+            # every face that still references it. Crucially we do NOT skip
+            # already-dead loose edges - leaving them behind would create stale
+            # degenerate faces that get mistaken for collapsible later on.
+            for win, loose in adj_pairs:
+                if win == loose:
+                    continue
+                for f in list(edge2faces[loose]):
+                    face_edges[f] = [win if int(x) == loose else int(x)
+                                     for x in face_edges[f]]
+                    edge2faces[win].add(f)
+                    edge2faces[loose].discard(f)
+                alive_edge[loose] = False
+                vert2edges[int(edges[loose, 0])].discard(loose)
+                vert2edges[int(edges[loose, 1])].discard(loose)
+                F_T[loose] = np.inf
 
-            # We need to keep track of changes to the adjacent faces
-            # Basically each face in (i, j, k) will be reduced to one edge
-            # which points from u -> v
-            # -> replace occurrences of loosing edge with winning edge
-            for win, loose in adj_edges:
-                if fastremap:
-                    face_edges = fastremap.remap(face_edges, {loose: win},
-                                                 preserve_missing_labels=True,
-                                                 in_place=True)
-                else:
-                    face_edges[face_edges == loose] = win
-                is_collapsed[loose] = True
-
-            # Replace occurrences of first node u with second node v
-            if fastremap:
-                edges = fastremap.remap(edges, {u: v},
-                                        preserve_missing_labels=True,
-                                        in_place=True)
-            else:
-                edges[edges == u] = v
+            # Replace occurrences of first node u with second node v on all edges
+            # still incident to u (local thanks to vert2edges).
+            for e2 in list(vert2edges[u]):
+                if edges[e2, 0] == u:
+                    edges[e2, 0] = v
+                if edges[e2, 1] == u:
+                    edges[e2, 1] = v
+                vert2edges[v].add(e2)
+            vert2edges[u] = set()
 
             # Add shape cost of u to shape costs of v
             Q_array[:, :, v] += Q_array[:, :, u]
@@ -362,10 +395,15 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
             verts_lengths[v] += verts_lengths[u]
 
             # Recompute costs for edges now incident to v (re-orienting them to
-            # their cheaper collapse direction). Both Q_array and verts_lengths
-            # must already be updated above.
-            has_v = (edges[:, 0] == v) | (edges[:, 1] == v)
-            F_T[has_v] = collapse_costs(has_v)
+            # their cheaper collapse direction) and (re-)push them onto the heap.
+            # Both Q_array and verts_lengths must already be updated above.
+            inc_v = np.fromiter(vert2edges[v], dtype=np.int64)
+            if inc_v.size:
+                costs = collapse_costs(inc_v)
+                # Kept edges incident to v must stay at infinity.
+                costs[keep[inc_v]] = np.inf
+                F_T[inc_v] = costs
+                push(inc_v)
 
     # If no edges survived the collapse there is nothing to build a skeleton
     # from. This typically happens for closed, blob-like meshes (e.g. a sphere)
