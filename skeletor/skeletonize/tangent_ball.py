@@ -158,7 +158,7 @@ def by_tangent_ball(mesh):
     References
     ----------
     [1] Ma, J., Bae, S.W. & Choi, S. 3D medial axis point approximation using
-        nearest neighbors and the normal field. Vis Comput 28, 7–19 (2012).
+        nearest neighbors and the normal field. Vis Comput 28, 7-19 (2012).
         https://doi.org/10.1007/s00371-011-0594-7
 
     """

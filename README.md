@@ -4,9 +4,7 @@
 Unlike its [namesake](https://en.wikipedia.org/wiki/Skeletor), this Python 3
 library does not (yet) seek to conquer Eternia but to turn meshes into skeletons.
 
-_Heads-up: skeletor `1.0.0` introduced some breaking changes and major reorganizations._
-_Please see the [changelog](https://github.com/navis-org/skeletor/blob/master/NEWS.md)_
-_for details._
+_Please see the [changelog](https://github.com/navis-org/skeletor/blob/master/NEWS.md) for a summary of recent changes._
 
 ## Install
 ```bash
@@ -94,11 +92,15 @@ capabilities to inspect the results:
 ## Benchmarks
 ![skeletor_examples](https://github.com/navis-org/skeletor/raw/master/benchmarks/benchmark_2.png)
 
+Each panel highlights one method (data points + fit); the faint lines in the
+background are the fits for all the other methods, so you can compare them at a
+glance (note the shared, logarithmic time axis).
+
 [Benchmarks](https://github.com/navis-org/skeletor/blob/master/benchmarks/skeletor_benchmark.ipynb)
-were run on a 2018 MacBook Pro (2.2 GHz Core i7, 32Gb memory) with optional
-`fastremap` dependency installed. Note some of these functions (e.g.
-contraction and TEASAR/vertex cluster skeletonization) can vary a lot in
-speed based on parameterization.
+were run on an Apple M3 Max (36 Gb memory) with the optional `fastremap`
+dependency installed. Note some of these functions (e.g. contraction and
+TEASAR/vertex cluster skeletonization) can vary a lot in speed based on
+parameterization.
 
 ## Contributing
 Pull requests are always welcome!
