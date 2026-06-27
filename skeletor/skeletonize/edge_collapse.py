@@ -34,7 +34,8 @@ from .utils import mst_over_mesh, edges_to_graph, make_swc
 __all__ = ['by_edge_collapse']
 
 
-def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
+def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
+                     link_condition=False, progress=True):
     """Skeletonize a (contracted) mesh by iteratively collapsing edges.
 
     This algorithm (described in [1]) iteratively collapses edges that are part
@@ -60,6 +61,18 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     sample_weight : float, optional
                     Weight for sampling costs which penalize collapses that
                     would generate prohibitively long edges.
+    link_condition : bool, optional
+                    If True, enforce the topological link condition from the
+                    paper: an edge ``(u, v)`` is only collapsed if every vertex
+                    adjacent to *both* ``u`` and ``v`` also forms a triangle
+                    with them. This keeps collapses manifold but is **off by
+                    default** because the (often non-watertight, non-manifold)
+                    contracted meshes this pipeline deals with violate it for a
+                    large fraction of edges - blocking those collapses produces
+                    a sparser, worse skeleton. Since the final skeleton is
+                    rebuilt via a minimum spanning tree over the surviving
+                    vertices, manifold-preserving collapses are not required for
+                    a good result. Enable it only for clean, manifold meshes.
     progress :      bool
                     If True, will show progress bar.
 
@@ -102,21 +115,26 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
 
     # For each edge, generate a matrix (K). K is made up of two sets of
     # coordinates in 3D space, a and b. a is the normalised edge vector
-    # of edge(i,j) and b = a * <x/y/z coordinates of vertex i>
+    # of edge(i,j) and b = a x <coordinates of vertex i> (cross product).
     #
     # The matrix K takes the form:
     #
     #        Kij = 0, -az, ay, -bx
     #              az, 0, -ax, -by
     #             -ay, ax, 0,  -bz
+    #
+    # The first three columns are the skew-symmetric (cross-product) matrix of
+    # `a`. Together with b = a x u this makes ``p^T (K^T K) p`` equal to the
+    # squared distance of point p to the line through the edge - i.e. a proper
+    # quadric error metric (and hence always >= 0).
 
     edge_co0, edge_co1 = verts[edges[:, 0]], verts[edges[:, 1]]
-    a = (edge_co1 - edge_co0) / edge_lengths.reshape(edges.shape[0], 1)
-    # Note: It's a bit unclear to me whether the normalised edge vector should
-    # be allowed to have negative values but I seem to be getting better
-    # results if I use absolute values
-    a = np.fabs(a)
-    b = a * edge_co0
+    # Unit vector along each edge. Guard against zero-length (degenerate) edges
+    # which would otherwise produce NaNs that poison the cost matrices.
+    safe_len = edge_lengths.reshape(edges.shape[0], 1).copy()
+    safe_len[safe_len == 0] = 1
+    a = (edge_co1 - edge_co0) / safe_len
+    b = np.cross(a, edge_co0)
 
     # Bunch of zeros
     zero = np.zeros(a.shape[0])
@@ -157,13 +175,6 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
         # Add to Q array
         Q_array[:, :, v] = Q
 
-    # Not sure if we are doing something wrong when calculating the Q array but
-    # we end up having negative values which translate into negative scores.
-    # This in turn is bad because we propagate that negative score when
-    # collapsing edges which leads to a "zipper-effect" where nodes collapse
-    # in sequence a->b->c->d until they hit some node with really high cost
-    # Q_array -= Q_array.min()
-
     # Edge collapse:
     # Determining which edge to collapse is a weighted sum of the shape and
     # sampling cost. The shape cost of vertex i is Fa(p) = pT Qi p where p is
@@ -180,52 +191,55 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
     # both i and j, but (i/j/k) is not a face.
     # We will set the cost of these edges to infinity.
 
-    # Now work out the shape cost of collapsing each node (eq. 7)
-    # First get coordinates of the first node of each edge
-    # Note that in Nik's implementation this was the second node
-    p = verts[edges[:, 0]]
+    # Now work out the shape cost of collapsing each edge (eq. 7).
+    # Collapsing edge (u, v) merges u into v (see the loop below), so we
+    # evaluate the combined error quadric (Q_u + Q_v) at the survivor's
+    # homogeneous position v. This is the quadratic form ``p^T Q p`` and -
+    # because Q is a sum of K^T K terms and hence positive semi-definite - it
+    # is always >= 0.
+    verts_h = np.append(verts, np.ones((verts.shape[0], 1)), axis=1)
 
-    # Append weight factor
-    w = 1
-    p = np.append(p, np.full((p.shape[0], 1), w), axis=1)
-
-    this_Q1 = Q_array[:, :, edges[:, 0]]
-    this_Q2 = Q_array[:, :, edges[:, 1]]
-
-    F1 = np.einsum('ij,kji->ij', p, this_Q1)[:, [0, 1]]
-    F2 = np.einsum('ij,kji->ij', p, this_Q2)[:, [0, 1]]
-
-    # Calculate and append shape cost
-    F = np.append(F1, F2, axis=1)
-    shape_cost = np.sum(F, axis=1)
-
-    # Sum lengths of all edges associated with a given vertex
-    # This is easiest by generating a sparse matrix from the edges
-    # and then summing by row
+    # Sum of lengths of all edges incident to each vertex (for the sample cost).
+    # Easiest via a sparse matrix from the edges, summed by row. Symmetrize so
+    # that a->b == a<-b.
     adj = scipy.sparse.coo_matrix((edge_lengths,
                                    (edges[:, 0], edges[:, 1])),
                                   shape=(verts.shape[0], verts.shape[0]))
-
-    # This makes sure the matrix is symmetrical, i.e. a->b == a<-b
-    # Note that I'm not sure whether this is strictly necessary but it really
-    # can't hurt
     adj = adj + adj.T
+    verts_lengths = np.array(adj.sum(axis=1)).flatten()
 
-    # Get the lengths associated with each vertex
-    verts_lengths = adj.sum(axis=1)
+    def collapse_costs(mask):
+        """Cost of collapsing the edges selected by `mask` (eq. 8).
 
-    # We need to flatten this (something funny with summing sparse matrices)
-    verts_lengths = np.array(verts_lengths).flatten()
+        Both collapse directions are considered and the cheaper one is kept;
+        the edge is re-oriented in place so that column 0 is always the vertex
+        that gets *removed* and column 1 the *survivor* (matching the collapse
+        loop below). Returns the minimum total cost per edge.
+        """
+        e = edges[mask]
+        el = edge_lengths[mask]
+        # Combined error quadric of both endpoints (symmetric in u, v)
+        Quv = Q_array[:, :, e[:, 0]] + Q_array[:, :, e[:, 1]]
+        p0, p1 = verts_h[e[:, 0]], verts_h[e[:, 1]]
+        # Shape cost = combined quadric evaluated at the survivor's position
+        shape_keep0 = np.einsum('ei,ije,ej->e', p0, Quv, p0)  # survive col 0
+        shape_keep1 = np.einsum('ei,ije,ej->e', p1, Quv, p1)  # survive col 1
+        # Sample cost depends on the *removed* vertex's incident lengths
+        samp_rm0 = el * (verts_lengths[e[:, 0]] - el)  # remove col 0
+        samp_rm1 = el * (verts_lengths[e[:, 1]] - el)  # remove col 1
+        # Direction A: remove col 0, survive col 1
+        costA = shape_keep1 * shape_weight + samp_rm0 * sample_weight
+        # Direction B: remove col 1, survive col 0
+        costB = shape_keep0 * shape_weight + samp_rm1 * sample_weight
+        # Re-orient edges where reversing is cheaper (col 0 = removed vertex)
+        flip = costB < costA
+        if flip.any():
+            e[flip] = e[flip][:, ::-1]
+            edges[mask] = e
+        return np.minimum(costA, costB)
 
-    # Map the sum of vertex lengths onto edges (as per first vertex in edge)
-    ik_edge = verts_lengths[edges[:, 0]]
-
-    # Calculate sampling cost
-    sample_cost = edge_lengths * (ik_edge - edge_lengths)
-
-    # Determine which edge to collapse and collapse it
-    # Total Cost - weighted sum of shape and sample cost, equation 8 in paper
-    F_T = shape_cost * shape_weight + sample_cost * sample_weight
+    # Total cost - weighted sum of shape and sample cost, equation 8 in paper
+    F_T = collapse_costs(np.ones(edges.shape[0], dtype=bool))
 
     # Now start collapsing edges one at a time
     face_count = face_edges.shape[0]  # keep track of face counts for progress bar
@@ -247,6 +261,12 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
 
             # Get the edge that we want to collapse
             collapse_ix = np.argmin(F_T)
+            # If even the cheapest edge has infinite cost there is nothing left
+            # we can safely collapse (everything is collapsed, kept, or deferred
+            # by the link condition below). Stop - the MST reconstruction at the
+            # end will reconnect whatever vertices remain.
+            if not np.isfinite(F_T[collapse_ix]):
+                break
             # Get the vertices this edge connects
             u, v = edges[collapse_ix]
             # Get all edges that contain these vertices:
@@ -277,6 +297,26 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
 
             # Get the collapsed faces [(e1, e2, e3), ...] for this edge
             clps_faces = face_edges[has_uv]
+
+            # Link condition (optional): we may only collapse edge (u, v) if
+            # every vertex adjacent to BOTH u and v also forms a triangle
+            # (u, v, k) with it. A "blind" common neighbour (one that does not
+            # share a face) would turn into a non-manifold fold on collapse. If
+            # we find one, defer this edge (set its cost to infinity) and pick
+            # another. Off by default - see the docstring for why.
+            if link_condition:
+                inc = ~is_collapsed & ~uuvv
+                inc_u = inc & ((edges[:, 0] == u) | (edges[:, 1] == u))
+                inc_v = inc & ((edges[:, 0] == v) | (edges[:, 1] == v))
+                nbr_u = np.where(edges[inc_u, 0] == u, edges[inc_u, 1], edges[inc_u, 0])
+                nbr_v = np.where(edges[inc_v, 0] == v, edges[inc_v, 1], edges[inc_v, 0])
+                common = np.intersect1d(nbr_u, nbr_v)
+                common = common[(common != u) & (common != v)]
+                # Vertices that legitimately share a face with the edge (u, v)
+                face_k = np.unique(edges[clps_faces])
+                if np.setdiff1d(common, face_k).size:
+                    F_T[clps_edges] = np.inf
+                    continue
 
             # Remove the collapsed faces
             face_edges = face_edges[~has_uv]
@@ -316,33 +356,26 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1, progress=True):
             # Add shape cost of u to shape costs of v
             Q_array[:, :, v] += Q_array[:, :, u]
 
-            # Determine which edges require update of costs:
-            # In theory we only need to update costs for edges that are
-            # associated with vertices v and u (which now also v)
-            has_v = (edges[:, 0] == v) | (edges[:, 1] == v)
-
-            # Uncomment to temporarily force updating costs for all edges
-            # has_v[:] = True
-
-            # Update shape costs
-            this_Q1 = Q_array[:, :, edges[has_v, 0]]
-            this_Q2 = Q_array[:, :, edges[has_v, 1]]
-
-            F1 = np.einsum('ij,kji->ij', p[edges[has_v, 0]], this_Q1)[:, [0, 1]]
-            F2 = np.einsum('ij,kji->ij', p[edges[has_v, 1]], this_Q2)[:, [0, 1]]
-
-            F = np.append(F1, F2, axis=1)
-            new_shape_cost = np.sum(F, axis=1)
-
-            # Update sum of incoming edge lengths
+            # Update sum of incident edge lengths for the survivor.
             # Technically we would have to recalculate lengths of adjacent edges
-            # every time but we will take the cheap way out and simply add them up
+            # every time but we take the cheap way out and simply add them up.
             verts_lengths[v] += verts_lengths[u]
-            # Update sample costs for edges associated with v
-            ik_edge = verts_lengths[edges[has_v, 0]]
-            new_sample_cost = edge_lengths[has_v] * (ik_edge - edge_lengths[has_v])
 
-            F_T[has_v] = new_shape_cost * shape_weight + new_sample_cost * sample_weight
+            # Recompute costs for edges now incident to v (re-orienting them to
+            # their cheaper collapse direction). Both Q_array and verts_lengths
+            # must already be updated above.
+            has_v = (edges[:, 0] == v) | (edges[:, 1] == v)
+            F_T[has_v] = collapse_costs(has_v)
+
+    # If no edges survived the collapse there is nothing to build a skeleton
+    # from. This typically happens for closed, blob-like meshes (e.g. a sphere)
+    # that collapse symmetrically without ever leaving a face-less edge - such
+    # meshes should be contracted (see `skeletor.pre.contract`) first.
+    if not keep.any():
+        raise ValueError("Edge collapse did not leave any skeleton edges. This "
+                         "usually means the mesh is closed/blob-like rather "
+                         "than tubular - try contracting it first with "
+                         "`skeletor.pre.contract`.")
 
     # After the edge collapse, the edges are garbled - I have yet to figure out
     # why and whether that can be prevented. However the vertices in those
