@@ -1,5 +1,11 @@
 # News
 
+## 1.6.0 (2026-06-27)
+- new skeletonization method: `skeletor.skeletonize.by_mean_curvature`
+- `sk.skeletonize.by_wavefront_exact` now returns a `mesh_map` property in the `Skeleton` object
+- fixes + improvements to mesh contraction (`sk.pre.contract`)
+- fixes + improvements to `sk.skeletonize.by_edge_collapse`
+
 ## 1.5.0 (2026-02-25)
 - new skeletonization method: `skeletor.skeletonize.by_wavefront_exact`
 - new post-processing methods: `skeletor.post.recenter_vertices` and `skeletor.post.fix_outside_edges` (by @zyx287)
