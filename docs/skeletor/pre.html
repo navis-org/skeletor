@@ -446,235 +446,275 @@ Reduces final face count where detail is not important.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">contract</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">mesh</span>,</span><span class="param">	<span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-06</span>,</span><span class="param">	<span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span>,</span><span class="param">	<span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">precision</span><span class="o">=</span><span class="mf">1e-07</span>,</span><span class="param">	<span class="n">SL</span><span class="o">=</span><span class="mi">2</span>,</span><span class="param">	<span class="n">WH0</span><span class="o">=</span><span class="mi">1</span>,</span><span class="param">	<span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span>,</span><span class="param">	<span class="n">operator</span><span class="o">=</span><span class="s1">&#39;cotangent&#39;</span>,</span><span class="param">	<span class="n">progress</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">validate</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">):</span></span>
+        <span class="name">contract</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">mesh</span>,</span><span class="param">	<span class="n">epsilon</span><span class="o">=</span><span class="mf">0.1</span>,</span><span class="param">	<span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span>,</span><span class="param">	<span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">precision</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">SL</span><span class="o">=</span><span class="mi">2</span>,</span><span class="param">	<span class="n">WH0</span><span class="o">=</span><span class="mi">1</span>,</span><span class="param">	<span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span>,</span><span class="param">	<span class="n">operator</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span>,</span><span class="param">	<span class="n">progress</span><span class="o">=</span><span class="kc">True</span>,</span><span class="param">	<span class="n">validate</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">):</span></span>
 
                 <label class="view-source-button" for="contract-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#contract"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="contract-37"><a href="#contract-37"><span class="linenos"> 37</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contract</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-06</span><span class="p">,</span> <span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">,</span>
-</span><span id="contract-38"><a href="#contract-38"><span class="linenos"> 38</span></a>             <span class="n">SL</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">WH0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="contract-39"><a href="#contract-39"><span class="linenos"> 39</span></a>             <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="contract-40"><a href="#contract-40"><span class="linenos"> 40</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Contract mesh.</span>
-</span><span id="contract-41"><a href="#contract-41"><span class="linenos"> 41</span></a>
-</span><span id="contract-42"><a href="#contract-42"><span class="linenos"> 42</span></a><span class="sd">    In a nutshell: this function contracts the mesh by applying rounds of</span>
-</span><span id="contract-43"><a href="#contract-43"><span class="linenos"> 43</span></a><span class="sd">    _constraint_ Laplacian smoothing. This function can be fairly expensive</span>
-</span><span id="contract-44"><a href="#contract-44"><span class="linenos"> 44</span></a><span class="sd">    and I highly recommend you play around with ``SL`` to contract the</span>
-</span><span id="contract-45"><a href="#contract-45"><span class="linenos"> 45</span></a><span class="sd">    mesh in as few steps as possible. The contraction doesn&#39;t have to be perfect</span>
-</span><span id="contract-46"><a href="#contract-46"><span class="linenos"> 46</span></a><span class="sd">    for good skeletonization results (&lt;10%, i.e. `epsilon&lt;0.1`).</span>
-</span><span id="contract-47"><a href="#contract-47"><span class="linenos"> 47</span></a>
-</span><span id="contract-48"><a href="#contract-48"><span class="linenos"> 48</span></a><span class="sd">    Also: parameterization matters a lot! Default parameters will get you there</span>
-</span><span id="contract-49"><a href="#contract-49"><span class="linenos"> 49</span></a><span class="sd">    but playing around with `SL` and `WH0` might speed things up by an order of</span>
-</span><span id="contract-50"><a href="#contract-50"><span class="linenos"> 50</span></a><span class="sd">    magnitude.</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="contract-47"><a href="#contract-47"><span class="linenos"> 47</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contract</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">iter_lim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">time_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="contract-48"><a href="#contract-48"><span class="linenos"> 48</span></a>             <span class="n">SL</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">WH0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">WL0</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="contract-49"><a href="#contract-49"><span class="linenos"> 49</span></a>             <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="contract-50"><a href="#contract-50"><span class="linenos"> 50</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Contract mesh.</span>
 </span><span id="contract-51"><a href="#contract-51"><span class="linenos"> 51</span></a>
-</span><span id="contract-52"><a href="#contract-52"><span class="linenos"> 52</span></a><span class="sd">    Parameters</span>
-</span><span id="contract-53"><a href="#contract-53"><span class="linenos"> 53</span></a><span class="sd">    ----------</span>
-</span><span id="contract-54"><a href="#contract-54"><span class="linenos"> 54</span></a><span class="sd">    mesh :          mesh obj</span>
-</span><span id="contract-55"><a href="#contract-55"><span class="linenos"> 55</span></a><span class="sd">                    The mesh to be contracted. Can be any object (e.g.</span>
-</span><span id="contract-56"><a href="#contract-56"><span class="linenos"> 56</span></a><span class="sd">                    a trimesh.Trimesh) that has ``.vertices`` and ``.faces``</span>
-</span><span id="contract-57"><a href="#contract-57"><span class="linenos"> 57</span></a><span class="sd">                    properties or a tuple ``(vertices, faces)`` or a dictionary</span>
-</span><span id="contract-58"><a href="#contract-58"><span class="linenos"> 58</span></a><span class="sd">                    ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
-</span><span id="contract-59"><a href="#contract-59"><span class="linenos"> 59</span></a><span class="sd">                    Vertices and faces must be (N, 3) numpy arrays.</span>
-</span><span id="contract-60"><a href="#contract-60"><span class="linenos"> 60</span></a><span class="sd">    epsilon :       float (0-1), optional</span>
-</span><span id="contract-61"><a href="#contract-61"><span class="linenos"> 61</span></a><span class="sd">                    Target contraction rate as measured by the sum of all face</span>
-</span><span id="contract-62"><a href="#contract-62"><span class="linenos"> 62</span></a><span class="sd">                    areas in the contracted versus the original mesh. Algorithm</span>
-</span><span id="contract-63"><a href="#contract-63"><span class="linenos"> 63</span></a><span class="sd">                    will stop once mesh is contracted below this threshold.</span>
-</span><span id="contract-64"><a href="#contract-64"><span class="linenos"> 64</span></a><span class="sd">                    Depending on your mesh (number of faces, shape) reaching a</span>
-</span><span id="contract-65"><a href="#contract-65"><span class="linenos"> 65</span></a><span class="sd">                    strong contraction can be extremely costly with comparatively</span>
-</span><span id="contract-66"><a href="#contract-66"><span class="linenos"> 66</span></a><span class="sd">                    little benefit for the subsequent skeletonization. Note that</span>
-</span><span id="contract-67"><a href="#contract-67"><span class="linenos"> 67</span></a><span class="sd">                    the algorithm might stop short of this target if ``iter_lim``</span>
-</span><span id="contract-68"><a href="#contract-68"><span class="linenos"> 68</span></a><span class="sd">                    or ``time_lim`` is reached first or if the sum of face areas</span>
-</span><span id="contract-69"><a href="#contract-69"><span class="linenos"> 69</span></a><span class="sd">                    is increasing from one iteration to the next instead of</span>
-</span><span id="contract-70"><a href="#contract-70"><span class="linenos"> 70</span></a><span class="sd">                    decreasing.</span>
-</span><span id="contract-71"><a href="#contract-71"><span class="linenos"> 71</span></a><span class="sd">    iter_lim :      int (&gt;1), optional</span>
-</span><span id="contract-72"><a href="#contract-72"><span class="linenos"> 72</span></a><span class="sd">                    Maximum rounds of contractions.</span>
-</span><span id="contract-73"><a href="#contract-73"><span class="linenos"> 73</span></a><span class="sd">    time_lim :      int, optional</span>
-</span><span id="contract-74"><a href="#contract-74"><span class="linenos"> 74</span></a><span class="sd">                    Maximum run time in seconds. Note that this limit is not</span>
-</span><span id="contract-75"><a href="#contract-75"><span class="linenos"> 75</span></a><span class="sd">                    checked during but after each round of contraction. Hence,</span>
-</span><span id="contract-76"><a href="#contract-76"><span class="linenos"> 76</span></a><span class="sd">                    the actual total time will likely overshoot ``time_lim``.</span>
-</span><span id="contract-77"><a href="#contract-77"><span class="linenos"> 77</span></a><span class="sd">    precision :     float, optional</span>
-</span><span id="contract-78"><a href="#contract-78"><span class="linenos"> 78</span></a><span class="sd">                    Sets the precision for finding the least-square solution.</span>
-</span><span id="contract-79"><a href="#contract-79"><span class="linenos"> 79</span></a><span class="sd">                    This is the main determinant for speed vs quality: lower</span>
-</span><span id="contract-80"><a href="#contract-80"><span class="linenos"> 80</span></a><span class="sd">                    values will take (much) longer but will get you closer to an</span>
-</span><span id="contract-81"><a href="#contract-81"><span class="linenos"> 81</span></a><span class="sd">                    optimally contracted mesh. Higher values will be faster but</span>
-</span><span id="contract-82"><a href="#contract-82"><span class="linenos"> 82</span></a><span class="sd">                    the iterative contractions might stop early.</span>
-</span><span id="contract-83"><a href="#contract-83"><span class="linenos"> 83</span></a><span class="sd">    SL :            float, optional</span>
-</span><span id="contract-84"><a href="#contract-84"><span class="linenos"> 84</span></a><span class="sd">                    Factor by which the contraction matrix is multiplied for</span>
-</span><span id="contract-85"><a href="#contract-85"><span class="linenos"> 85</span></a><span class="sd">                    each iteration. Higher values = quicker contraction, lower</span>
-</span><span id="contract-86"><a href="#contract-86"><span class="linenos"> 86</span></a><span class="sd">                    values = more likely to get you an optimal contraction.</span>
-</span><span id="contract-87"><a href="#contract-87"><span class="linenos"> 87</span></a><span class="sd">    WH0 :           float, optional</span>
-</span><span id="contract-88"><a href="#contract-88"><span class="linenos"> 88</span></a><span class="sd">                    Initial weight factor for the attraction constraints.</span>
-</span><span id="contract-89"><a href="#contract-89"><span class="linenos"> 89</span></a><span class="sd">                    The ratio of the initial weights ``WL0`` and ``WH0``</span>
-</span><span id="contract-90"><a href="#contract-90"><span class="linenos"> 90</span></a><span class="sd">                    controls the smoothness and the degree of contraction of the</span>
-</span><span id="contract-91"><a href="#contract-91"><span class="linenos"> 91</span></a><span class="sd">                    first iteration result, thus it determines the amount of</span>
-</span><span id="contract-92"><a href="#contract-92"><span class="linenos"> 92</span></a><span class="sd">                    details retained in subsequent and final contracted meshes:</span>
-</span><span id="contract-93"><a href="#contract-93"><span class="linenos"> 93</span></a><span class="sd">                    higher ``WH0`` = more details retained.</span>
-</span><span id="contract-94"><a href="#contract-94"><span class="linenos"> 94</span></a><span class="sd">    WL0 :           &quot;auto&quot; | float</span>
-</span><span id="contract-95"><a href="#contract-95"><span class="linenos"> 95</span></a><span class="sd">                    Initial weight factor for the contraction constraints. By</span>
-</span><span id="contract-96"><a href="#contract-96"><span class="linenos"> 96</span></a><span class="sd">                    default (&quot;auto&quot;), this will be set to ``1e-3 * sqrt(A)``</span>
-</span><span id="contract-97"><a href="#contract-97"><span class="linenos"> 97</span></a><span class="sd">                    with ``A`` being the average face area. This ensures that</span>
-</span><span id="contract-98"><a href="#contract-98"><span class="linenos"> 98</span></a><span class="sd">                    contraction forces scale with the coarseness of the mesh.</span>
-</span><span id="contract-99"><a href="#contract-99"><span class="linenos"> 99</span></a><span class="sd">    operator :      &quot;cotangent&quot; | &quot;umbrella&quot;</span>
-</span><span id="contract-100"><a href="#contract-100"><span class="linenos">100</span></a><span class="sd">                    Which Laplacian operator to use:</span>
-</span><span id="contract-101"><a href="#contract-101"><span class="linenos">101</span></a>
-</span><span id="contract-102"><a href="#contract-102"><span class="linenos">102</span></a><span class="sd">                      - The &quot;cotangent&quot; operator (default) takes both topology</span>
-</span><span id="contract-103"><a href="#contract-103"><span class="linenos">103</span></a><span class="sd">                        and geometry of the mesh into account and is hence a</span>
-</span><span id="contract-104"><a href="#contract-104"><span class="linenos">104</span></a><span class="sd">                        better descriptor of the curvature flow. This is the</span>
-</span><span id="contract-105"><a href="#contract-105"><span class="linenos">105</span></a><span class="sd">                        operator used in the original paper.</span>
-</span><span id="contract-106"><a href="#contract-106"><span class="linenos">106</span></a><span class="sd">                      - The &quot;umbrella&quot; operator (aka &quot;uniform weighting&quot;) uses</span>
-</span><span id="contract-107"><a href="#contract-107"><span class="linenos">107</span></a><span class="sd">                        only topological features of the mesh. This also makes</span>
-</span><span id="contract-108"><a href="#contract-108"><span class="linenos">108</span></a><span class="sd">                        it more robust against flaws in the mesh! Use it when</span>
-</span><span id="contract-109"><a href="#contract-109"><span class="linenos">109</span></a><span class="sd">                        the cotangent operator produces oddly contracted meshes.</span>
-</span><span id="contract-110"><a href="#contract-110"><span class="linenos">110</span></a>
-</span><span id="contract-111"><a href="#contract-111"><span class="linenos">111</span></a><span class="sd">    progress :      bool</span>
-</span><span id="contract-112"><a href="#contract-112"><span class="linenos">112</span></a><span class="sd">                    Whether or not to show a progress bar.</span>
-</span><span id="contract-113"><a href="#contract-113"><span class="linenos">113</span></a><span class="sd">    validate :      bool</span>
-</span><span id="contract-114"><a href="#contract-114"><span class="linenos">114</span></a><span class="sd">                    If True, will try to fix potential issues with the mesh</span>
-</span><span id="contract-115"><a href="#contract-115"><span class="linenos">115</span></a><span class="sd">                    (e.g. infinite values, duplicate vertices, degenerate faces)</span>
-</span><span id="contract-116"><a href="#contract-116"><span class="linenos">116</span></a><span class="sd">                    before collapsing. Degenerate meshes can lead to effectively</span>
-</span><span id="contract-117"><a href="#contract-117"><span class="linenos">117</span></a><span class="sd">                    infinite runtime for this function!</span>
-</span><span id="contract-118"><a href="#contract-118"><span class="linenos">118</span></a>
-</span><span id="contract-119"><a href="#contract-119"><span class="linenos">119</span></a><span class="sd">    Returns</span>
-</span><span id="contract-120"><a href="#contract-120"><span class="linenos">120</span></a><span class="sd">    -------</span>
-</span><span id="contract-121"><a href="#contract-121"><span class="linenos">121</span></a><span class="sd">    trimesh.Trimesh</span>
-</span><span id="contract-122"><a href="#contract-122"><span class="linenos">122</span></a><span class="sd">                    Contracted copy of original mesh. The final contraction rate</span>
-</span><span id="contract-123"><a href="#contract-123"><span class="linenos">123</span></a><span class="sd">                    is attached to the mesh as ``.epsilon`` property.</span>
-</span><span id="contract-124"><a href="#contract-124"><span class="linenos">124</span></a>
-</span><span id="contract-125"><a href="#contract-125"><span class="linenos">125</span></a><span class="sd">    References</span>
-</span><span id="contract-126"><a href="#contract-126"><span class="linenos">126</span></a><span class="sd">    ----------</span>
-</span><span id="contract-127"><a href="#contract-127"><span class="linenos">127</span></a><span class="sd">    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
-</span><span id="contract-128"><a href="#contract-128"><span class="linenos">128</span></a><span class="sd">        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
-</span><span id="contract-129"><a href="#contract-129"><span class="linenos">129</span></a>
-</span><span id="contract-130"><a href="#contract-130"><span class="linenos">130</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="contract-131"><a href="#contract-131"><span class="linenos">131</span></a>    <span class="k">assert</span> <span class="n">operator</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="s1">&#39;umbrella&#39;</span><span class="p">)</span>
-</span><span id="contract-132"><a href="#contract-132"><span class="linenos">132</span></a>    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-</span><span id="contract-133"><a href="#contract-133"><span class="linenos">133</span></a>
-</span><span id="contract-134"><a href="#contract-134"><span class="linenos">134</span></a>    <span class="c1"># Force into trimesh</span>
-</span><span id="contract-135"><a href="#contract-135"><span class="linenos">135</span></a>    <span class="n">m</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
-</span><span id="contract-136"><a href="#contract-136"><span class="linenos">136</span></a>    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
-</span><span id="contract-137"><a href="#contract-137"><span class="linenos">137</span></a>
-</span><span id="contract-138"><a href="#contract-138"><span class="linenos">138</span></a>    <span class="c1"># Initialize attraction weights</span>
-</span><span id="contract-139"><a href="#contract-139"><span class="linenos">139</span></a>    <span class="n">zeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-</span><span id="contract-140"><a href="#contract-140"><span class="linenos">140</span></a>    <span class="n">WH0_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-</span><span id="contract-141"><a href="#contract-141"><span class="linenos">141</span></a>    <span class="n">WH0_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
-</span><span id="contract-142"><a href="#contract-142"><span class="linenos">142</span></a>    <span class="n">WH0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WH0_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WH0_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
-</span><span id="contract-143"><a href="#contract-143"><span class="linenos">143</span></a>    <span class="c1"># Make a copy but keep original values</span>
-</span><span id="contract-144"><a href="#contract-144"><span class="linenos">144</span></a>    <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="p">)</span>
-</span><span id="contract-145"><a href="#contract-145"><span class="linenos">145</span></a>
-</span><span id="contract-146"><a href="#contract-146"><span class="linenos">146</span></a>    <span class="c1"># Initialize contraction weights</span>
-</span><span id="contract-147"><a href="#contract-147"><span class="linenos">147</span></a>    <span class="k">if</span> <span class="n">WL0</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
-</span><span id="contract-148"><a href="#contract-148"><span class="linenos">148</span></a>        <span class="n">WL0</span> <span class="o">=</span> <span class="mf">1e-03</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">averageFaceArea</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
-</span><span id="contract-149"><a href="#contract-149"><span class="linenos">149</span></a>        <span class="c1">#WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))</span>
-</span><span id="contract-150"><a href="#contract-150"><span class="linenos">150</span></a>    <span class="n">WL_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-</span><span id="contract-151"><a href="#contract-151"><span class="linenos">151</span></a>    <span class="n">WL_diag</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">WL0</span><span class="p">)</span>
-</span><span id="contract-152"><a href="#contract-152"><span class="linenos">152</span></a>    <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">spdiags</span><span class="p">(</span><span class="n">WL_diag</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">WL_diag</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</span><span id="contract-52"><a href="#contract-52"><span class="linenos"> 52</span></a><span class="sd">    In a nutshell: this function contracts the mesh by applying rounds of</span>
+</span><span id="contract-53"><a href="#contract-53"><span class="linenos"> 53</span></a><span class="sd">    _constraint_ Laplacian smoothing. This function can be fairly expensive</span>
+</span><span id="contract-54"><a href="#contract-54"><span class="linenos"> 54</span></a><span class="sd">    and I highly recommend you play around with ``SL`` to contract the</span>
+</span><span id="contract-55"><a href="#contract-55"><span class="linenos"> 55</span></a><span class="sd">    mesh in as few steps as possible. The contraction doesn&#39;t have to be perfect</span>
+</span><span id="contract-56"><a href="#contract-56"><span class="linenos"> 56</span></a><span class="sd">    for good skeletonization results (&lt;10%, i.e. `epsilon&lt;0.1`).</span>
+</span><span id="contract-57"><a href="#contract-57"><span class="linenos"> 57</span></a>
+</span><span id="contract-58"><a href="#contract-58"><span class="linenos"> 58</span></a><span class="sd">    Also: parameterization matters a lot! Default parameters will get you there</span>
+</span><span id="contract-59"><a href="#contract-59"><span class="linenos"> 59</span></a><span class="sd">    but playing around with `SL` and `WH0` might speed things up by an order of</span>
+</span><span id="contract-60"><a href="#contract-60"><span class="linenos"> 60</span></a><span class="sd">    magnitude.</span>
+</span><span id="contract-61"><a href="#contract-61"><span class="linenos"> 61</span></a>
+</span><span id="contract-62"><a href="#contract-62"><span class="linenos"> 62</span></a><span class="sd">    Parameters</span>
+</span><span id="contract-63"><a href="#contract-63"><span class="linenos"> 63</span></a><span class="sd">    ----------</span>
+</span><span id="contract-64"><a href="#contract-64"><span class="linenos"> 64</span></a><span class="sd">    mesh :          mesh obj</span>
+</span><span id="contract-65"><a href="#contract-65"><span class="linenos"> 65</span></a><span class="sd">                    The mesh to be contracted. Can be any object (e.g.</span>
+</span><span id="contract-66"><a href="#contract-66"><span class="linenos"> 66</span></a><span class="sd">                    a trimesh.Trimesh) that has ``.vertices`` and ``.faces``</span>
+</span><span id="contract-67"><a href="#contract-67"><span class="linenos"> 67</span></a><span class="sd">                    properties or a tuple ``(vertices, faces)`` or a dictionary</span>
+</span><span id="contract-68"><a href="#contract-68"><span class="linenos"> 68</span></a><span class="sd">                    ``{&#39;vertices&#39;: vertices, &#39;faces&#39;: faces}``.</span>
+</span><span id="contract-69"><a href="#contract-69"><span class="linenos"> 69</span></a><span class="sd">                    Vertices and faces must be (N, 3) numpy arrays.</span>
+</span><span id="contract-70"><a href="#contract-70"><span class="linenos"> 70</span></a><span class="sd">    epsilon :       float (0-1), optional</span>
+</span><span id="contract-71"><a href="#contract-71"><span class="linenos"> 71</span></a><span class="sd">                    Target contraction rate as measured by the sum of all face</span>
+</span><span id="contract-72"><a href="#contract-72"><span class="linenos"> 72</span></a><span class="sd">                    areas in the contracted versus the original mesh. Algorithm</span>
+</span><span id="contract-73"><a href="#contract-73"><span class="linenos"> 73</span></a><span class="sd">                    will stop once mesh is contracted below this threshold.</span>
+</span><span id="contract-74"><a href="#contract-74"><span class="linenos"> 74</span></a><span class="sd">                    Depending on your mesh (number of faces, shape) reaching a</span>
+</span><span id="contract-75"><a href="#contract-75"><span class="linenos"> 75</span></a><span class="sd">                    strong contraction can be extremely costly with comparatively</span>
+</span><span id="contract-76"><a href="#contract-76"><span class="linenos"> 76</span></a><span class="sd">                    little benefit for the subsequent skeletonization. Note that</span>
+</span><span id="contract-77"><a href="#contract-77"><span class="linenos"> 77</span></a><span class="sd">                    the algorithm might stop short of this target if ``iter_lim``</span>
+</span><span id="contract-78"><a href="#contract-78"><span class="linenos"> 78</span></a><span class="sd">                    or ``time_lim`` is reached first or if the contraction</span>
+</span><span id="contract-79"><a href="#contract-79"><span class="linenos"> 79</span></a><span class="sd">                    becomes unstable (the sum of face areas increases or the</span>
+</span><span id="contract-80"><a href="#contract-80"><span class="linenos"> 80</span></a><span class="sd">                    bounding box grows from one iteration to the next).</span>
+</span><span id="contract-81"><a href="#contract-81"><span class="linenos"> 81</span></a>
+</span><span id="contract-82"><a href="#contract-82"><span class="linenos"> 82</span></a><span class="sd">                    .. warning::</span>
+</span><span id="contract-83"><a href="#contract-83"><span class="linenos"> 83</span></a>
+</span><span id="contract-84"><a href="#contract-84"><span class="linenos"> 84</span></a><span class="sd">                       Avoid pushing ``epsilon`` too low (the default ``0.1`` is</span>
+</span><span id="contract-85"><a href="#contract-85"><span class="linenos"> 85</span></a><span class="sd">                       plenty for skeletonization). The contraction reduces the</span>
+</span><span id="contract-86"><a href="#contract-86"><span class="linenos"> 86</span></a><span class="sd">                       total face area regardless of whether it is faithfully</span>
+</span><span id="contract-87"><a href="#contract-87"><span class="linenos"> 87</span></a><span class="sd">                       thinning the mesh or merely collapsing (often</span>
+</span><span id="contract-88"><a href="#contract-88"><span class="linenos"> 88</span></a><span class="sd">                       disconnected) regions onto their centroids. Very small</span>
+</span><span id="contract-89"><a href="#contract-89"><span class="linenos"> 89</span></a><span class="sd">                       ``epsilon`` therefore tends to *over-contract*: vertices</span>
+</span><span id="contract-90"><a href="#contract-90"><span class="linenos"> 90</span></a><span class="sd">                       get dragged past the medial axis and away from the</span>
+</span><span id="contract-91"><a href="#contract-91"><span class="linenos"> 91</span></a><span class="sd">                       original surface, which hurts rather than helps the</span>
+</span><span id="contract-92"><a href="#contract-92"><span class="linenos"> 92</span></a><span class="sd">                       subsequent skeletonization.</span>
+</span><span id="contract-93"><a href="#contract-93"><span class="linenos"> 93</span></a><span class="sd">    iter_lim :      int (&gt;1), optional</span>
+</span><span id="contract-94"><a href="#contract-94"><span class="linenos"> 94</span></a><span class="sd">                    Maximum rounds of contractions.</span>
+</span><span id="contract-95"><a href="#contract-95"><span class="linenos"> 95</span></a><span class="sd">    time_lim :      int, optional</span>
+</span><span id="contract-96"><a href="#contract-96"><span class="linenos"> 96</span></a><span class="sd">                    Maximum run time in seconds. Note that this limit is not</span>
+</span><span id="contract-97"><a href="#contract-97"><span class="linenos"> 97</span></a><span class="sd">                    checked during but after each round of contraction. Hence,</span>
+</span><span id="contract-98"><a href="#contract-98"><span class="linenos"> 98</span></a><span class="sd">                    the actual total time will likely overshoot ``time_lim``.</span>
+</span><span id="contract-99"><a href="#contract-99"><span class="linenos"> 99</span></a><span class="sd">    precision :     float, optional</span>
+</span><span id="contract-100"><a href="#contract-100"><span class="linenos">100</span></a><span class="sd">                    DEPRECATED and ignored. The contraction now solves the</span>
+</span><span id="contract-101"><a href="#contract-101"><span class="linenos">101</span></a><span class="sd">                    normal equations directly (exact sparse factorization) so</span>
+</span><span id="contract-102"><a href="#contract-102"><span class="linenos">102</span></a><span class="sd">                    there is no iterative-solver tolerance to set. Passing a</span>
+</span><span id="contract-103"><a href="#contract-103"><span class="linenos">103</span></a><span class="sd">                    value will emit a deprecation warning.</span>
+</span><span id="contract-104"><a href="#contract-104"><span class="linenos">104</span></a><span class="sd">    SL :            float, optional</span>
+</span><span id="contract-105"><a href="#contract-105"><span class="linenos">105</span></a><span class="sd">                    Factor by which the contraction matrix is multiplied for</span>
+</span><span id="contract-106"><a href="#contract-106"><span class="linenos">106</span></a><span class="sd">                    each iteration. Higher values = quicker contraction, lower</span>
+</span><span id="contract-107"><a href="#contract-107"><span class="linenos">107</span></a><span class="sd">                    values = more likely to get you an optimal contraction.</span>
+</span><span id="contract-108"><a href="#contract-108"><span class="linenos">108</span></a><span class="sd">    WH0 :           float, optional</span>
+</span><span id="contract-109"><a href="#contract-109"><span class="linenos">109</span></a><span class="sd">                    Initial weight factor for the attraction constraints.</span>
+</span><span id="contract-110"><a href="#contract-110"><span class="linenos">110</span></a><span class="sd">                    The ratio of the initial weights ``WL0`` and ``WH0``</span>
+</span><span id="contract-111"><a href="#contract-111"><span class="linenos">111</span></a><span class="sd">                    controls the smoothness and the degree of contraction of the</span>
+</span><span id="contract-112"><a href="#contract-112"><span class="linenos">112</span></a><span class="sd">                    first iteration result, thus it determines the amount of</span>
+</span><span id="contract-113"><a href="#contract-113"><span class="linenos">113</span></a><span class="sd">                    details retained in subsequent and final contracted meshes:</span>
+</span><span id="contract-114"><a href="#contract-114"><span class="linenos">114</span></a><span class="sd">                    higher ``WH0`` = more details retained.</span>
+</span><span id="contract-115"><a href="#contract-115"><span class="linenos">115</span></a><span class="sd">    WL0 :           &quot;auto&quot; | float</span>
+</span><span id="contract-116"><a href="#contract-116"><span class="linenos">116</span></a><span class="sd">                    Initial weight factor for the contraction constraints. By</span>
+</span><span id="contract-117"><a href="#contract-117"><span class="linenos">117</span></a><span class="sd">                    default (&quot;auto&quot;), this will be set to ``1e-3 * sqrt(A)``</span>
+</span><span id="contract-118"><a href="#contract-118"><span class="linenos">118</span></a><span class="sd">                    with ``A`` being the average face area. This ensures that</span>
+</span><span id="contract-119"><a href="#contract-119"><span class="linenos">119</span></a><span class="sd">                    contraction forces scale with the coarseness of the mesh.</span>
+</span><span id="contract-120"><a href="#contract-120"><span class="linenos">120</span></a><span class="sd">    operator :      &quot;auto&quot; | &quot;robust&quot; | &quot;cotangent&quot; | &quot;umbrella&quot;</span>
+</span><span id="contract-121"><a href="#contract-121"><span class="linenos">121</span></a><span class="sd">                    Which Laplacian operator to use:</span>
+</span><span id="contract-122"><a href="#contract-122"><span class="linenos">122</span></a>
+</span><span id="contract-123"><a href="#contract-123"><span class="linenos">123</span></a><span class="sd">                      - &quot;auto&quot; (default) uses &quot;robust&quot; if the optional</span>
+</span><span id="contract-124"><a href="#contract-124"><span class="linenos">124</span></a><span class="sd">                        ``robust_laplacian`` package is installed and falls back</span>
+</span><span id="contract-125"><a href="#contract-125"><span class="linenos">125</span></a><span class="sd">                        to &quot;cotangent&quot; otherwise.</span>
+</span><span id="contract-126"><a href="#contract-126"><span class="linenos">126</span></a><span class="sd">                      - The &quot;robust&quot; operator uses the intrinsic mollified</span>
+</span><span id="contract-127"><a href="#contract-127"><span class="linenos">127</span></a><span class="sd">                        Laplacian of Sharp &amp; Crane (via ``robust_laplacian``).</span>
+</span><span id="contract-128"><a href="#contract-128"><span class="linenos">128</span></a><span class="sd">                        It is well-defined even on non-manifold and degenerate</span>
+</span><span id="contract-129"><a href="#contract-129"><span class="linenos">129</span></a><span class="sd">                        meshes and is the recommended choice for the messy</span>
+</span><span id="contract-130"><a href="#contract-130"><span class="linenos">130</span></a><span class="sd">                        meshes this package typically deals with.</span>
+</span><span id="contract-131"><a href="#contract-131"><span class="linenos">131</span></a><span class="sd">                      - The &quot;cotangent&quot; operator takes both topology and</span>
+</span><span id="contract-132"><a href="#contract-132"><span class="linenos">132</span></a><span class="sd">                        geometry of the mesh into account and is hence a good</span>
+</span><span id="contract-133"><a href="#contract-133"><span class="linenos">133</span></a><span class="sd">                        descriptor of the curvature flow. This is the operator</span>
+</span><span id="contract-134"><a href="#contract-134"><span class="linenos">134</span></a><span class="sd">                        used in the original paper.</span>
+</span><span id="contract-135"><a href="#contract-135"><span class="linenos">135</span></a><span class="sd">                      - The &quot;umbrella&quot; operator (aka &quot;uniform weighting&quot;) uses</span>
+</span><span id="contract-136"><a href="#contract-136"><span class="linenos">136</span></a><span class="sd">                        only topological features of the mesh. This also makes</span>
+</span><span id="contract-137"><a href="#contract-137"><span class="linenos">137</span></a><span class="sd">                        it more robust against flaws in the mesh! Use it when</span>
+</span><span id="contract-138"><a href="#contract-138"><span class="linenos">138</span></a><span class="sd">                        the cotangent operator produces oddly contracted meshes.</span>
+</span><span id="contract-139"><a href="#contract-139"><span class="linenos">139</span></a>
+</span><span id="contract-140"><a href="#contract-140"><span class="linenos">140</span></a><span class="sd">    progress :      bool</span>
+</span><span id="contract-141"><a href="#contract-141"><span class="linenos">141</span></a><span class="sd">                    Whether or not to show a progress bar.</span>
+</span><span id="contract-142"><a href="#contract-142"><span class="linenos">142</span></a><span class="sd">    validate :      bool</span>
+</span><span id="contract-143"><a href="#contract-143"><span class="linenos">143</span></a><span class="sd">                    If True, will try to fix potential issues with the mesh</span>
+</span><span id="contract-144"><a href="#contract-144"><span class="linenos">144</span></a><span class="sd">                    (e.g. infinite values, duplicate vertices, degenerate faces)</span>
+</span><span id="contract-145"><a href="#contract-145"><span class="linenos">145</span></a><span class="sd">                    before collapsing. Degenerate meshes can lead to effectively</span>
+</span><span id="contract-146"><a href="#contract-146"><span class="linenos">146</span></a><span class="sd">                    infinite runtime for this function!</span>
+</span><span id="contract-147"><a href="#contract-147"><span class="linenos">147</span></a>
+</span><span id="contract-148"><a href="#contract-148"><span class="linenos">148</span></a><span class="sd">    Returns</span>
+</span><span id="contract-149"><a href="#contract-149"><span class="linenos">149</span></a><span class="sd">    -------</span>
+</span><span id="contract-150"><a href="#contract-150"><span class="linenos">150</span></a><span class="sd">    trimesh.Trimesh</span>
+</span><span id="contract-151"><a href="#contract-151"><span class="linenos">151</span></a><span class="sd">                    Contracted copy of original mesh. The final contraction rate</span>
+</span><span id="contract-152"><a href="#contract-152"><span class="linenos">152</span></a><span class="sd">                    is attached to the mesh as ``.epsilon`` property.</span>
 </span><span id="contract-153"><a href="#contract-153"><span class="linenos">153</span></a>
-</span><span id="contract-154"><a href="#contract-154"><span class="linenos">154</span></a>    <span class="c1"># Copy mesh</span>
-</span><span id="contract-155"><a href="#contract-155"><span class="linenos">155</span></a>    <span class="n">dm</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="contract-156"><a href="#contract-156"><span class="linenos">156</span></a>
-</span><span id="contract-157"><a href="#contract-157"><span class="linenos">157</span></a>    <span class="n">area_ratios</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-</span><span id="contract-158"><a href="#contract-158"><span class="linenos">158</span></a>    <span class="n">originalRingAreas</span> <span class="o">=</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-</span><span id="contract-159"><a href="#contract-159"><span class="linenos">159</span></a>    <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span>
-</span><span id="contract-160"><a href="#contract-160"><span class="linenos">160</span></a>    <span class="n">bar_format</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{l_bar}{bar}</span><span class="s2">| [</span><span class="si">{elapsed}</span><span class="s2">&lt;</span><span class="si">{remaining}</span><span class="s2">, &quot;</span>
-</span><span id="contract-161"><a href="#contract-161"><span class="linenos">161</span></a>                  <span class="s2">&quot;</span><span class="si">{postfix[0]}</span><span class="s2">/</span><span class="si">{postfix[1]}</span><span class="s2">it, &quot;</span>
-</span><span id="contract-162"><a href="#contract-162"><span class="linenos">162</span></a>                  <span class="s2">&quot;</span><span class="si">{rate_fmt}</span><span class="s2">, epsilon </span><span class="si">{postfix[2]:.2g}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="contract-163"><a href="#contract-163"><span class="linenos">163</span></a>    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-</span><span id="contract-164"><a href="#contract-164"><span class="linenos">164</span></a>              <span class="n">bar_format</span><span class="o">=</span><span class="n">bar_format</span><span class="p">,</span>
-</span><span id="contract-165"><a href="#contract-165"><span class="linenos">165</span></a>              <span class="n">disable</span><span class="o">=</span><span class="n">progress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="contract-166"><a href="#contract-166"><span class="linenos">166</span></a>              <span class="n">postfix</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">iter_lim</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
-</span><span id="contract-167"><a href="#contract-167"><span class="linenos">167</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iter_lim</span><span class="p">):</span>
-</span><span id="contract-168"><a href="#contract-168"><span class="linenos">168</span></a>            <span class="c1"># Get Laplace weights</span>
-</span><span id="contract-169"><a href="#contract-169"><span class="linenos">169</span></a>
-</span><span id="contract-170"><a href="#contract-170"><span class="linenos">170</span></a>            <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">:</span>
-</span><span id="contract-171"><a href="#contract-171"><span class="linenos">171</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_cotangent</span><span class="p">(</span><span class="n">dm</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="contract-172"><a href="#contract-172"><span class="linenos">172</span></a>            <span class="k">else</span><span class="p">:</span>
-</span><span id="contract-173"><a href="#contract-173"><span class="linenos">173</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_umbrella</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-</span><span id="contract-174"><a href="#contract-174"><span class="linenos">174</span></a><span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="contract-175"><a href="#contract-175"><span class="linenos">175</span></a><span class="sd">            import robust_laplacian</span>
-</span><span id="contract-176"><a href="#contract-176"><span class="linenos">176</span></a><span class="sd">            L, M_ = robust_laplacian.mesh_laplacian(np.array(dm.vertices),</span>
-</span><span id="contract-177"><a href="#contract-177"><span class="linenos">177</span></a><span class="sd">                                                    np.array(dm.faces),</span>
-</span><span id="contract-178"><a href="#contract-178"><span class="linenos">178</span></a><span class="sd">                                                    mollify_factor=1e-3)</span>
-</span><span id="contract-179"><a href="#contract-179"><span class="linenos">179</span></a><span class="sd">            &quot;&quot;&quot;</span>
-</span><span id="contract-180"><a href="#contract-180"><span class="linenos">180</span></a>            <span class="n">V</span> <span class="o">=</span> <span class="n">getMeshVPos</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
-</span><span id="contract-181"><a href="#contract-181"><span class="linenos">181</span></a>            <span class="n">A</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">WL</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">WH</span><span class="p">])</span>
-</span><span id="contract-182"><a href="#contract-182"><span class="linenos">182</span></a>            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">zeros</span><span class="p">,</span> <span class="n">WH</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">V</span><span class="p">)))</span>
+</span><span id="contract-154"><a href="#contract-154"><span class="linenos">154</span></a><span class="sd">    References</span>
+</span><span id="contract-155"><a href="#contract-155"><span class="linenos">155</span></a><span class="sd">    ----------</span>
+</span><span id="contract-156"><a href="#contract-156"><span class="linenos">156</span></a><span class="sd">    [1] Au OK, Tai CL, Chu HK, Cohen-Or D, Lee TY. Skeleton extraction by mesh</span>
+</span><span id="contract-157"><a href="#contract-157"><span class="linenos">157</span></a><span class="sd">        contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.</span>
+</span><span id="contract-158"><a href="#contract-158"><span class="linenos">158</span></a>
+</span><span id="contract-159"><a href="#contract-159"><span class="linenos">159</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="contract-160"><a href="#contract-160"><span class="linenos">160</span></a>    <span class="c1"># Resolve the operator (and check optional dependency for &quot;robust&quot;)</span>
+</span><span id="contract-161"><a href="#contract-161"><span class="linenos">161</span></a>    <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+</span><span id="contract-162"><a href="#contract-162"><span class="linenos">162</span></a>        <span class="n">operator</span> <span class="o">=</span> <span class="s1">&#39;robust&#39;</span> <span class="k">if</span> <span class="n">_has_robust_laplacian</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cotangent&#39;</span>
+</span><span id="contract-163"><a href="#contract-163"><span class="linenos">163</span></a>        <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">:</span>
+</span><span id="contract-164"><a href="#contract-164"><span class="linenos">164</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;`robust_laplacian` not installed - falling back to &quot;</span>
+</span><span id="contract-165"><a href="#contract-165"><span class="linenos">165</span></a>                        <span class="s2">&quot;the &#39;cotangent&#39; operator. Install it with &quot;</span>
+</span><span id="contract-166"><a href="#contract-166"><span class="linenos">166</span></a>                        <span class="s2">&quot;`pip install robust_laplacian` for better results on &quot;</span>
+</span><span id="contract-167"><a href="#contract-167"><span class="linenos">167</span></a>                        <span class="s2">&quot;imperfect meshes.&quot;</span><span class="p">)</span>
+</span><span id="contract-168"><a href="#contract-168"><span class="linenos">168</span></a>    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;robust&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_has_robust_laplacian</span><span class="p">():</span>
+</span><span id="contract-169"><a href="#contract-169"><span class="linenos">169</span></a>        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;operator=&#39;robust&#39; requires the `robust_laplacian` &quot;</span>
+</span><span id="contract-170"><a href="#contract-170"><span class="linenos">170</span></a>                          <span class="s2">&quot;package:</span><span class="se">\n</span><span class="s2">  pip install robust_laplacian&quot;</span><span class="p">)</span>
+</span><span id="contract-171"><a href="#contract-171"><span class="linenos">171</span></a>    <span class="k">assert</span> <span class="n">operator</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;robust&#39;</span><span class="p">,</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">,</span> <span class="s1">&#39;umbrella&#39;</span><span class="p">)</span>
+</span><span id="contract-172"><a href="#contract-172"><span class="linenos">172</span></a>
+</span><span id="contract-173"><a href="#contract-173"><span class="linenos">173</span></a>    <span class="k">if</span> <span class="n">precision</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="contract-174"><a href="#contract-174"><span class="linenos">174</span></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`precision` is deprecated and ignored: contract() now &quot;</span>
+</span><span id="contract-175"><a href="#contract-175"><span class="linenos">175</span></a>                      <span class="s2">&quot;solves the normal equations directly instead of using an &quot;</span>
+</span><span id="contract-176"><a href="#contract-176"><span class="linenos">176</span></a>                      <span class="s2">&quot;iterative least-squares solver.&quot;</span><span class="p">,</span>
+</span><span id="contract-177"><a href="#contract-177"><span class="linenos">177</span></a>                      <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="contract-178"><a href="#contract-178"><span class="linenos">178</span></a>
+</span><span id="contract-179"><a href="#contract-179"><span class="linenos">179</span></a>    <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;robust&#39;</span><span class="p">:</span>
+</span><span id="contract-180"><a href="#contract-180"><span class="linenos">180</span></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">robust_laplacian</span>
+</span><span id="contract-181"><a href="#contract-181"><span class="linenos">181</span></a>
+</span><span id="contract-182"><a href="#contract-182"><span class="linenos">182</span></a>    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 </span><span id="contract-183"><a href="#contract-183"><span class="linenos">183</span></a>
-</span><span id="contract-184"><a href="#contract-184"><span class="linenos">184</span></a>            <span class="n">cpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-</span><span id="contract-185"><a href="#contract-185"><span class="linenos">185</span></a>            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-</span><span id="contract-186"><a href="#contract-186"><span class="linenos">186</span></a><span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="contract-187"><a href="#contract-187"><span class="linenos">187</span></a><span class="sd">                # Solve A*x = b</span>
-</span><span id="contract-188"><a href="#contract-188"><span class="linenos">188</span></a><span class="sd">                # Note that we force scipy&#39;s lsqr() to use current vertex</span>
-</span><span id="contract-189"><a href="#contract-189"><span class="linenos">189</span></a><span class="sd">                # positions as start points - this speeds things up and</span>
-</span><span id="contract-190"><a href="#contract-190"><span class="linenos">190</span></a><span class="sd">                # without it we get suboptimal solutions that lead to early</span>
-</span><span id="contract-191"><a href="#contract-191"><span class="linenos">191</span></a><span class="sd">                # termination</span>
-</span><span id="contract-192"><a href="#contract-192"><span class="linenos">192</span></a><span class="sd">                cpts[:, j] = lsqr(A, b[:, j],</span>
-</span><span id="contract-193"><a href="#contract-193"><span class="linenos">193</span></a><span class="sd">                                  atol=precision, btol=precision,</span>
-</span><span id="contract-194"><a href="#contract-194"><span class="linenos">194</span></a><span class="sd">                                  damp=1,</span>
-</span><span id="contract-195"><a href="#contract-195"><span class="linenos">195</span></a><span class="sd">                                  x0=dm.vertices[:, j])[0]</span>
-</span><span id="contract-196"><a href="#contract-196"><span class="linenos">196</span></a><span class="sd">                &quot;&quot;&quot;</span>
-</span><span id="contract-197"><a href="#contract-197"><span class="linenos">197</span></a>                <span class="c1"># The solution below is recommended in scipy&#39;s lsqr docstring</span>
-</span><span id="contract-198"><a href="#contract-198"><span class="linenos">198</span></a>                <span class="c1"># for when we have an initial estimate</span>
-</span><span id="contract-199"><a href="#contract-199"><span class="linenos">199</span></a>                <span class="c1"># Gives use the same results as above but is slightly faster</span>
-</span><span id="contract-200"><a href="#contract-200"><span class="linenos">200</span></a>
-</span><span id="contract-201"><a href="#contract-201"><span class="linenos">201</span></a>                <span class="c1"># Initial estimate (i.e. our current positions)</span>
-</span><span id="contract-202"><a href="#contract-202"><span class="linenos">202</span></a>                <span class="n">x0</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
-</span><span id="contract-203"><a href="#contract-203"><span class="linenos">203</span></a>                <span class="c1"># Compute residual vector</span>
-</span><span id="contract-204"><a href="#contract-204"><span class="linenos">204</span></a>                <span class="n">r0</span> <span class="o">=</span> <span class="n">b</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">A</span> <span class="o">*</span> <span class="n">x0</span>
-</span><span id="contract-205"><a href="#contract-205"><span class="linenos">205</span></a>                <span class="c1"># Use LSQR to solve the system</span>
-</span><span id="contract-206"><a href="#contract-206"><span class="linenos">206</span></a>                <span class="n">dx</span> <span class="o">=</span> <span class="n">lsqr</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span>
-</span><span id="contract-207"><a href="#contract-207"><span class="linenos">207</span></a>                          <span class="n">atol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span> <span class="n">btol</span><span class="o">=</span><span class="n">precision</span><span class="p">,</span>
-</span><span id="contract-208"><a href="#contract-208"><span class="linenos">208</span></a>                          <span class="n">damp</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="contract-209"><a href="#contract-209"><span class="linenos">209</span></a>                <span class="c1"># Add the correction dx to obtain a final solution</span>
-</span><span id="contract-210"><a href="#contract-210"><span class="linenos">210</span></a>                <span class="n">cpts</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">dx</span>
-</span><span id="contract-211"><a href="#contract-211"><span class="linenos">211</span></a>
-</span><span id="contract-212"><a href="#contract-212"><span class="linenos">212</span></a>            <span class="c1"># Update mesh with new vertex position</span>
-</span><span id="contract-213"><a href="#contract-213"><span class="linenos">213</span></a>            <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">cpts</span>
-</span><span id="contract-214"><a href="#contract-214"><span class="linenos">214</span></a>
-</span><span id="contract-215"><a href="#contract-215"><span class="linenos">215</span></a>            <span class="c1"># Update iteration in progress bar</span>
-</span><span id="contract-216"><a href="#contract-216"><span class="linenos">216</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-</span><span id="contract-217"><a href="#contract-217"><span class="linenos">217</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span id="contract-218"><a href="#contract-218"><span class="linenos">218</span></a>
-</span><span id="contract-219"><a href="#contract-219"><span class="linenos">219</span></a>            <span class="c1"># Break if face area has increased compared to the last iteration</span>
-</span><span id="contract-220"><a href="#contract-220"><span class="linenos">220</span></a>            <span class="n">new_eps</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">m</span><span class="o">.</span><span class="n">area</span>
-</span><span id="contract-221"><a href="#contract-221"><span class="linenos">221</span></a>            <span class="k">if</span> <span class="p">(</span><span class="n">new_eps</span> <span class="o">&gt;</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-</span><span id="contract-222"><a href="#contract-222"><span class="linenos">222</span></a>                <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">goodvertices</span>
-</span><span id="contract-223"><a href="#contract-223"><span class="linenos">223</span></a>                <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-</span><span id="contract-224"><a href="#contract-224"><span class="linenos">224</span></a>                    <span class="n">tqdm</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Total face area increased from last iteration.&quot;</span>
-</span><span id="contract-225"><a href="#contract-225"><span class="linenos">225</span></a>                               <span class="sa">f</span><span class="s2">&quot; Contraction stopped prematurely after </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> &quot;</span>
-</span><span id="contract-226"><a href="#contract-226"><span class="linenos">226</span></a>                               <span class="sa">f</span><span class="s2">&quot;iterations at epsilon </span><span class="si">{</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-</span><span id="contract-227"><a href="#contract-227"><span class="linenos">227</span></a>                <span class="k">break</span>
-</span><span id="contract-228"><a href="#contract-228"><span class="linenos">228</span></a>            <span class="n">area_ratios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_eps</span><span class="p">)</span>
-</span><span id="contract-229"><a href="#contract-229"><span class="linenos">229</span></a>
-</span><span id="contract-230"><a href="#contract-230"><span class="linenos">230</span></a>            <span class="c1"># Update progress bar</span>
-</span><span id="contract-231"><a href="#contract-231"><span class="linenos">231</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
-</span><span id="contract-232"><a href="#contract-232"><span class="linenos">232</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="contract-233"><a href="#contract-233"><span class="linenos">233</span></a>                <span class="n">prog</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
-</span><span id="contract-234"><a href="#contract-234"><span class="linenos">234</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="mi">100</span><span class="o">-</span><span class="n">pbar</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
-</span><span id="contract-235"><a href="#contract-235"><span class="linenos">235</span></a>
-</span><span id="contract-236"><a href="#contract-236"><span class="linenos">236</span></a>            <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">cpts</span>
-</span><span id="contract-237"><a href="#contract-237"><span class="linenos">237</span></a>
-</span><span id="contract-238"><a href="#contract-238"><span class="linenos">238</span></a>            <span class="c1"># Update contraction weights -&gt; at each iteration the contraction</span>
-</span><span id="contract-239"><a href="#contract-239"><span class="linenos">239</span></a>            <span class="c1"># forces increase to counteract the increased attraction forces</span>
-</span><span id="contract-240"><a href="#contract-240"><span class="linenos">240</span></a>            <span class="n">WL</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WL</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">SL</span><span class="p">))</span>
+</span><span id="contract-184"><a href="#contract-184"><span class="linenos">184</span></a>    <span class="c1"># Force into trimesh</span>
+</span><span id="contract-185"><a href="#contract-185"><span class="linenos">185</span></a>    <span class="n">m</span> <span class="o">=</span> <span class="n">make_trimesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
+</span><span id="contract-186"><a href="#contract-186"><span class="linenos">186</span></a>    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+</span><span id="contract-187"><a href="#contract-187"><span class="linenos">187</span></a>
+</span><span id="contract-188"><a href="#contract-188"><span class="linenos">188</span></a>    <span class="c1"># Initial per-vertex attraction weight (W_H) and the scalar contraction</span>
+</span><span id="contract-189"><a href="#contract-189"><span class="linenos">189</span></a>    <span class="c1"># weight (W_L0). W_H anchors vertices to their current positions; W_L grows</span>
+</span><span id="contract-190"><a href="#contract-190"><span class="linenos">190</span></a>    <span class="c1"># by SL each iteration and drives the curvature-flow contraction.</span>
+</span><span id="contract-191"><a href="#contract-191"><span class="linenos">191</span></a>    <span class="n">WH0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">WH0</span><span class="p">))</span>
+</span><span id="contract-192"><a href="#contract-192"><span class="linenos">192</span></a>
+</span><span id="contract-193"><a href="#contract-193"><span class="linenos">193</span></a>    <span class="k">if</span> <span class="n">WL0</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+</span><span id="contract-194"><a href="#contract-194"><span class="linenos">194</span></a>        <span class="n">WL0</span> <span class="o">=</span> <span class="mf">1e-03</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">averageFaceArea</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+</span><span id="contract-195"><a href="#contract-195"><span class="linenos">195</span></a>    <span class="n">WL0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">WL0</span><span class="p">)</span>
+</span><span id="contract-196"><a href="#contract-196"><span class="linenos">196</span></a>
+</span><span id="contract-197"><a href="#contract-197"><span class="linenos">197</span></a>    <span class="c1"># Copy mesh</span>
+</span><span id="contract-198"><a href="#contract-198"><span class="linenos">198</span></a>    <span class="n">dm</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="contract-199"><a href="#contract-199"><span class="linenos">199</span></a>
+</span><span id="contract-200"><a href="#contract-200"><span class="linenos">200</span></a>    <span class="n">area_ratios</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+</span><span id="contract-201"><a href="#contract-201"><span class="linenos">201</span></a>    <span class="n">ring0</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># original one-ring areas; set on the first iteration</span>
+</span><span id="contract-202"><a href="#contract-202"><span class="linenos">202</span></a>    <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span>
+</span><span id="contract-203"><a href="#contract-203"><span class="linenos">203</span></a>    <span class="c1"># The contraction flow is contractive, so the bounding box must shrink</span>
+</span><span id="contract-204"><a href="#contract-204"><span class="linenos">204</span></a>    <span class="c1"># monotonically. A growing bbox (or non-finite vertices) signals numerical</span>
+</span><span id="contract-205"><a href="#contract-205"><span class="linenos">205</span></a>    <span class="c1"># breakdown - which happens once `wl` grows so large that ``wl**2 * L.T@L``</span>
+</span><span id="contract-206"><a href="#contract-206"><span class="linenos">206</span></a>    <span class="c1"># swamps ``diag(W_H**2)`` below float precision and the solve diverges.</span>
+</span><span id="contract-207"><a href="#contract-207"><span class="linenos">207</span></a>    <span class="n">prev_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="contract-208"><a href="#contract-208"><span class="linenos">208</span></a>    <span class="n">bar_format</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{l_bar}{bar}</span><span class="s2">| [</span><span class="si">{elapsed}</span><span class="s2">&lt;</span><span class="si">{remaining}</span><span class="s2">, &quot;</span>
+</span><span id="contract-209"><a href="#contract-209"><span class="linenos">209</span></a>                  <span class="s2">&quot;</span><span class="si">{postfix[0]}</span><span class="s2">/</span><span class="si">{postfix[1]}</span><span class="s2">it, &quot;</span>
+</span><span id="contract-210"><a href="#contract-210"><span class="linenos">210</span></a>                  <span class="s2">&quot;</span><span class="si">{rate_fmt}</span><span class="s2">, epsilon </span><span class="si">{postfix[2]:.2g}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="contract-211"><a href="#contract-211"><span class="linenos">211</span></a>    <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><span id="contract-212"><a href="#contract-212"><span class="linenos">212</span></a>              <span class="n">bar_format</span><span class="o">=</span><span class="n">bar_format</span><span class="p">,</span>
+</span><span id="contract-213"><a href="#contract-213"><span class="linenos">213</span></a>              <span class="n">disable</span><span class="o">=</span><span class="n">progress</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="contract-214"><a href="#contract-214"><span class="linenos">214</span></a>              <span class="n">postfix</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">iter_lim</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+</span><span id="contract-215"><a href="#contract-215"><span class="linenos">215</span></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iter_lim</span><span class="p">):</span>
+</span><span id="contract-216"><a href="#contract-216"><span class="linenos">216</span></a>            <span class="c1"># Compute the Laplace operator and per-vertex areas on the current</span>
+</span><span id="contract-217"><a href="#contract-217"><span class="linenos">217</span></a>            <span class="c1"># geometry (faces are constant throughout)</span>
+</span><span id="contract-218"><a href="#contract-218"><span class="linenos">218</span></a>            <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;robust&#39;</span><span class="p">:</span>
+</span><span id="contract-219"><a href="#contract-219"><span class="linenos">219</span></a>                <span class="c1"># Intrinsic mollified Laplacian (Sharp &amp; Crane). L is positive</span>
+</span><span id="contract-220"><a href="#contract-220"><span class="linenos">220</span></a>                <span class="c1"># semi-definite; its sign is irrelevant here as the energy</span>
+</span><span id="contract-221"><a href="#contract-221"><span class="linenos">221</span></a>                <span class="c1"># squares L. M is the (diagonal) lumped mass matrix.</span>
+</span><span id="contract-222"><a href="#contract-222"><span class="linenos">222</span></a>                <span class="n">L</span><span class="p">,</span> <span class="n">M</span> <span class="o">=</span> <span class="n">robust_laplacian</span><span class="o">.</span><span class="n">mesh_laplacian</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">vertices</span><span class="p">),</span>
+</span><span id="contract-223"><a href="#contract-223"><span class="linenos">223</span></a>                                                       <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">faces</span><span class="p">),</span>
+</span><span id="contract-224"><a href="#contract-224"><span class="linenos">224</span></a>                                                       <span class="n">mollify_factor</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+</span><span id="contract-225"><a href="#contract-225"><span class="linenos">225</span></a>                <span class="n">ring</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span>
+</span><span id="contract-226"><a href="#contract-226"><span class="linenos">226</span></a>            <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;cotangent&#39;</span><span class="p">:</span>
+</span><span id="contract-227"><a href="#contract-227"><span class="linenos">227</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_cotangent</span><span class="p">(</span><span class="n">dm</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="contract-228"><a href="#contract-228"><span class="linenos">228</span></a>                <span class="n">ring</span> <span class="o">=</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-229"><a href="#contract-229"><span class="linenos">229</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="contract-230"><a href="#contract-230"><span class="linenos">230</span></a>                <span class="n">L</span> <span class="o">=</span> <span class="n">laplacian_umbrella</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-231"><a href="#contract-231"><span class="linenos">231</span></a>                <span class="n">ring</span> <span class="o">=</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-232"><a href="#contract-232"><span class="linenos">232</span></a>
+</span><span id="contract-233"><a href="#contract-233"><span class="linenos">233</span></a>            <span class="n">ring</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">a_min</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">a_max</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="contract-234"><a href="#contract-234"><span class="linenos">234</span></a>            <span class="c1"># The first iteration runs on the original geometry - keep its areas</span>
+</span><span id="contract-235"><a href="#contract-235"><span class="linenos">235</span></a>            <span class="c1"># as the reference for the attraction-weight update</span>
+</span><span id="contract-236"><a href="#contract-236"><span class="linenos">236</span></a>            <span class="k">if</span> <span class="n">ring0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="contract-237"><a href="#contract-237"><span class="linenos">237</span></a>                <span class="n">ring0</span> <span class="o">=</span> <span class="n">ring</span>
+</span><span id="contract-238"><a href="#contract-238"><span class="linenos">238</span></a>
+</span><span id="contract-239"><a href="#contract-239"><span class="linenos">239</span></a>            <span class="c1"># Contraction weight grows by SL each iteration</span>
+</span><span id="contract-240"><a href="#contract-240"><span class="linenos">240</span></a>            <span class="n">wl</span> <span class="o">=</span> <span class="n">WL0</span> <span class="o">*</span> <span class="n">SL</span> <span class="o">**</span> <span class="n">i</span>
 </span><span id="contract-241"><a href="#contract-241"><span class="linenos">241</span></a>
-</span><span id="contract-242"><a href="#contract-242"><span class="linenos">242</span></a>            <span class="c1"># Update attraction weights -&gt; the smaller the one ring areas</span>
-</span><span id="contract-243"><a href="#contract-243"><span class="linenos">243</span></a>            <span class="c1"># the higher the attraction forces</span>
-</span><span id="contract-244"><a href="#contract-244"><span class="linenos">244</span></a>            <span class="n">changeinarea</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">originalRingAreas</span> <span class="o">/</span> <span class="n">getOneRingAreas</span><span class="p">(</span><span class="n">dm</span><span class="p">))</span>
-</span><span id="contract-245"><a href="#contract-245"><span class="linenos">245</span></a>            <span class="n">WH</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">dia_matrix</span><span class="p">(</span><span class="n">WH0</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">changeinarea</span><span class="p">))</span>
-</span><span id="contract-246"><a href="#contract-246"><span class="linenos">246</span></a>
-</span><span id="contract-247"><a href="#contract-247"><span class="linenos">247</span></a>            <span class="c1"># Stop if we reached our target contraction rate</span>
-</span><span id="contract-248"><a href="#contract-248"><span class="linenos">248</span></a>            <span class="k">if</span> <span class="p">(</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">epsilon</span><span class="p">):</span>
-</span><span id="contract-249"><a href="#contract-249"><span class="linenos">249</span></a>                <span class="k">break</span>
-</span><span id="contract-250"><a href="#contract-250"><span class="linenos">250</span></a>
-</span><span id="contract-251"><a href="#contract-251"><span class="linenos">251</span></a>            <span class="c1"># Stop if time limit is reached</span>
-</span><span id="contract-252"><a href="#contract-252"><span class="linenos">252</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_lim</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
-</span><span id="contract-253"><a href="#contract-253"><span class="linenos">253</span></a>                <span class="k">if</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">time_lim</span><span class="p">:</span>
-</span><span id="contract-254"><a href="#contract-254"><span class="linenos">254</span></a>                    <span class="k">break</span>
-</span><span id="contract-255"><a href="#contract-255"><span class="linenos">255</span></a>
-</span><span id="contract-256"><a href="#contract-256"><span class="linenos">256</span></a>        <span class="c1"># Keep track of final epsilon</span>
-</span><span id="contract-257"><a href="#contract-257"><span class="linenos">257</span></a>        <span class="n">dm</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="contract-258"><a href="#contract-258"><span class="linenos">258</span></a>
-</span><span id="contract-259"><a href="#contract-259"><span class="linenos">259</span></a>        <span class="k">return</span> <span class="n">dm</span>
+</span><span id="contract-242"><a href="#contract-242"><span class="linenos">242</span></a>            <span class="c1"># Attraction weights grow where the one-ring area has shrunk. Floor</span>
+</span><span id="contract-243"><a href="#contract-243"><span class="linenos">243</span></a>            <span class="c1"># to keep the system positive-definite for collapsed vertices.</span>
+</span><span id="contract-244"><a href="#contract-244"><span class="linenos">244</span></a>            <span class="n">WH</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">WH0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ring0</span> <span class="o">/</span> <span class="n">ring</span><span class="p">),</span> <span class="mf">1e-6</span><span class="p">)</span>
+</span><span id="contract-245"><a href="#contract-245"><span class="linenos">245</span></a>
+</span><span id="contract-246"><a href="#contract-246"><span class="linenos">246</span></a>            <span class="n">V</span> <span class="o">=</span> <span class="n">getMeshVPos</span><span class="p">(</span><span class="n">dm</span><span class="p">)</span>
+</span><span id="contract-247"><a href="#contract-247"><span class="linenos">247</span></a>
+</span><span id="contract-248"><a href="#contract-248"><span class="linenos">248</span></a>            <span class="c1"># Solve the constrained least-squares problem</span>
+</span><span id="contract-249"><a href="#contract-249"><span class="linenos">249</span></a>            <span class="c1">#   min  || wl * L * V&#39; ||^2  +  || W_H * (V&#39; - V) ||^2</span>
+</span><span id="contract-250"><a href="#contract-250"><span class="linenos">250</span></a>            <span class="c1"># via its (symmetric positive-definite) normal equations</span>
+</span><span id="contract-251"><a href="#contract-251"><span class="linenos">251</span></a>            <span class="c1">#   (wl^2 * L^T L + diag(W_H^2)) V&#39; = diag(W_H^2) V</span>
+</span><span id="contract-252"><a href="#contract-252"><span class="linenos">252</span></a>            <span class="c1"># One sparse factorization + three back-substitutions per iteration.</span>
+</span><span id="contract-253"><a href="#contract-253"><span class="linenos">253</span></a>            <span class="n">WH2</span> <span class="o">=</span> <span class="n">WH</span> <span class="o">**</span> <span class="mi">2</span>
+</span><span id="contract-254"><a href="#contract-254"><span class="linenos">254</span></a>            <span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="n">wl</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="n">WH2</span><span class="p">)</span>
+</span><span id="contract-255"><a href="#contract-255"><span class="linenos">255</span></a>            <span class="n">solve</span> <span class="o">=</span> <span class="n">factorized</span><span class="p">(</span><span class="n">N</span><span class="o">.</span><span class="n">tocsc</span><span class="p">())</span>
+</span><span id="contract-256"><a href="#contract-256"><span class="linenos">256</span></a>            <span class="n">rhs</span> <span class="o">=</span> <span class="n">WH2</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">V</span>
+</span><span id="contract-257"><a href="#contract-257"><span class="linenos">257</span></a>            <span class="n">cpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">rhs</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]))</span>
+</span><span id="contract-258"><a href="#contract-258"><span class="linenos">258</span></a>                                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)])</span>
+</span><span id="contract-259"><a href="#contract-259"><span class="linenos">259</span></a>
+</span><span id="contract-260"><a href="#contract-260"><span class="linenos">260</span></a>            <span class="c1"># Update mesh with new vertex position</span>
+</span><span id="contract-261"><a href="#contract-261"><span class="linenos">261</span></a>            <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">cpts</span>
+</span><span id="contract-262"><a href="#contract-262"><span class="linenos">262</span></a>
+</span><span id="contract-263"><a href="#contract-263"><span class="linenos">263</span></a>            <span class="c1"># Update iteration in progress bar</span>
+</span><span id="contract-264"><a href="#contract-264"><span class="linenos">264</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-265"><a href="#contract-265"><span class="linenos">265</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="contract-266"><a href="#contract-266"><span class="linenos">266</span></a>
+</span><span id="contract-267"><a href="#contract-267"><span class="linenos">267</span></a>            <span class="c1"># Break if the contraction became unstable (bounding box grew or</span>
+</span><span id="contract-268"><a href="#contract-268"><span class="linenos">268</span></a>            <span class="c1"># vertices went non-finite) or if the total face area increased</span>
+</span><span id="contract-269"><a href="#contract-269"><span class="linenos">269</span></a>            <span class="c1"># compared to the last iteration. In all cases revert to the last</span>
+</span><span id="contract-270"><a href="#contract-270"><span class="linenos">270</span></a>            <span class="c1"># known-good vertices.</span>
+</span><span id="contract-271"><a href="#contract-271"><span class="linenos">271</span></a>            <span class="n">new_eps</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">m</span><span class="o">.</span><span class="n">area</span>
+</span><span id="contract-272"><a href="#contract-272"><span class="linenos">272</span></a>            <span class="n">new_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dm</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="contract-273"><a href="#contract-273"><span class="linenos">273</span></a>            <span class="n">unstable</span> <span class="o">=</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cpts</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="contract-274"><a href="#contract-274"><span class="linenos">274</span></a>                        <span class="ow">or</span> <span class="n">new_diag</span> <span class="o">&gt;</span> <span class="n">prev_diag</span> <span class="o">*</span> <span class="mf">1.001</span><span class="p">)</span>
+</span><span id="contract-275"><a href="#contract-275"><span class="linenos">275</span></a>            <span class="k">if</span> <span class="n">unstable</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new_eps</span> <span class="o">&gt;</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+</span><span id="contract-276"><a href="#contract-276"><span class="linenos">276</span></a>                <span class="n">dm</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">goodvertices</span>
+</span><span id="contract-277"><a href="#contract-277"><span class="linenos">277</span></a>                <span class="n">reason</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Mesh became numerically unstable&quot;</span> <span class="k">if</span> <span class="n">unstable</span>
+</span><span id="contract-278"><a href="#contract-278"><span class="linenos">278</span></a>                          <span class="k">else</span> <span class="s2">&quot;Total face area increased from last iteration&quot;</span><span class="p">)</span>
+</span><span id="contract-279"><a href="#contract-279"><span class="linenos">279</span></a>                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">. Contraction stopped after </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> iterations at &quot;</span>
+</span><span id="contract-280"><a href="#contract-280"><span class="linenos">280</span></a>                       <span class="sa">f</span><span class="s2">&quot;epsilon </span><span class="si">{</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2g</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="contract-281"><a href="#contract-281"><span class="linenos">281</span></a>                <span class="k">if</span> <span class="n">unstable</span><span class="p">:</span>
+</span><span id="contract-282"><a href="#contract-282"><span class="linenos">282</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="contract-283"><a href="#contract-283"><span class="linenos">283</span></a>                <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-284"><a href="#contract-284"><span class="linenos">284</span></a>                    <span class="n">tqdm</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="contract-285"><a href="#contract-285"><span class="linenos">285</span></a>                <span class="k">break</span>
+</span><span id="contract-286"><a href="#contract-286"><span class="linenos">286</span></a>            <span class="n">area_ratios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_eps</span><span class="p">)</span>
+</span><span id="contract-287"><a href="#contract-287"><span class="linenos">287</span></a>            <span class="n">prev_diag</span> <span class="o">=</span> <span class="n">new_diag</span>
+</span><span id="contract-288"><a href="#contract-288"><span class="linenos">288</span></a>
+</span><span id="contract-289"><a href="#contract-289"><span class="linenos">289</span></a>            <span class="c1"># Update progress bar</span>
+</span><span id="contract-290"><a href="#contract-290"><span class="linenos">290</span></a>            <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+</span><span id="contract-291"><a href="#contract-291"><span class="linenos">291</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">postfix</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="contract-292"><a href="#contract-292"><span class="linenos">292</span></a>                <span class="n">prog</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="contract-293"><a href="#contract-293"><span class="linenos">293</span></a>                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="mi">100</span><span class="o">-</span><span class="n">pbar</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+</span><span id="contract-294"><a href="#contract-294"><span class="linenos">294</span></a>
+</span><span id="contract-295"><a href="#contract-295"><span class="linenos">295</span></a>            <span class="n">goodvertices</span> <span class="o">=</span> <span class="n">cpts</span>
+</span><span id="contract-296"><a href="#contract-296"><span class="linenos">296</span></a>
+</span><span id="contract-297"><a href="#contract-297"><span class="linenos">297</span></a>            <span class="c1"># Stop if we reached our target contraction rate</span>
+</span><span id="contract-298"><a href="#contract-298"><span class="linenos">298</span></a>            <span class="k">if</span> <span class="p">(</span><span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">epsilon</span><span class="p">):</span>
+</span><span id="contract-299"><a href="#contract-299"><span class="linenos">299</span></a>                <span class="k">break</span>
+</span><span id="contract-300"><a href="#contract-300"><span class="linenos">300</span></a>
+</span><span id="contract-301"><a href="#contract-301"><span class="linenos">301</span></a>            <span class="c1"># Stop if time limit is reached</span>
+</span><span id="contract-302"><a href="#contract-302"><span class="linenos">302</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_lim</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+</span><span id="contract-303"><a href="#contract-303"><span class="linenos">303</span></a>                <span class="k">if</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">time_lim</span><span class="p">:</span>
+</span><span id="contract-304"><a href="#contract-304"><span class="linenos">304</span></a>                    <span class="k">break</span>
+</span><span id="contract-305"><a href="#contract-305"><span class="linenos">305</span></a>
+</span><span id="contract-306"><a href="#contract-306"><span class="linenos">306</span></a>        <span class="c1"># Keep track of final epsilon</span>
+</span><span id="contract-307"><a href="#contract-307"><span class="linenos">307</span></a>        <span class="n">dm</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">area_ratios</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="contract-308"><a href="#contract-308"><span class="linenos">308</span></a>
+</span><span id="contract-309"><a href="#contract-309"><span class="linenos">309</span></a>        <span class="k">return</span> <span class="n">dm</span>
 </span></pre></div>
 
 
@@ -699,7 +739,7 @@ a trimesh.Trimesh) that has <code>.vertices</code> and <code>.faces</code>
 properties or a tuple <code>(vertices, faces)</code> or a dictionary
 <code>{'vertices': vertices, 'faces': faces}</code>.
 Vertices and faces must be (N, 3) numpy arrays.</li>
-<li><strong>epsilon</strong> (float (0-1), optional):
+<li><p><strong>epsilon</strong> (float (0-1), optional):
 Target contraction rate as measured by the sum of all face
 areas in the contracted versus the original mesh. Algorithm
 will stop once mesh is contracted below this threshold.
@@ -707,21 +747,34 @@ Depending on your mesh (number of faces, shape) reaching a
 strong contraction can be extremely costly with comparatively
 little benefit for the subsequent skeletonization. Note that
 the algorithm might stop short of this target if <code>iter_lim</code>
-or <code>time_lim</code> is reached first or if the sum of face areas
-is increasing from one iteration to the next instead of
-decreasing.</li>
-<li><strong>iter_lim</strong> (int (&gt;1), optional):
-Maximum rounds of contractions.</li>
+or <code>time_lim</code> is reached first or if the contraction
+becomes unstable (the sum of face areas increases or the
+bounding box grows from one iteration to the next).</p>
+
+<div class="alert warning">
+
+<p>Avoid pushing <code>epsilon</code> too low (the default <code>0.1</code> is
+plenty for skeletonization). The contraction reduces the
+total face area regardless of whether it is faithfully
+thinning the mesh or merely collapsing (often
+disconnected) regions onto their centroids. Very small
+<code>epsilon</code> therefore tends to <em>over-contract</em>: vertices
+get dragged past the medial axis and away from the
+original surface, which hurts rather than helps the
+subsequent skeletonization.</p>
+
+</div></li>
+<li><p><strong>iter_lim</strong> (int (&gt;1), optional):
+Maximum rounds of contractions.</p></li>
 <li><strong>time_lim</strong> (int, optional):
 Maximum run time in seconds. Note that this limit is not
 checked during but after each round of contraction. Hence,
 the actual total time will likely overshoot <code>time_lim</code>.</li>
 <li><strong>precision</strong> (float, optional):
-Sets the precision for finding the least-square solution.
-This is the main determinant for speed vs quality: lower
-values will take (much) longer but will get you closer to an
-optimally contracted mesh. Higher values will be faster but
-the iterative contractions might stop early.</li>
+DEPRECATED and ignored. The contraction now solves the
+normal equations directly (exact sparse factorization) so
+there is no iterative-solver tolerance to set. Passing a
+value will emit a deprecation warning.</li>
 <li><strong>SL</strong> (float, optional):
 Factor by which the contraction matrix is multiplied for
 each iteration. Higher values = quicker contraction, lower
@@ -738,14 +791,22 @@ Initial weight factor for the contraction constraints. By
 default ("auto"), this will be set to <code>1e-3 * sqrt(A)</code>
 with <code>A</code> being the average face area. This ensures that
 contraction forces scale with the coarseness of the mesh.</li>
-<li><p><strong>operator</strong> ("cotangent" | "umbrella"):
+<li><p><strong>operator</strong> ("auto" | "robust" | "cotangent" | "umbrella"):
 Which Laplacian operator to use:</p>
 
 <ul>
-<li>The "cotangent" operator (default) takes both topology
-and geometry of the mesh into account and is hence a
-better descriptor of the curvature flow. This is the
-operator used in the original paper.</li>
+<li>"auto" (default) uses "robust" if the optional
+<code>robust_laplacian</code> package is installed and falls back
+to "cotangent" otherwise.</li>
+<li>The "robust" operator uses the intrinsic mollified
+Laplacian of Sharp &amp; Crane (via <code>robust_laplacian</code>).
+It is well-defined even on non-manifold and degenerate
+meshes and is the recommended choice for the messy
+meshes this package typically deals with.</li>
+<li>The "cotangent" operator takes both topology and
+geometry of the mesh into account and is hence a good
+descriptor of the curvature flow. This is the operator
+used in the original paper.</li>
 <li>The "umbrella" operator (aka "uniform weighting") uses
 only topological features of the mesh. This also makes
 it more robust against flaws in the mesh! Use it when
