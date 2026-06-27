@@ -22,6 +22,7 @@ import pandas as pd
 
 from tqdm.auto import tqdm
 from itertools import combinations
+from scipy.spatial import cKDTree
 
 from ..utilities import make_trimesh
 from .base import Skeleton
@@ -43,7 +44,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
     of hopping from vertex to vertex. This can give better results on meshes with a
     low vertex density but is computationally more expensive: the difference between
     the two methods depends heavily on the mesh and the step size, but as a rule of thumb,
-    the exact version is about 3-4x slower than the non-exact version.
+    the exact version is about 3-4x slower than the hop version.
 
     Parameters
     ----------
@@ -104,7 +105,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
 
     mesh = make_trimesh(mesh, validate=False)
 
-    centers_final, radii_final, parents = _cast_waves(
+    centers_final, radii_final, parents, mesh_map = _cast_waves(
         mesh,
         step_size=step_size,
         origins=origins,
@@ -121,7 +122,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
     swc["z"] = centers_final[:, 2]
     swc["radius"] = radii_final
 
-    return Skeleton(swc=swc, mesh=mesh, method="wavefront_exact")
+    return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map, method="wavefront_exact")
 
 
 def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=True):
@@ -157,6 +158,10 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     centers = []
     radii = []
     parents = []
+
+    # Maps each mesh vertex to its skeleton node (filled in below). Final node
+    # IDs equal positions in `centers`, so we can assign these as we go.
+    mesh_map = np.full(mesh.vertices.shape[0], -1, dtype=int)
 
     # Go over each connected component
     with tqdm(
@@ -201,6 +206,8 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
 
             # If the max distance is less than the step size, we can just add the seed
             if mx < step_size:
+                # All vertices in this component collapse to that single node
+                mesh_map[cc] = len(centers)
                 centers.append(mesh.vertices[cc[seed]])
                 radii.append(0)
                 parents.append(-1)
@@ -299,6 +306,14 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             # Set is_seed to False for all new vertices
             # (this avoids having "None" value for this attribute which will cause problems during the vertex contraction step)
             SG.vs[len(cc) :]["is_seed"] = False
+
+            # Track, for each graph vertex, which original mesh vertices it
+            # represents (synthetic vertices represent none). This rides through
+            # the vertex contraction below so we can recover the mesh -> node map.
+            # Length must match the current vertex count exactly.
+            SG.vs["orig"] = [[i] for i in range(len(cc))] + [
+                [] for _ in range(len(new_vertices))
+            ]
 
             # Delete the old edges
             SG.delete_edges(edges_to_delete)
@@ -433,7 +448,13 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                     return False
 
             SG.contract_vertices(
-                new_mapping, combine_attrs={"is_seed": combine_is_seed}
+                new_mapping,
+                combine_attrs={
+                    "is_seed": combine_is_seed,
+                    # Concatenate the original-vertex membership lists so each
+                    # contracted node knows which mesh vertices it absorbed.
+                    "orig": lambda values: [v for sub in values for v in sub],
+                },
             )
             SG = SG.simplify()
 
@@ -476,9 +497,35 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             this_parents[this_parents >= 0] += len(centers)  # offset parents
             parents.extend(this_parents)
 
+            # Map mesh vertices to their final skeleton node. A surviving vertex
+            # at position `j` becomes node `offset + j` (same convention as the
+            # parent offset above, since node IDs are positions in `centers`).
+            offset = len(centers)
+            for j, members in enumerate(SG.vs["orig"]):
+                for m in members:  # m = original vertex's index within `cc`
+                    mesh_map[cc[m]] = offset + j
+
+            # A handful of tip vertices may have had their contracted node dropped
+            # as isolated (the "no step node in cc2" case above). Assign each to
+            # the nearest surviving node center in this component.
+            orphans = cc[mesh_map[cc] == -1]
+            if len(orphans):
+                cc_centers = np.vstack(SG.vs["center"])
+                d = mesh.vertices[orphans][:, None, :] - cc_centers[None, :, :]
+                mesh_map[orphans] = offset + (d**2).sum(-1).argmin(1)
+
             radii.extend(SG.vs["radius"])
             centers.extend(SG.vs["center"])
 
             pbar.update(len(cc))
 
-    return np.vstack(centers), np.array(radii), np.array(parents)
+    centers = np.vstack(centers)
+
+    # Catch any mesh vertices that never made it into the graph (e.g. fully
+    # isolated vertices not part of any edge) by mapping them to the nearest
+    # skeleton node. Normally a no-op.
+    still = np.where(mesh_map == -1)[0]
+    if len(still):
+        mesh_map[still] = cKDTree(centers).query(mesh.vertices[still])[1]
+
+    return centers, np.array(radii), np.array(parents), mesh_map

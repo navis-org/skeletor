@@ -54,9 +54,8 @@ class TestSkeletonization:
     def test_wave_exact(self):
         s = sk.skeletonize.by_wavefront_exact(sk.example_mesh(), step_size=50)
 
-        # Currently this method doesn't provide a mesh map
-        # assert len(s.mesh_map) == len(s.mesh.vertices)
-        # assert all(np.isin(s.mesh_map, s.swc.node_id.values))
+        assert len(s.mesh_map) == len(s.mesh.vertices)
+        assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
     def test_vertex_cluster(self):
         s = sk.skeletonize.by_vertex_clusters(sk.example_mesh(),
@@ -67,6 +66,14 @@ class TestSkeletonization:
 
     def test_edge_collapse(self):
         s = sk.skeletonize.by_edge_collapse(sk.example_mesh())
+
+        # Skeleton must be valid: finite vertices and well-formed edges that
+        # stay within the input bounding box (no spurious long "zipper" jumps)
+        assert isinstance(s.vertices, np.ndarray)
+        assert np.isfinite(s.vertices).all()
+        assert s.edges.shape[1] == 2
+        m = sk.example_mesh()
+        assert (s.vertices >= m.bounds[0]).all() and (s.vertices <= m.bounds[1]).all()
 
     def test_teasar(self):
         s = sk.skeletonize.by_teasar(sk.example_mesh(), 500)

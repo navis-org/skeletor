@@ -183,7 +183,7 @@ def make_swc(x, coords, reindex=True, validate=True):
     # Generate node table (do NOT remove the explicit dtype)
     swc = pd.DataFrame(edges, columns=['node_id', 'parent_id'], dtype=int)
 
-    # See if we need to add manually add rows for root node(s)
+    # See if we need to manually add rows for root node(s)
     miss = swc.parent_id.unique()
     miss = miss[~np.isin(miss, swc.node_id.values)]
     miss = miss[miss > -1]

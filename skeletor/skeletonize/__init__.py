@@ -29,7 +29,7 @@ is a quick summary:
 | function                                    | speed | robust | radii [^2] | mesh map [^3] | description                                        |
 | ------------------------------------------- | :---: | :----: | :--------: | :-----------: | ---------------------------------------------------|
 | `skeletor.skeletonize.by_wavefront()`       | ++++  | ++     | yes        | yes           | works well for tubular meshes                      |
-| `skeletor.skeletonize.by_wavefront_exact()` | +++   | ++     | yes        | no            | works well for tubular meshes                      |
+| `skeletor.skeletonize.by_wavefront_exact()` | +++   | ++     | yes        | yes           | works well for tubular meshes                      |
 | `skeletor.skeletonize.by_vertex_clusters()` | ++    | +      | no         | yes           | best with contracted meshes [^1]                   |
 | `skeletor.skeletonize.by_teasar()`          | +     | ++     | no         | yes           | works on mesh surface                              |
 | `skeletor.skeletonize.by_tangent_ball()`    | ++    | 0      | yes        | yes           | works with mesh normals                            |

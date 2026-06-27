@@ -208,7 +208,7 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
     radii = np.full((mesh.vertices.shape[0], waves), fill_value=np.nan)
 
     # Go over each connected component
-    with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress) as pbar:
+    with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress, leave=False) as pbar:
         for cc in G.connected_components():
             # Make a subgraph for this connected component
             SG = G.subgraph(cc)
