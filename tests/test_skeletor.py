@@ -1,3 +1,5 @@
+import pytest
+
 import skeletor as sk
 import trimesh as tm
 import networkx as nx
@@ -15,9 +17,27 @@ class TestPreprocessing:
                                 inplace=False)
         assert isinstance(fixed, tm.Trimesh)
 
-    def test_contraction(self):
-        cont = sk.pre.contract(sk.example_mesh(), epsilon=0.1)
+    @pytest.mark.parametrize('operator', ['cotangent', 'umbrella', 'robust'])
+    def test_contraction(self, operator):
+        if operator == 'robust':
+            pytest.importorskip('robust_laplacian')
+
+        m = sk.example_mesh()
+        # Use an aggressive epsilon - this is the setting that exposes
+        # numerical breakdown of the solve (vertices smearing out of bounds)
+        cont = sk.pre.contract(m, epsilon=1e-6, operator=operator,
+                               progress=False)
+
         assert isinstance(cont, tm.Trimesh)
+        # Vertices must stay finite (no NaN/inf leaking from the solve)
+        assert np.isfinite(cont.vertices).all()
+        # The contraction flow is contractive: vertices must not smear outside
+        # the input bounding box (allowing a small numerical margin)
+        diag = np.linalg.norm(m.bounds[1] - m.bounds[0])
+        assert (cont.vertices.min(axis=0) >= m.bounds[0] - 0.01 * diag).all()
+        assert (cont.vertices.max(axis=0) <= m.bounds[1] + 0.01 * diag).all()
+        # Contraction must actually make meaningful progress
+        assert cont.epsilon < 0.5
 
 
 class TestSkeletonization:

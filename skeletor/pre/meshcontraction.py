@@ -16,11 +16,12 @@
 
 import logging
 import time
+import warnings
 
 import numpy as np
 import scipy as sp
 
-from scipy.sparse.linalg import lsqr
+from scipy.sparse.linalg import factorized
 from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh
@@ -33,8 +34,17 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 
-def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
-             SL=2, WH0=1, WL0='auto', operator='cotangent', progress=True,
+def _has_robust_laplacian():
+    """Check whether the optional ``robust_laplacian`` package is available."""
+    try:
+        import robust_laplacian  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def contract(mesh, epsilon=0.1, iter_lim=100, time_lim=None, precision=None,
+             SL=2, WH0=1, WL0='auto', operator='auto', progress=True,
              validate=True):
     """Contract mesh.
 
@@ -64,9 +74,21 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
                     strong contraction can be extremely costly with comparatively
                     little benefit for the subsequent skeletonization. Note that
                     the algorithm might stop short of this target if ``iter_lim``
-                    or ``time_lim`` is reached first or if the sum of face areas
-                    is increasing from one iteration to the next instead of
-                    decreasing.
+                    or ``time_lim`` is reached first or if the contraction
+                    becomes unstable (the sum of face areas increases or the
+                    bounding box grows from one iteration to the next).
+
+                    .. warning::
+
+                       Avoid pushing ``epsilon`` too low (the default ``0.1`` is
+                       plenty for skeletonization). The contraction reduces the
+                       total face area regardless of whether it is faithfully
+                       thinning the mesh or merely collapsing (often
+                       disconnected) regions onto their centroids. Very small
+                       ``epsilon`` therefore tends to *over-contract*: vertices
+                       get dragged past the medial axis and away from the
+                       original surface, which hurts rather than helps the
+                       subsequent skeletonization.
     iter_lim :      int (>1), optional
                     Maximum rounds of contractions.
     time_lim :      int, optional
@@ -74,11 +96,10 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
                     checked during but after each round of contraction. Hence,
                     the actual total time will likely overshoot ``time_lim``.
     precision :     float, optional
-                    Sets the precision for finding the least-square solution.
-                    This is the main determinant for speed vs quality: lower
-                    values will take (much) longer but will get you closer to an
-                    optimally contracted mesh. Higher values will be faster but
-                    the iterative contractions might stop early.
+                    DEPRECATED and ignored. The contraction now solves the
+                    normal equations directly (exact sparse factorization) so
+                    there is no iterative-solver tolerance to set. Passing a
+                    value will emit a deprecation warning.
     SL :            float, optional
                     Factor by which the contraction matrix is multiplied for
                     each iteration. Higher values = quicker contraction, lower
@@ -95,13 +116,21 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
                     default ("auto"), this will be set to ``1e-3 * sqrt(A)``
                     with ``A`` being the average face area. This ensures that
                     contraction forces scale with the coarseness of the mesh.
-    operator :      "cotangent" | "umbrella"
+    operator :      "auto" | "robust" | "cotangent" | "umbrella"
                     Which Laplacian operator to use:
 
-                      - The "cotangent" operator (default) takes both topology
-                        and geometry of the mesh into account and is hence a
-                        better descriptor of the curvature flow. This is the
-                        operator used in the original paper.
+                      - "auto" (default) uses "robust" if the optional
+                        ``robust_laplacian`` package is installed and falls back
+                        to "cotangent" otherwise.
+                      - The "robust" operator uses the intrinsic mollified
+                        Laplacian of Sharp & Crane (via ``robust_laplacian``).
+                        It is well-defined even on non-manifold and degenerate
+                        meshes and is the recommended choice for the messy
+                        meshes this package typically deals with.
+                      - The "cotangent" operator takes both topology and
+                        geometry of the mesh into account and is hence a good
+                        descriptor of the curvature flow. This is the operator
+                        used in the original paper.
                       - The "umbrella" operator (aka "uniform weighting") uses
                         only topological features of the mesh. This also makes
                         it more robust against flaws in the mesh! Use it when
@@ -127,35 +156,54 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
         contraction. ACM Transactions on Graphics (TOG). 2008 Aug 1;27(3):44.
 
     """
-    assert operator in ('cotangent', 'umbrella')
+    # Resolve the operator (and check optional dependency for "robust")
+    if operator == 'auto':
+        operator = 'robust' if _has_robust_laplacian() else 'cotangent'
+        if operator == 'cotangent':
+            logger.info("`robust_laplacian` not installed - falling back to "
+                        "the 'cotangent' operator. Install it with "
+                        "`pip install robust_laplacian` for better results on "
+                        "imperfect meshes.")
+    elif operator == 'robust' and not _has_robust_laplacian():
+        raise ImportError("operator='robust' requires the `robust_laplacian` "
+                          "package:\n  pip install robust_laplacian")
+    assert operator in ('robust', 'cotangent', 'umbrella')
+
+    if precision is not None:
+        warnings.warn("`precision` is deprecated and ignored: contract() now "
+                      "solves the normal equations directly instead of using an "
+                      "iterative least-squares solver.",
+                      DeprecationWarning, stacklevel=2)
+
+    if operator == 'robust':
+        import robust_laplacian
+
     start = time.time()
 
     # Force into trimesh
     m = make_trimesh(mesh, validate=validate)
     n = len(m.vertices)
 
-    # Initialize attraction weights
-    zeros = np.zeros((n, 3))
-    WH0_diag = np.zeros(n)
-    WH0_diag.fill(WH0)
-    WH0 = sp.sparse.spdiags(WH0_diag, 0, WH0_diag.size, WH0_diag.size)
-    # Make a copy but keep original values
-    WH = sp.sparse.dia_matrix(WH0)
+    # Initial per-vertex attraction weight (W_H) and the scalar contraction
+    # weight (W_L0). W_H anchors vertices to their current positions; W_L grows
+    # by SL each iteration and drives the curvature-flow contraction.
+    WH0 = np.full(n, float(WH0))
 
-    # Initialize contraction weights
     if WL0 == 'auto':
         WL0 = 1e-03 * np.sqrt(averageFaceArea(m))
-        #WL0 = 1.0 / 10.0 * np.sqrt(averageFaceArea(m))
-    WL_diag = np.zeros(n)
-    WL_diag.fill(WL0)
-    WL = sp.sparse.spdiags(WL_diag, 0, WL_diag.size, WL_diag.size)
+    WL0 = float(WL0)
 
     # Copy mesh
     dm = m.copy()
 
     area_ratios = [1.0]
-    originalRingAreas = getOneRingAreas(dm)
+    ring0 = None  # original one-ring areas; set on the first iteration
     goodvertices = dm.vertices
+    # The contraction flow is contractive, so the bounding box must shrink
+    # monotonically. A growing bbox (or non-finite vertices) signals numerical
+    # breakdown - which happens once `wl` grows so large that ``wl**2 * L.T@L``
+    # swamps ``diag(W_H**2)`` below float precision and the solve diverges.
+    prev_diag = np.linalg.norm(m.bounds[1] - m.bounds[0])
     bar_format = ("{l_bar}{bar}| [{elapsed}<{remaining}, "
                   "{postfix[0]}/{postfix[1]}it, "
                   "{rate_fmt}, epsilon {postfix[2]:.2g}")
@@ -164,49 +212,49 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
               disable=progress is False,
               postfix=[1, iter_lim, 1]) as pbar:
         for i in range(iter_lim):
-            # Get Laplace weights
-
-            if operator == 'cotangent':
-                L = laplacian_cotangent(dm, normalized=True)
+            # Compute the Laplace operator and per-vertex areas on the current
+            # geometry (faces are constant throughout)
+            if operator == 'robust':
+                # Intrinsic mollified Laplacian (Sharp & Crane). L is positive
+                # semi-definite; its sign is irrelevant here as the energy
+                # squares L. M is the (diagonal) lumped mass matrix.
+                L, M = robust_laplacian.mesh_laplacian(np.asarray(dm.vertices),
+                                                       np.asarray(dm.faces),
+                                                       mollify_factor=1e-3)
+                ring = M.diagonal()
+            elif operator == 'cotangent':
+                L = laplacian_cotangent(dm, normalized=False)
+                ring = getOneRingAreas(dm)
             else:
                 L = laplacian_umbrella(dm)
-            """
-            import robust_laplacian
-            L, M_ = robust_laplacian.mesh_laplacian(np.array(dm.vertices),
-                                                    np.array(dm.faces),
-                                                    mollify_factor=1e-3)
-            """
+                ring = getOneRingAreas(dm)
+
+            ring = np.clip(ring, a_min=1e-12, a_max=None)
+            # The first iteration runs on the original geometry - keep its areas
+            # as the reference for the attraction-weight update
+            if ring0 is None:
+                ring0 = ring
+
+            # Contraction weight grows by SL each iteration
+            wl = WL0 * SL ** i
+
+            # Attraction weights grow where the one-ring area has shrunk. Floor
+            # to keep the system positive-definite for collapsed vertices.
+            WH = np.maximum(WH0 * np.sqrt(ring0 / ring), 1e-6)
+
             V = getMeshVPos(dm)
-            A = sp.sparse.vstack([WL.dot(L), WH])
-            b = np.vstack((zeros, WH.dot(V)))
 
-            cpts = np.zeros((n, 3))
-            for j in range(3):
-                """
-                # Solve A*x = b
-                # Note that we force scipy's lsqr() to use current vertex
-                # positions as start points - this speeds things up and
-                # without it we get suboptimal solutions that lead to early
-                # termination
-                cpts[:, j] = lsqr(A, b[:, j],
-                                  atol=precision, btol=precision,
-                                  damp=1,
-                                  x0=dm.vertices[:, j])[0]
-                """
-                # The solution below is recommended in scipy's lsqr docstring
-                # for when we have an initial estimate
-                # Gives use the same results as above but is slightly faster
-
-                # Initial estimate (i.e. our current positions)
-                x0 = dm.vertices[:, j]
-                # Compute residual vector
-                r0 = b[:, j] - A * x0
-                # Use LSQR to solve the system
-                dx = lsqr(A, r0,
-                          atol=precision, btol=precision,
-                          damp=1)[0]
-                # Add the correction dx to obtain a final solution
-                cpts[:, j] = x0 + dx
+            # Solve the constrained least-squares problem
+            #   min  || wl * L * V' ||^2  +  || W_H * (V' - V) ||^2
+            # via its (symmetric positive-definite) normal equations
+            #   (wl^2 * L^T L + diag(W_H^2)) V' = diag(W_H^2) V
+            # One sparse factorization + three back-substitutions per iteration.
+            WH2 = WH ** 2
+            N = (wl ** 2) * (L.T @ L) + sp.sparse.diags(WH2)
+            solve = factorized(N.tocsc())
+            rhs = WH2[:, None] * V
+            cpts = np.column_stack([solve(np.ascontiguousarray(rhs[:, j]))
+                                    for j in range(3)])
 
             # Update mesh with new vertex position
             dm.vertices = cpts
@@ -215,16 +263,27 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
             if progress:
                 pbar.postfix[0] = i + 1
 
-            # Break if face area has increased compared to the last iteration
+            # Break if the contraction became unstable (bounding box grew or
+            # vertices went non-finite) or if the total face area increased
+            # compared to the last iteration. In all cases revert to the last
+            # known-good vertices.
             new_eps = dm.area / m.area
-            if (new_eps > area_ratios[-1]):
+            new_diag = np.linalg.norm(dm.bounds[1] - dm.bounds[0])
+            unstable = (not np.isfinite(cpts).all()
+                        or new_diag > prev_diag * 1.001)
+            if unstable or (new_eps > area_ratios[-1]):
                 dm.vertices = goodvertices
+                reason = ("Mesh became numerically unstable" if unstable
+                          else "Total face area increased from last iteration")
+                msg = (f"{reason}. Contraction stopped after {i} iterations at "
+                       f"epsilon {area_ratios[-1]:.2g}.")
+                if unstable:
+                    logger.info(msg)
                 if progress:
-                    tqdm.write("Total face area increased from last iteration."
-                               f" Contraction stopped prematurely after {i} "
-                               f"iterations at epsilon {area_ratios[-1]:.2g}.")
+                    tqdm.write(msg)
                 break
             area_ratios.append(new_eps)
+            prev_diag = new_diag
 
             # Update progress bar
             if progress:
@@ -233,15 +292,6 @@ def contract(mesh, epsilon=1e-06, iter_lim=100, time_lim=None, precision=1e-07,
                 pbar.update(min(prog, 100-pbar.n))
 
             goodvertices = cpts
-
-            # Update contraction weights -> at each iteration the contraction
-            # forces increase to counteract the increased attraction forces
-            WL = sp.sparse.dia_matrix(WL.multiply(SL))
-
-            # Update attraction weights -> the smaller the one ring areas
-            # the higher the attraction forces
-            changeinarea = np.sqrt(originalRingAreas / getOneRingAreas(dm))
-            WH = sp.sparse.dia_matrix(WH0.multiply(changeinarea))
 
             # Stop if we reached our target contraction rate
             if (area_ratios[-1] <= epsilon):

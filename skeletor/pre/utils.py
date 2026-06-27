@@ -79,8 +79,11 @@ def laplacian_cotangent(mesh, normalized=False):
     ----------
     mesh :          trimesh.Trimesh
     normalized :    bool
-                    If True will (sort of) normalize the weights. This requires
-                    ``scikit-learn`` to be installed.
+                    If True will L2-normalize each row of the weights. This
+                    requires ``scikit-learn`` to be installed. Note this is only
+                    meant for visualization (see ``visualizeLaplaceWeights``);
+                    do NOT use it for contraction as it decouples the operator's
+                    magnitude from the mesh geometry.
 
     Returns
     -------
@@ -105,28 +108,19 @@ def laplacian_cotangent(mesh, normalized=False):
     a = mesh.face_angles[face_pairs[:, 0], a_ix]
     b = mesh.face_angles[face_pairs[:, 1], b_ix]
 
-    # Clip angles to prevent extreme weights
-    #a_min, a_max = np.deg2rad(1), np.deg2rad(179)
-    #a = np.clip(a, a_min=a_min, a_max=a_max)
-    #b = np.clip(b, a_min=a_min, a_max=a_max)
+    # Clip angles to prevent extreme/infinite weights from (near-)degenerate
+    # faces. Without this, angles of 0 or pi produce +/-inf cotangents which
+    # leak NaNs into the contraction solve. Clipping to [1, 179] degrees bounds
+    # the cotangents to roughly +/-57 and handles both ends cleanly.
+    #   1 / np.tan(np.deg2rad(1))   =  57   (sharp angle -> high weight)
+    #   1 / np.tan(np.deg2rad(179)) = -57   (flat angle  -> low weight)
+    a_min, a_max = np.deg2rad(1), np.deg2rad(179)
+    a = np.clip(a, a_min=a_min, a_max=a_max)
+    b = np.clip(b, a_min=a_min, a_max=a_max)
 
-    # Produce the cotangents
-    # The warning filter is for catching division by 0 warnings (see below)
-    with warnings.catch_warnings():
-        # Sharp angles give high weights:
-        # 1 / np.tan(np.deg2rad(1)) = 57
-        # Flat angles give low weights:
-        # 1 / np.tan(np.deg2rad(179)) = -57
-        warnings.simplefilter("ignore")
-        cota = 1 / np.tan(a)
-        cotb = 1 / np.tan(b)
-        data = cota + cotb
-
-        # If a face is fully collapsed angles a or b can be 0 -> in this case
-        # we have to make sure not to introduces infinite values
-        # -8165619676597685 is the value of 1 / np.tan(180) -> so the opposite
-        # of collapsed face
-        data[data == np.inf] = 8165619676597685
+    cota = 1 / np.tan(a)
+    cotb = 1 / np.tan(b)
+    data = cota + cotb
 
     # Generate rows and cols
     i = mesh.face_adjacency_edges[:, 0]

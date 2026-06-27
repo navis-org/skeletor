@@ -48,6 +48,11 @@ setup(
         'Programming Language :: Python :: 3.12',
     ],
     install_requires=requirements,
+    extras_require={
+        # Optional: intrinsic mollified Laplacian (Sharp & Crane) used by
+        # `skeletor.pre.contract(operator='robust')`.
+        'robust': ['robust_laplacian'],
+    },
     python_requires='>=3.8',
     include_package_data=True,
     zip_safe=False
