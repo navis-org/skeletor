@@ -229,13 +229,12 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
     radii = np.full((mesh.vertices.shape[0], waves), fill_value=np.nan)
 
     # Go over each connected component
+    n_total = G.vcount()
     with tqdm(desc='Skeletonizing', total=len(G.vs), disable=not progress, leave=False) as pbar:
         for cc in G.connected_components():
-            # Make a subgraph for this connected component
-            SG = G.subgraph(cc)
             cc = np.array(cc)
 
-            # Select seeds according to the number of waves
+            # Select seeds according to the number of waves (positions within cc)
             n_waves = min(waves, len(cc))
             pot_seeds = np.arange(len(cc))
             np.random.seed(1985)  # make seeds predictable
@@ -259,8 +258,19 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
                 seeds = np.random.choice(pot_seeds, size=n_waves, replace=False)
             seeds = seeds.astype(int)
 
-            # Get the distance between the seeds and all other nodes
-            dist = np.array(SG.distances(source=seeds, target=None, mode='all'))
+            # Get the distance between the seeds and all nodes in this component.
+            # A component spanning most of the graph would make G.subgraph fall back
+            # to copy-and-delete (a multi-GB copy of the whole graph -> swap on
+            # memory-limited nodes). For that case run BFS on G directly, restricted
+            # to cc (BFS scratch ~ component size anyway, no copy). Smaller
+            # components are subgraphed so the BFS scratch stays component-local.
+            dominant = len(cc) > 0.5 * n_total
+            if dominant:
+                dist = np.array(G.distances(source=list(cc[seeds]),
+                                            target=list(cc), mode='all'))
+            else:
+                SG = G.subgraph(cc, implementation="create_from_scratch")
+                dist = np.array(SG.distances(source=seeds, target=None, mode='all'))
 
             if step_size > 1:
                 mx = dist.flatten()
@@ -275,7 +285,15 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
                 for i in range(0, int(mx) + 1):
                     this_dist = this_wave == i
                     ix = np.where(this_dist)[0]
-                    SG2 = SG.subgraph(ix)
+                    # ix indexes positions within cc. Build the (small) ring
+                    # subgraph from the per-component SG so the cost stays local;
+                    # for the dominant component there is no SG so use G directly
+                    # (G ~ component there anyway). Induced connectivity of a ring
+                    # is identical either way.
+                    if dominant:
+                        SG2 = G.subgraph(cc[ix], implementation="create_from_scratch")
+                    else:
+                        SG2 = SG.subgraph(ix, implementation="create_from_scratch")
                     for cc2 in SG2.connected_components():
                         this_verts = cc[ix[cc2]]
                         this_center = mesh.vertices[this_verts].mean(axis=0)
