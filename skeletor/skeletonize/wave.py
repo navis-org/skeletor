@@ -27,6 +27,12 @@ from ..utilities import make_trimesh
 from .base import Skeleton
 from .utils import make_swc, reindex_swc, edges_to_graph
 
+try:
+    from fastremap import unique
+except ModuleNotFoundError:
+    from numpy import unique
+except BaseException:
+    raise
 __all__ = ['by_wavefront']
 
 # This flag determines whether we use inverse radii or edge lengths for the MST.
@@ -136,8 +142,7 @@ def by_wavefront(mesh,
 
     # Collapse vertices into nodes
     (node_centers,
-     vertex_to_node_map) = np.unique(centers_final,
-                                     return_inverse=True, axis=0)
+     vertex_to_node_map) = unique(centers_final, return_inverse=True, axis=0)
 
     # Map radii for individual vertices to the collapsed nodes
     # Using pandas is the fastest way here
