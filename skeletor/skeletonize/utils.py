@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 import trimesh as tm
 import scipy.sparse
+import scipy.sparse.csgraph
 import scipy.spatial
 
 
@@ -228,6 +229,70 @@ def make_swc(x, coords, reindex=True, validate=True):
         return swc, new_ids
 
     return swc
+
+
+def forest_to_swc(edges, coords, radii, n_nodes):
+    """Generate SWC table directly from a forest (i.e. one tree per component).
+
+    This is a fast alternative to the ``edges_to_graph`` -> ``make_swc`` ->
+    ``reindex_swc`` pipeline for the case where the edges already form a
+    spanning forest: each tree is rooted at its lowest node ID and oriented
+    child -> parent, and new node IDs are assigned in BFS order which
+    guarantees that parents have lower IDs than their children.
+
+    Parameters
+    ----------
+    edges :     (N, 2) array
+                Edge list describing a forest (no cycles!) over nodes
+                ``0..n_nodes-1``. Isolated nodes are allowed and become roots.
+    coords :    (n_nodes, 3) array
+                X/Y/Z locations of nodes.
+    radii :     (n_nodes, ) array
+                Radius for each node.
+    n_nodes :   int
+                Total number of nodes.
+
+    Returns
+    -------
+    swc :       pandas.DataFrame
+    new_ids :   (n_nodes, ) array
+                Maps original node IDs (positional) to re-indexed node IDs.
+
+    """
+    edges = np.asarray(edges, dtype=np.int64).reshape(-1, 2)
+    adj = scipy.sparse.coo_matrix((np.ones(len(edges)),
+                                   (edges[:, 0], edges[:, 1])),
+                                  shape=(n_nodes, n_nodes))
+    _, labels = scipy.sparse.csgraph.connected_components(adj, directed=False)
+
+    # First occurrence of each label = lowest node ID in that component
+    roots = np.unique(labels, return_index=True)[1]
+
+    # With unit weights this is effectively a BFS from all roots at once;
+    # because the graph is a forest the resulting orientation is unique
+    dist, pred, _ = scipy.sparse.csgraph.dijkstra(adj, directed=False,
+                                                  indices=roots,
+                                                  return_predecessors=True,
+                                                  min_only=True)
+
+    # Sorting by BFS depth puts parents before their children
+    order = np.argsort(dist, kind='stable')
+    new_ids = np.empty(n_nodes, dtype=np.int64)
+    new_ids[order] = np.arange(n_nodes)
+
+    parent_ord = pred[order].astype(np.int64)  # -9999 for roots/isolated nodes
+    parent_new = np.full(n_nodes, -1, dtype=np.int64)
+    has_parent = parent_ord >= 0
+    parent_new[has_parent] = new_ids[parent_ord[has_parent]]
+
+    swc = pd.DataFrame({'node_id': np.arange(n_nodes),
+                        'parent_id': parent_new,
+                        'x': coords[order, 0],
+                        'y': coords[order, 1],
+                        'z': coords[order, 2],
+                        'radius': radii[order]})
+
+    return swc, new_ids
 
 
 def reindex_swc(swc, inplace=False):

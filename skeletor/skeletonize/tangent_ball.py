@@ -24,7 +24,7 @@ import scipy.spatial
 import trimesh as tm
 
 from .base import Skeleton
-from .utils import edges_to_graph, make_swc, reindex_swc
+from .utils import forest_to_swc
 
 from ..utilities import make_trimesh
 
@@ -262,19 +262,15 @@ def by_tangent_ball(mesh):
     # Generate hierarchical tree
     tree = G.spanning_tree(weights=weights)
 
-    # Create a directed acyclic and hierarchical graph
-    G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
-                          nodes=np.arange(0, len(G.vs)),
-                          fix_tree=True,
-                          drop_disconnected=False)
-
-    # Generate the SWC table
-    swc = make_swc(G_nx, coords=centers, reindex=False)
-    swc['radius'] = radii[swc.node_id.values]
-    _, new_ids = reindex_swc(swc, inplace=True)
+    # Generate the SWC table (this orients the tree and re-indexes nodes such
+    # that parents always have lower IDs than their children)
+    swc, new_ids = forest_to_swc(np.array(tree.get_edgelist()),
+                                 coords=centers,
+                                 radii=radii,
+                                 n_nodes=len(G.vs))
 
     # Update vertex to node ID map
-    mesh_map = np.array([new_ids[n] for n in mesh_map])
+    mesh_map = new_ids[mesh_map]
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map,
                     method='tangent_ball')

@@ -25,7 +25,7 @@ from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh
 from .base import Skeleton
-from .utils import make_swc, reindex_swc, edges_to_graph
+from .utils import forest_to_swc
 
 try:
     from fastremap import unique
@@ -145,11 +145,19 @@ def by_wavefront(mesh,
      vertex_to_node_map) = unique(centers_final, return_inverse=True, axis=0)
 
     # Map radii for individual vertices to the collapsed nodes
-    # Using pandas is the fastest way here
-    node_radii = pd.DataFrame()
-    node_radii['node_id'] = vertex_to_node_map
-    node_radii['radius'] = radii_final
-    node_radii = node_radii.groupby('node_id').radius.apply(rad_agg_func).values
+    # (node IDs from unique() are contiguous 0..M-1, so the sorted groupby
+    # output aligns positionally with node IDs)
+    grouped = pd.Series(radii_final).groupby(vertex_to_node_map)
+    if callable(radius_agg):
+        node_radii = grouped.apply(rad_agg_func).values
+    else:
+        # Use pandas' cython-accelerated aggregations - these are much faster
+        # than .apply() which calls the aggregation function once per node
+        node_radii = {'mean': grouped.mean, 'max': grouped.max,
+                      'min': grouped.min, 'median': grouped.median,
+                      'percentile75': lambda: grouped.quantile(0.75),
+                      'percentile25': lambda: grouped.quantile(0.25),
+                      }[radius_agg]().values
 
     # Contract vertices
     G.contract_vertices(vertex_to_node_map)
@@ -184,19 +192,15 @@ def by_wavefront(mesh,
     # We need this to orient all edges towards the root
     tree = G.spanning_tree(weights=1 / weights)
 
-    # Create a directed acyclic and hierarchical graph
-    G_nx = edges_to_graph(edges=np.array(tree.get_edgelist()),
-                          nodes=np.arange(0, len(G.vs)),
-                          fix_tree=True,  # this makes sure graph is oriented
-                          drop_disconnected=False)
-
-    # Generate the SWC table
-    swc = make_swc(G_nx, coords=node_centers, reindex=False, validate=True)
-    swc['radius'] = node_radii[swc.node_id.values]
-    _, new_ids = reindex_swc(swc, inplace=True)
+    # Generate the SWC table (this orients the tree and re-indexes nodes such
+    # that parents always have lower IDs than their children)
+    swc, new_ids = forest_to_swc(np.array(tree.get_edgelist()),
+                                 coords=node_centers,
+                                 radii=node_radii,
+                                 n_nodes=len(G.vs))
 
     # Update vertex to node ID map
-    vertex_to_node_map = np.array([new_ids[n] for n in vertex_to_node_map])
+    vertex_to_node_map = new_ids[vertex_to_node_map]
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
                     method='wavefront')
