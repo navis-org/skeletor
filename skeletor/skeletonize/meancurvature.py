@@ -250,7 +250,16 @@ def _contract_and_remesh(m, epsilon, iter_lim, time_lim, SL, WH0, WL0,
             new = np.column_stack([solve(np.ascontiguousarray(rhs[:, j]))
                                    for j in range(3)])
 
-            if not np.isfinite(new).all():
+            # The flow is contractive, so a single step must never inflate the
+            # surface. A growing bounding box (or non-finite vertices) signals
+            # numerical breakdown - which happens once `wl` grows so large that
+            # ``wl**2 * L.T@L`` swamps ``diag(W_H**2)``, at which point the solve
+            # diverges and flings vertices far outside the original mesh. Bail
+            # out *before* applying the step so `pos`/`faces`/`parent` are left
+            # holding the last known-good state (same guard as `pre.contract`).
+            diag_before = np.linalg.norm(verts_c.max(axis=0) - verts_c.min(axis=0))
+            diag_after = np.linalg.norm(new.max(axis=0) - new.min(axis=0))
+            if not np.isfinite(new).all() or diag_after > diag_before * 1.001:
                 logger.info(f"Mean-curvature flow became unstable at iteration "
                             f"{i}. Stopping.")
                 break
@@ -339,9 +348,11 @@ def _collapse_short_edges(cm, used, parent, pos, faces, thresh):
     A.data[:] = 1
     A2 = (A @ A).tocsr()
     # Number of faces incident to each (undirected) edge.
+    # Note the `axis=1`: we sort each edge's two endpoints (not each column!) to
+    # canonicalise them as undirected edges before counting.
     fe = np.sort(np.concatenate([cm.faces[:, [0, 1]],
                                  cm.faces[:, [1, 2]],
-                                 cm.faces[:, [0, 2]]]), axis=0)
+                                 cm.faces[:, [0, 2]]]), axis=1)
     ue, fcnt = np.unique(fe, axis=0, return_counts=True)
     FC = sp.sparse.csr_matrix((np.concatenate([fcnt, fcnt]),
                               (np.concatenate([ue[:, 0], ue[:, 1]]),
