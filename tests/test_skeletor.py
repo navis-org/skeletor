@@ -4,6 +4,7 @@ import skeletor as sk
 import trimesh as tm
 import networkx as nx
 import numpy as np
+import scipy.spatial
 
 
 class TestPreprocessing:
@@ -64,6 +65,31 @@ class TestSkeletonization:
         assert len(s.mesh_map) == len(s.mesh.vertices)
         assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
+    @pytest.mark.parametrize('method,kwargs',
+                             [('by_vertex_clusters', {'sampling_dist': 200}),
+                              ('by_wavefront', {'waves': 1}),
+                              ('by_teasar', {'inv_dist': 200})])
+    def test_mesh_map_is_local(self, method, kwargs):
+        """Each vertex must map to a *nearby* node.
+
+        `np.isin(mesh_map, node_id)` - the check the other tests use - passes
+        for any permutation, so it happily accepted a mesh_map that was indexed
+        by cluster-discovery order rather than by vertex ID.
+        """
+        m = sk.example_mesh()
+        s = getattr(sk.skeletonize, method)(m, progress=False, **kwargs)
+
+        mapped = s.swc.set_index('node_id')[['x', 'y', 'z']].loc[s.mesh_map].values
+        d_mapped = np.linalg.norm(np.asarray(m.vertices) - mapped, axis=1)
+
+        tree = scipy.spatial.cKDTree(s.swc[['x', 'y', 'z']].values)
+        d_nearest = tree.query(np.asarray(m.vertices))[0]
+
+        # Nodes are collapsed clusters of vertices, so the mapped node need not
+        # be the closest one - but it must be in the same neighbourhood, not
+        # across the mesh
+        assert d_mapped.mean() < 3 * d_nearest.mean() + 1e-9
+
     def test_edge_collapse(self):
         s = sk.skeletonize.by_edge_collapse(sk.example_mesh())
 
@@ -80,6 +106,11 @@ class TestSkeletonization:
 
         assert len(s.mesh_map) == len(s.mesh.vertices)
         assert all(np.isin(s.mesh_map, s.swc.node_id.values))
+
+    def test_teasar_nothing_left(self):
+        """A `min_length` nothing can satisfy must say so, not IndexError."""
+        with pytest.raises(ValueError, match='min_length'):
+            sk.skeletonize.by_teasar(sk.example_mesh(), 500, min_length=1e9)
 
     def test_mean_curvature(self):
         s = sk.skeletonize.by_mean_curvature(sk.example_mesh(), progress=False)

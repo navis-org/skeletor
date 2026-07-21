@@ -26,7 +26,8 @@ import trimesh as tm
 from .base import Skeleton
 from .utils import forest_to_swc
 
-from ..utilities import make_trimesh
+from .. import _fastcore
+from ..utilities import make_trimesh, get_edges_unique
 
 # Interesting references:
 # - https://www.sciencedirect.com/science/article/pii/S037843710600464X
@@ -75,7 +76,7 @@ def visualize_normals(mesh, le='auto', show=True):
 def _make_normals(mesh, le='auto'):
     """Make path representing normals of the mesh for debugging."""
     if le == 'auto':
-        le = mesh.edges_unique_length.mean()
+        le = get_edges_unique(mesh, lengths=True)[1].mean()
 
     # Generate vertices
     vertices = np.append(mesh.vertices,
@@ -222,21 +223,50 @@ def by_tangent_ball(mesh):
         inv[looser_ix] = True
 
     # Now we need to collapse nodes into the remaining centers
-    G = ig.Graph(n=mesh.vertices.shape[0],
-                 edges=mesh.edges_unique,
-                 directed=False)
+    edges = get_edges_unique(mesh)
+    n_verts = mesh.vertices.shape[0]
+
+    # navis-fastcore can do all of the graph work below straight off the edge
+    # list; without it we need an igraph object
+    use_fastcore = _fastcore.has('connected_components_graph',
+                                 'geodesic_nearest_mesh',
+                                 'contract_vertices',
+                                 'minimum_spanning_tree')
+    G = None if use_fastcore else ig.Graph(n=n_verts, edges=edges,
+                                           directed=False)
 
     # Make sure that every connected component has at least one valid target
-    for cc in G.connected_components():
-        if not np.isin(cc, original_ind[~inv]).any():
-            inv[cc[0]] = False
-            centers[cc[0]] = mesh.vertices[cc[0]]
+    if use_fastcore:
+        # Each vertex is labelled with the lowest vertex ID in its component,
+        # which is exactly the vertex the fallback below picks as `cc[0]`
+        comp = _fastcore.fastcore.connected_components_graph(edges, n_verts)
+        roots, cix = np.unique(comp, return_inverse=True)
+        has_valid = np.bincount(cix, weights=~inv, minlength=len(roots)) > 0
+        orphaned = roots[~has_valid]
+        inv[orphaned] = False
+        centers[orphaned] = mesh.vertices[orphaned]
+    else:
+        for cc in G.connected_components():
+            if not np.isin(cc, original_ind[~inv]).any():
+                inv[cc[0]] = False
+                centers[cc[0]] = mesh.vertices[cc[0]]
 
     # For each invalidated vertex, find the closest vertex that is still valid
     # This works on unweighted edges but should be good enough - way faster
     # than a proper path search for sure
-    pairs = find_closest(G, sources=original_ind[inv],
-                         targets=original_ind[~inv])
+    sources, targets = original_ind[inv], original_ind[~inv]
+    if use_fastcore:
+        # Same hop distance `find_closest` uses. Note that ties are broken
+        # towards the lower vertex ID here whereas `find_closest` lets igraph's
+        # neighborhood order decide - the pick among equidistant targets is
+        # arbitrary either way. Sources that reach no target come back as -1 and
+        # are dropped, which is what `find_closest` does with them too.
+        _, nearest = _fastcore.fastcore.geodesic_nearest_mesh(
+            mesh.faces, n_vertices=n_verts, sources=sources, targets=targets)
+        found = nearest >= 0
+        pairs = np.vstack((sources[found], nearest[found])).T
+    else:
+        pairs = find_closest(G, sources=sources, targets=targets)
 
     # Generate a mesh vertex to skeleton node map
     mesh_map = original_ind.copy()
@@ -250,24 +280,33 @@ def by_tangent_ball(mesh):
     radii = radii[uni]
 
     # Contract vertices to nodes according to the mesh
-    G.contract_vertices(mesh_map, combine_attrs=None)
-
-    # This only drops duplicate and self-loop edges
-    G = G.simplify()
+    # (this only drops duplicate and self-loop edges)
+    if use_fastcore:
+        el = _fastcore.fastcore.contract_vertices(edges, mesh_map)
+    else:
+        G.contract_vertices(mesh_map, combine_attrs=None)
+        G = G.simplify()
+        el = np.array(G.get_edgelist())
+    el = np.asarray(el).reshape(-1, 2)
 
     # Generate weights between remaining centers
-    el = np.array(G.get_edgelist())
+    n_nodes = len(uni)
     weights = np.linalg.norm(centers[el[:, 0]] - centers[el[:, 1]], axis=1)
 
     # Generate hierarchical tree
-    tree = G.spanning_tree(weights=weights)
+    if use_fastcore:
+        keep = _fastcore.fastcore.minimum_spanning_tree(el, n_nodes,
+                                                        weights=weights)
+        tree_edges = el[keep]
+    else:
+        tree_edges = np.array(G.spanning_tree(weights=weights).get_edgelist())
 
     # Generate the SWC table (this orients the tree and re-indexes nodes such
     # that parents always have lower IDs than their children)
-    swc, new_ids = forest_to_swc(np.array(tree.get_edgelist()),
+    swc, new_ids = forest_to_swc(tree_edges,
                                  coords=centers,
                                  radii=radii,
-                                 n_nodes=len(G.vs))
+                                 n_nodes=n_nodes)
 
     # Update vertex to node ID map
     mesh_map = new_ids[mesh_map]

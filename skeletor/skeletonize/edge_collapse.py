@@ -22,7 +22,7 @@ import scipy.spatial
 
 from tqdm.auto import tqdm
 
-from ..utilities import make_trimesh
+from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
 from .utils import mst_over_mesh, edges_to_graph, make_swc
 
@@ -88,7 +88,7 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     # Shorthand faces and edges
     # We convert to arrays to (a) make a copy and (b) remove potential overhead
     # from these originally being trimesh TrackedArrays
-    edges = np.array(mesh.edges_unique)
+    edges = np.array(get_edges_unique(mesh))
     verts = np.array(mesh.vertices)
 
     # For cost calculations we will normalise coordinates

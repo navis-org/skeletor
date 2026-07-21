@@ -24,7 +24,8 @@ from tqdm.auto import tqdm
 from itertools import combinations
 from scipy.spatial import cKDTree
 
-from ..utilities import make_trimesh
+from .. import _fastcore
+from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
 
 try:
@@ -145,12 +146,19 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     if step_size <= 0:
         raise ValueError("`step_size` must be > 0")
 
+    # Plain ndarray view of the vertices. Indexing `mesh.vertices` directly
+    # hands back trimesh TrackedArrays, and every subsequent arithmetic op on
+    # one of those pays for a `__array_wrap__` call - which adds up fast in the
+    # per-wavefront loop below.
+    verts = np.asarray(mesh.vertices)
+
     # Generate Graph (must be undirected)
-    G = ig.Graph(edges=mesh.edges_unique, directed=False)
-    G.es["weight"] = mesh.edges_unique_length
+    edges_unique, edges_unique_length = get_edges_unique(mesh, lengths=True)
+    G = ig.Graph(edges=edges_unique, directed=False)
+    G.es["weight"] = edges_unique_length
 
     # For each edge, track which faces in the mesh it belong to
-    edge2face = [[] for _ in range(len(mesh.edges_unique))]
+    edge2face = [[] for _ in range(len(edges_unique))]
     for i, f in enumerate(mesh.faces_unique_edges):
         for e in f:
             edge2face[e].append(i)
@@ -210,7 +218,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             if mx < step_size:
                 # All vertices in this component collapse to that single node
                 mesh_map[cc] = len(centers)
-                centers.append(mesh.vertices[cc[seed]])
+                centers.append(verts[cc[seed]])
                 radii.append(0)
                 parents.append(-1)
                 continue
@@ -239,8 +247,8 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             ).T
 
             # For each edge calculate the unit vector from proximal -> distal vertex
-            edges_prox_pos = mesh.vertices[cc][edges_srt[:, 0]]
-            edges_distal_pos = mesh.vertices[cc][edges_srt[:, 1]]
+            edges_prox_pos = verts[cc][edges_srt[:, 0]]
+            edges_distal_pos = verts[cc][edges_srt[:, 1]]
             edges_vect_norm = edges_distal_pos - edges_prox_pos
             edges_vect_norm = (
                 edges_vect_norm / np.linalg.norm(edges_vect_norm, axis=1)[:, None]
@@ -364,16 +372,13 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             SG = SG.simplify()
 
             # Array with all vertex coordinates (old + new)
-            all_vertices = np.vstack([mesh.vertices[cc], new_vertices])
+            all_vertices = np.vstack([verts[cc], new_vertices])
 
-            # Now we need a graph containing only step-vertices
+            # Now we need to know which vertices are step-vertices
             all_step_nodes = np.concatenate(
                 [list(s) for s in nodes_at_stepsize.values()]
             )
-            SG.vs["is_step_node"] = np.isin(np.arange(0, len(SG.vs)), all_step_nodes)
-
-            # First generate a graph where there are no edges between nodes of a different distance from the seed
-            SG_no_across = SG.copy()
+            is_step_node = np.isin(np.arange(0, len(SG.vs)), all_step_nodes)
 
             # Map nodes to their step index (same integer indexing as `nodes_at_stepsize`)
             nodes2step = {n: d for d, nodes in nodes_at_stepsize.items() for n in nodes}
@@ -382,37 +387,64 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             dist_round = np.round(dist / step_size).astype(int)
             nodes2step.update(dict(zip(np.arange(len(dist_round)), dist_round)))
 
-            # Delete all edges that connect nodes of different distances
-            SG_no_across.delete_edges(
-                [
-                    i
-                    for i, e in enumerate(SG_no_across.get_edgelist())
-                    if nodes2step[e[0]] != nodes2step[e[1]]
-                ]
+            # We now want the groups of connected nodes that sit at the same
+            # distance from the seed, i.e. the connected components of the graph
+            # with all edges spanning two different distances removed.
+            step_of_node = np.array(
+                [nodes2step[n] for n in range(len(SG.vs))], dtype=np.int64
             )
+            sg_edges = np.asarray(SG.get_edgelist(), dtype=np.int64).reshape(-1, 2)
 
-            if False:
-                # Check for weakly connected components. Something like this:
-                # 0 - 1   5 - 7
-                # |   |   |   |
-                # 2 - 3 - 4 - 6
-                # where we would want to remove the connections between 3 and 4
-                # In practice this can lead to lots of side branches though
-                # which is why we are not doing this for now.
-                SG_no_across.delete_edges(SG_no_across.bridges())
+            if _fastcore.has("level_set_components"):
+                # A single DSU sweep that unions an edge only where its two
+                # endpoints agree on their step - no graph copy, no edge
+                # deletion pass, no separate component search.
+                front_ids, _ = _fastcore.fastcore.level_set_components(
+                    sg_edges, len(SG.vs), step_of_node
+                )
+            else:
+                # The same thing the long way round: copy the graph, delete
+                # every edge that spans two steps, then search for components.
+                SG_no_across = SG.copy()
+                SG_no_across.delete_edges(
+                    [
+                        i
+                        for i, e in enumerate(sg_edges)
+                        if step_of_node[e[0]] != step_of_node[e[1]]
+                    ]
+                )
+                front_ids = np.empty(len(SG.vs), dtype=np.int64)
+                for i, cc2 in enumerate(SG_no_across.connected_components()):
+                    front_ids[cc2] = i
 
-            # Because there should only be within-layer edges, we can iterate over all
-            # connected components in `SG_no_across` and collapse them into a single node
-            # at the center of the connected component
+            # Note: we could additionally check for weakly connected components.
+            # Something like this:
+            # 0 - 1   5 - 7
+            # |   |   |   |
+            # 2 - 3 - 4 - 6
+            # where we would want to remove the connections between 3 and 4.
+            # In practice this can lead to lots of side branches though which is
+            # why we are not doing this.
+
+            # Group the node IDs by wavefront. Both branches above number the
+            # fronts in order of first appearance scanning nodes low to high, so
+            # a stable sort recovers igraph's component order along with its
+            # ascending members.
+            order = np.argsort(front_ids, kind="stable")
+            ids_srt = front_ids[order]
+            starts = np.flatnonzero(np.r_[True, ids_srt[1:] != ids_srt[:-1]])
+            fronts = np.split(order, starts[1:])
+
+            # Now we collapse each wavefront into a single node at its center
             new_mapping = np.arange(
                 0, len(SG.vs)
-            )  # note: we're still mapping to SG, not SG_no_across!
+            )  # note: we're still mapping to SG, not the front IDs!
             this_centers = {}
             this_radii = {}
             edges_to_delete = []
-            for cc2 in SG_no_across.connected_components():
+            for cc2 in fronts:
                 # Subset cc2 to only step nodes (i.e. remove the "rounded" original nodes)
-                cc2_step = [n for n in cc2 if SG_no_across.vs[n]["is_step_node"]]
+                cc2_step = cc2[is_step_node[cc2]]
 
                 if not len(cc2_step):
                     # Connected components without a step node happen when there are normal
@@ -420,7 +452,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                     # We will manually disconnect these nodes.
                     for n in cc2:
                         edges_to_delete.extend(
-                            [e.index for e in SG.es.select(_source=n)]
+                            [e.index for e in SG.es.select(_source=int(n))]
                         )
                     continue
 
@@ -438,8 +470,8 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
                     # We will do this by mapping all nodes in `cc2` to the first node in `cc2`
                     new_mapping[cc2[1:]] = cc2[0]
 
-                this_centers[cc2[0]] = this_center
-                this_radii[cc2[0]] = this_radius
+                this_centers[int(cc2[0])] = this_center
+                this_radii[int(cc2[0])] = this_radius
 
             # Remove the spurious edges (need to do that first before simplifying)
             SG.delete_edges(np.unique(edges_to_delete))
@@ -466,22 +498,27 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             )
             SG = SG.simplify()
 
-            # Add properties before we delete vertices
-            SG.vs["center"] = [this_centers.get(v.index, None) for v in SG.vs]
-            SG.vs["radius"] = [this_radii.get(v.index, None) for v in SG.vs]
+            # Add properties before we delete vertices (which renumbers them).
+            # Note we index by plain integer rather than iterating `SG.vs`: that
+            # would build a throwaway `Vertex` object per vertex.
+            vids = range(SG.vcount())
+            SG.vs["center"] = [this_centers.get(i, None) for i in vids]
+            SG.vs["radius"] = [this_radii.get(i, None) for i in vids]
 
             # For debugging:
-            SG.vs["has_center"] = [v.index in this_centers for v in SG.vs]
-            SG.vs["step_dist"] = [nodes2step.get(v.index, None) for v in SG.vs]
-            SG.vs["position"] = [v for v in all_vertices]
+            SG.vs["has_center"] = [i in this_centers for i in vids]
+            SG.vs["step_dist"] = [nodes2step.get(i, None) for i in vids]
+            SG.vs["position"] = list(all_vertices)
 
             # Drop disconnected nodes (nodes will be disconnected because they got contracted)
-            SG.delete_vertices([v.index for v in SG.vs if len(v.neighbors()) == 0])
+            # The graph is simplified, so a zero degree means no neighbours.
+            SG.delete_vertices(np.flatnonzero(np.asarray(SG.degree()) == 0))
 
             # Last but not least: remove edges that do not connect nodes across adjacent
             # step distances. `step_dist` is an integer step index (see `nodes2step` above),
             # so neighbouring wavefronts differ by exactly 1.
-            edge_dists = np.array([SG.vs[e]["step_dist"] for e in SG.get_edgelist()])
+            edge_dists = np.asarray(SG.vs["step_dist"])[
+                np.asarray(SG.get_edgelist(), dtype=np.int64).reshape(-1, 2)]
             edge_dists_diff = np.abs(edge_dists[:, 0] - edge_dists[:, 1])
             edges_to_delete = np.where(edge_dists_diff != 1)[0]
 
@@ -521,7 +558,7 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
             orphans = cc[mesh_map[cc] == -1]
             if len(orphans):
                 cc_centers = np.vstack(SG.vs["center"])
-                d = mesh.vertices[orphans][:, None, :] - cc_centers[None, :, :]
+                d = verts[orphans][:, None, :] - cc_centers[None, :, :]
                 mesh_map[orphans] = offset + (d**2).sum(-1).argmin(1)
 
             radii.extend(SG.vs["radius"])
@@ -536,6 +573,6 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
     # skeleton node. Normally a no-op.
     still = np.where(mesh_map == -1)[0]
     if len(still):
-        mesh_map[still] = cKDTree(centers).query(mesh.vertices[still])[1]
+        mesh_map[still] = cKDTree(centers).query(verts[still])[1]
 
     return centers, np.array(radii), np.array(parents), mesh_map

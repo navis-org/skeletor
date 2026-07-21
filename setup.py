@@ -52,6 +52,9 @@ setup(
         # Optional: intrinsic mollified Laplacian (Sharp & Crane) used by
         # `skeletor.pre.contract(operator='robust')`.
         'robust': ['robust_laplacian'],
+        # Optional: Rust implementations of the graph primitives most methods
+        # are built on (see `skeletor._fastcore`). Same results, much faster.
+        'fast': ['navis-fastcore', 'fastremap'],
     },
     python_requires='>=3.8',
     include_package_data=True,

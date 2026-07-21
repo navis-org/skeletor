@@ -23,7 +23,8 @@ from scipy.spatial import cKDTree
 
 from tqdm.auto import tqdm
 
-from ..utilities import make_trimesh
+from .. import _fastcore
+from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
 from .utils import forest_to_swc
 
@@ -134,39 +135,36 @@ def by_wavefront(mesh,
 
     mesh = make_trimesh(mesh, validate=False)
 
-    centers_final, radii_final, G = _cast_waves(mesh, waves=waves,
-                                                origins=origins,
-                                                step_size=step_size,
-                                                rad_agg_func=rad_agg_func,
-                                                progress=progress)
+    edges = get_edges_unique(mesh)
+    n_verts = mesh.vertices.shape[0]
+
+    centers_final, radii_final = _cast_waves(mesh, edges,
+                                             waves=waves,
+                                             origins=origins,
+                                             step_size=step_size,
+                                             radius_agg=radius_agg,
+                                             rad_agg_func=rad_agg_func,
+                                             progress=progress)
 
     # Collapse vertices into nodes
     (node_centers,
      vertex_to_node_map) = unique(centers_final, return_inverse=True, axis=0)
+    n_nodes = len(node_centers)
 
     # Map radii for individual vertices to the collapsed nodes
     # (node IDs from unique() are contiguous 0..M-1, so the sorted groupby
     # output aligns positionally with node IDs)
-    grouped = pd.Series(radii_final).groupby(vertex_to_node_map)
-    if callable(radius_agg):
-        node_radii = grouped.apply(rad_agg_func).values
+    node_radii = _grouped_agg(radii_final, vertex_to_node_map,
+                              radius_agg, rad_agg_func)
+
+    # Contract vertices, dropping self loops and duplicate edges
+    if _fastcore.has('contract_vertices'):
+        el = _fastcore.fastcore.contract_vertices(edges, vertex_to_node_map)
     else:
-        # Use pandas' cython-accelerated aggregations - these are much faster
-        # than .apply() which calls the aggregation function once per node
-        node_radii = {'mean': grouped.mean, 'max': grouped.max,
-                      'min': grouped.min, 'median': grouped.median,
-                      'percentile75': lambda: grouped.quantile(0.75),
-                      'percentile25': lambda: grouped.quantile(0.25),
-                      }[radius_agg]().values
-
-    # Contract vertices
-    G.contract_vertices(vertex_to_node_map)
-
-    # Remove self loops and duplicate edges
-    G = G.simplify()
-
-    # Generate hierarchical tree
-    el = np.array(G.get_edgelist())
+        G = ig.Graph(n=n_verts, edges=edges, directed=False)
+        G.contract_vertices(vertex_to_node_map)
+        el = np.array(G.simplify().get_edgelist())
+    el = np.asarray(el).reshape(-1, 2)  # reshape catches the no-edges case
 
     if PRESERVE_BACKBONE:
         # Use the mean radius between vertices in an edge
@@ -189,15 +187,28 @@ def by_wavefront(mesh,
     else:
         weights = np.linalg.norm(node_centers[el[:, 0]] - node_centers[el[:, 1]], axis=1)
 
-    # We need this to orient all edges towards the root
-    tree = G.spanning_tree(weights=1 / weights)
+    # We need this to orient all edges towards the root. Note we want to *keep*
+    # the heavy edges, i.e. the maximum spanning tree.
+    # Heads-up: with several waves plenty of edges end up on exactly the same
+    # weight, and a maximum spanning tree is then not unique. The two branches
+    # below break those ties differently and can return trees that differ in a
+    # few percent of their edges - at identical total weight, so both are
+    # equally valid. Don't expect the skeletons to match edge for edge.
+    if _fastcore.has('minimum_spanning_tree'):
+        keep = _fastcore.fastcore.minimum_spanning_tree(el, n_nodes,
+                                                        weights=weights,
+                                                        maximize=True)
+        tree_edges = el[keep]
+    else:
+        G = ig.Graph(n=n_nodes, edges=el, directed=False)
+        tree_edges = np.array(G.spanning_tree(weights=1 / weights).get_edgelist())
 
     # Generate the SWC table (this orients the tree and re-indexes nodes such
     # that parents always have lower IDs than their children)
-    swc, new_ids = forest_to_swc(np.array(tree.get_edgelist()),
+    swc, new_ids = forest_to_swc(tree_edges,
                                  coords=node_centers,
                                  radii=node_radii,
-                                 n_nodes=len(G.vs))
+                                 n_nodes=n_nodes)
 
     # Update vertex to node ID map
     vertex_to_node_map = new_ids[vertex_to_node_map]
@@ -206,9 +217,62 @@ def by_wavefront(mesh,
                     method='wavefront')
 
 
-def _cast_waves(mesh, waves=1, origins=None, step_size=1,
-                rad_agg_func=np.mean, progress=True):
-    """Cast waves across mesh."""
+def _grouped_agg(values, ids, radius_agg, rad_agg_func):
+    """Aggregate `values` by group.
+
+    `ids` must be contiguous group IDs in ``[0, n_groups)`` with every ID
+    present, so the (sorted) groupby output aligns positionally with the IDs.
+    """
+    grouped = pd.Series(values).groupby(ids)
+
+    if callable(radius_agg):
+        return grouped.apply(rad_agg_func).values
+
+    # Use pandas' cython-accelerated aggregations - these are much faster than
+    # .apply() which calls the aggregation function once per group
+    return {'mean': grouped.mean, 'max': grouped.max,
+            'min': grouped.min, 'median': grouped.median,
+            'percentile75': lambda: grouped.quantile(0.75),
+            'percentile25': lambda: grouped.quantile(0.25),
+            }[radius_agg]().values
+
+
+def _pick_seeds(cc, waves, origins):
+    """Pick the wave origins for one connected component.
+
+    Returns seeds as positions *within* ``cc``.
+    """
+    n_waves = min(waves, len(cc))
+    pot_seeds = np.arange(len(cc))
+    np.random.seed(1985)  # make seeds predictable
+    # See if we can use any origins
+    if len(origins):
+        # Get those origins in this cc
+        in_cc = np.isin(origins, cc)
+        if any(in_cc):
+            # Map origins into cc
+            cc_map = dict(zip(cc, np.arange(0, len(cc))))
+            seeds = np.array([cc_map[o] for o in origins[in_cc]])
+        else:
+            seeds = np.array([])
+        if len(seeds) < n_waves:
+            remaining_seeds = pot_seeds[~np.isin(pot_seeds, seeds)]
+            seeds = np.append(seeds,
+                              np.random.choice(remaining_seeds,
+                                               size=n_waves - len(seeds),
+                                               replace=False))
+    else:
+        seeds = np.random.choice(pot_seeds, size=n_waves, replace=False)
+
+    return seeds.astype(int)
+
+
+def _cast_waves(mesh, edges, waves=1, origins=None, step_size=1,
+                radius_agg='mean', rad_agg_func=np.mean, progress=True):
+    """Cast waves across mesh.
+
+    Returns the per-vertex ring centers and radii, averaged over all waves.
+    """
     if not isinstance(origins, type(None)):
         if isinstance(origins, int):
             origins = [origins]
@@ -229,9 +293,112 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
     if step_size < 1:
         raise ValueError('`step_size` must be integer >= 1')
 
+    if _fastcore.has('connected_components_graph', 'geodesic_matrix_graph',
+                     'level_set_components'):
+        return _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
+                                    radius_agg, rad_agg_func, progress)
+
+    return _cast_waves_igraph(mesh, edges, waves, origins, step_size,
+                              rad_agg_func, progress)
+
+
+def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
+                         radius_agg, rad_agg_func, progress):
+    """`_cast_waves` backend using navis-fastcore. No graph object involved."""
+    fc = _fastcore.fastcore
+    verts = np.asarray(mesh.vertices)
+    n_verts = verts.shape[0]
+
+    # Prepare empty array to fill with centers
+    centers = np.full((n_verts, 3, waves), fill_value=np.nan)
+    radii = np.full((n_verts, waves), fill_value=np.nan)
+
+    # Level (i.e. binned distance from the seed) of every vertex, one row per
+    # wave. -1 marks vertices a wave never reached, which is exactly the value
+    # `level_set_components` treats as "excluded" rather than as a level of its
+    # own - so unreachable vertices can't fuse into a phantom ring.
+    labels = np.full((waves, n_verts), fill_value=-1, dtype=np.int64)
+
+    # Split into connected components. `connected_components_graph` labels each
+    # vertex with the lowest vertex ID in its component, so a stable sort on
+    # that label groups components in ascending ID order with their members
+    # sorted ascending too - the same order igraph produces, which keeps the
+    # seed selection below identical between the two backends.
+    comp = fc.connected_components_graph(edges, n_verts)
+    srt = np.argsort(comp, kind='stable')
+    comp_srt = comp[srt]
+    starts = np.flatnonzero(np.r_[True, comp_srt[1:] != comp_srt[:-1]])
+    ccs = np.split(srt, starts[1:])
+
+    # Go over each connected component
+    with tqdm(desc='Skeletonizing', total=n_verts, disable=not progress,
+              leave=False) as pbar:
+        for cc in ccs:
+            # Select seeds according to the number of waves (positions within cc)
+            seeds = _pick_seeds(cc, waves, origins)
+
+            # Get the distance between the seeds and all nodes in this
+            # component. Restricting `targets` to `cc` means only those columns
+            # are ever allocated, so this stays component-sized - no subgraph
+            # copy needed to keep the scratch space local.
+            dist = fc.geodesic_matrix_graph(edges, n_verts,
+                                            sources=cc[seeds], targets=cc)
+
+            # Unreachable comes back as -1. Within a component there shouldn't
+            # be any, but mask them before binning: `np.digitize` would happily
+            # sort -1 into the first bin alongside the seed itself.
+            unreachable = dist < 0
+
+            if step_size > 1:
+                mx = dist[~unreachable].max()
+                dist = np.digitize(dist, bins=np.arange(0, mx, step_size))
+
+            lvl = dist.astype(np.int64)
+            lvl[unreachable] = -1
+
+            # Components with fewer vertices than `waves` produce fewer rows;
+            # the remaining waves stay at -1 and are skipped below.
+            for w in range(lvl.shape[0]):
+                labels[w, cc] = lvl[w]
+
+            pbar.update(len(cc))
+
+    # Now collect the rings: for each wave, the connected components of every
+    # level set. Since mesh components are disjoint they can't be joined by an
+    # edge, so this runs across the whole mesh at once - one O(E) sweep per wave
+    # instead of a subgraph construction plus component search per level.
+    for w in range(waves):
+        ids, n_rings = fc.level_set_components(edges, n_verts, labels[w])
+
+        ix = np.flatnonzero(ids >= 0)
+        if not len(ix):
+            continue
+        ring = ids[ix]
+
+        # Ring centers: with contiguous ring IDs a bincount is the grouped mean
+        counts = np.bincount(ring, minlength=n_rings)
+        ring_centers = np.empty((n_rings, 3))
+        for k in range(3):
+            ring_centers[:, k] = np.bincount(ring, weights=verts[ix, k],
+                                             minlength=n_rings)
+        ring_centers /= counts[:, None]
+
+        # Ring radii: aggregate each vertex's distance to its ring's center
+        to_center = np.linalg.norm(verts[ix] - ring_centers[ring], axis=1)
+        ring_radii = _grouped_agg(to_center, ring, radius_agg, rad_agg_func)
+
+        centers[ix, :, w] = ring_centers[ring]
+        radii[ix, w] = ring_radii[ring]
+
+    # Get mean centers and radii over all the waves we casted
+    return np.nanmean(centers, axis=2), np.nanmean(radii, axis=1)
+
+
+def _cast_waves_igraph(mesh, edges, waves, origins, step_size,
+                       rad_agg_func, progress):
+    """`_cast_waves` backend using igraph."""
     # Generate Graph (must be undirected)
-    G = ig.Graph(edges=mesh.edges_unique, directed=False)
-    #G.es['weight'] = mesh.edges_unique_length
+    G = ig.Graph(n=mesh.vertices.shape[0], edges=edges, directed=False)
 
     # Prepare empty array to fill with centers
     centers = np.full((mesh.vertices.shape[0], 3, waves), fill_value=np.nan)
@@ -244,28 +411,7 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
             cc = np.array(cc)
 
             # Select seeds according to the number of waves (positions within cc)
-            n_waves = min(waves, len(cc))
-            pot_seeds = np.arange(len(cc))
-            np.random.seed(1985)  # make seeds predictable
-            # See if we can use any origins
-            if len(origins):
-                # Get those origins in this cc
-                in_cc = np.isin(origins, cc)
-                if any(in_cc):
-                    # Map origins into cc
-                    cc_map = dict(zip(cc, np.arange(0, len(cc))))
-                    seeds = np.array([cc_map[o] for o in origins[in_cc]])
-                else:
-                    seeds = np.array([])
-                if len(seeds) < n_waves:
-                    remaining_seeds = pot_seeds[~np.isin(pot_seeds, seeds)]
-                    seeds = np.append(seeds,
-                                      np.random.choice(remaining_seeds,
-                                                       size=n_waves - len(seeds),
-                                                       replace=False))
-            else:
-                seeds = np.random.choice(pot_seeds, size=n_waves, replace=False)
-            seeds = seeds.astype(int)
+            seeds = _pick_seeds(cc, waves, origins)
 
             # Get the distance between the seeds and all nodes in this component.
             # A component spanning most of the graph would make G.subgraph fall back
@@ -314,14 +460,18 @@ def _cast_waves(mesh, waves=1, origins=None, step_size=1,
             pbar.update(len(cc))
 
     # Get mean centers and radii over all the waves we casted
-    centers_final = np.nanmean(centers, axis=2)
-    radii_final = np.nanmean(radii, axis=1)
-
-    return centers_final, radii_final, G
+    return np.nanmean(centers, axis=2), np.nanmean(radii, axis=1)
 
 
 def dotprops(x, k=20):
     """Generate vectors and alpha from local neighborhood."""
+    if _fastcore.has('dotprops'):
+        # Same k convention (the point itself counts) and the same
+        # un-normalised scatter matrix, so `alpha` matches to ~1e-16. Note it
+        # also returns alpha=0 for a degenerate neighborhood where the SVD
+        # below divides by zero and yields NaN.
+        return _fastcore.fastcore.dotprops(x, k=k)
+
     # Checks and balances
     n_points = x.shape[0]
 

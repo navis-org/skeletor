@@ -30,6 +30,7 @@ Automatically installed with `pip`:
 - `ncollpyde`
 
 Optional because not strictly required for the core functions but  recommended:
+- [navis-fastcore](https://github.com/navis-org/fastcore-rs) for sizeable speed-ups with most methods: `pip3 install navis-fastcore`
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
 - [robust_laplacian](https://github.com/nmwsharp/robust-laplacians-py) for more robust Laplacian operators: `pip3 install robust_laplacian`
 - [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`

@@ -25,7 +25,7 @@ from scipy.sparse.linalg import factorized
 from scipy.spatial import cKDTree
 from tqdm.auto import tqdm
 
-from ..utilities import make_trimesh
+from ..utilities import make_trimesh, get_edges_unique
 from ..pre.meshcontraction import _has_robust_laplacian
 from ..pre.utils import (laplacian_cotangent, laplacian_umbrella,
                          averageFaceArea, getOneRingAreas)
@@ -207,7 +207,7 @@ def _contract_and_remesh(m, epsilon, iter_lim, time_lim, SL, WH0, WL0,
     # both derived from the *original* mesh so they stay on a fixed scale.
     ring0_mean = float(np.mean(getOneRingAreas(m)))
     ring0_mean = max(ring0_mean, 1e-12)
-    collapse_thresh = collapse_factor * float(np.mean(m.edges_unique_length))
+    collapse_thresh = collapse_factor * float(np.mean(get_edges_unique(m, lengths=True)[1]))
 
     full_area = m.area
     prev_ratio = 1.0
@@ -319,8 +319,7 @@ def _collapse_short_edges(cm, used, parent, pos, faces, thresh):
                 Edges shorter than this are collapsed.
 
     """
-    edges = cm.edges_unique
-    lengths = cm.edges_unique_length
+    edges, lengths = get_edges_unique(cm, lengths=True)
 
     short = np.where(lengths < thresh)[0]
     if not len(short):

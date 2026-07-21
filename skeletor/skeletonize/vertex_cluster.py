@@ -21,19 +21,47 @@ except ImportError:
 except BaseException:
     raise
 
-import networkx as nx
 import numpy as np
 import scipy.sparse
+import scipy.sparse.csgraph
 import scipy.spatial
 
 from tqdm.auto import tqdm
 
-from ..utilities import make_trimesh
+from .. import _fastcore
+from ..utilities import make_trimesh, get_edges_unique
 
 from .base import Skeleton
-from .utils import edges_to_graph, make_swc, dfs
+from .utils import edges_to_graph, make_swc
 
 __all__ = ['by_vertex_clusters']
+
+
+def _geodesic_clusters_scipy(edges, weights, n_nodes, max_dist, progress=True):
+    """Fallback for ``navis_fastcore.geodesic_clusters``.
+
+    Produces bit-identical labels, just one bounded Dijkstra per cluster
+    instead of a single sweep - so expect it to be ~100x slower.
+    """
+    adj = scipy.sparse.coo_matrix((weights, (edges[:, 0], edges[:, 1])),
+                                  shape=(n_nodes, n_nodes)).tocsr()
+
+    labels = np.full(n_nodes, -1, dtype=np.int64)
+    n_clusters = 0
+    with tqdm(desc='Clustering', total=n_nodes, disable=progress is False) as pbar:
+        for seed in range(n_nodes):
+            if labels[seed] >= 0:
+                continue
+            # Note the ball is grown through vertices earlier clusters already
+            # claimed, so each cluster stays a true ball around its seed
+            dist = scipy.sparse.csgraph.dijkstra(adj, directed=False,
+                                                 indices=seed, limit=max_dist)
+            take = (dist <= max_dist) & (labels < 0)
+            labels[take] = n_clusters
+            n_clusters += 1
+            pbar.update(int(take.sum()))
+
+    return labels, n_clusters
 
 
 def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True):
@@ -92,38 +120,23 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
     mesh = make_trimesh(mesh, validate=False)
 
     # Produce weighted edges
-    edges = np.concatenate((mesh.edges_unique,
-                            mesh.edges_unique_length.reshape(mesh.edges_unique.shape[0], 1)),
-                           axis=1)
+    edges_unique, edges_unique_length = get_edges_unique(mesh, lengths=True)
+    n_verts = mesh.vertices.shape[0]
 
-    # Generate Graph (must be undirected)
-    G = nx.Graph()
-    G.add_weighted_edges_from(edges)
+    # Group vertices into spatial clusters: walk the vertices in order, and for
+    # each one not yet claimed grow a cluster containing every vertex within
+    # `sampling_dist` geodesic distance of it that no earlier cluster took.
+    if _fastcore.has('geodesic_clusters'):
+        labels, n_clusters = _fastcore.fastcore.geodesic_clusters(
+            edges_unique, n_verts, sampling_dist, weights=edges_unique_length)
+    else:
+        labels, n_clusters = _geodesic_clusters_scipy(
+            edges_unique, edges_unique_length, n_verts, sampling_dist, progress)
 
-    # Run the graph traversal that groups vertices into spatial clusters
-    not_visited = set(G.nodes)
-    seen = set()
-    clusters = []
-    to_visit = len(not_visited)
-    with tqdm(desc='Clustering', total=len(not_visited), disable=progress is False) as pbar:
-        while not_visited:
-            # Pick a random node
-            start = not_visited.pop()
-            # Get all nodes in the geodesic vicinity
-            cl, seen = dfs(G, n=start, dist_traveled=0,
-                           max_dist=sampling_dist, seen=seen)
-            cl = set(cl)
-
-            # Append this cluster and track visited/not-visited nodes
-            clusters.append(cl)
-            not_visited = not_visited - cl
-
-            # Update  progress bar
-            pbar.update(to_visit - len(not_visited))
-            to_visit = len(not_visited)
-
-    # `clusters` is a list of sets -> let's turn it into list of arrays
-    clusters = [np.array(list(c)).astype(int) for c in clusters]
+    # Turn the labels into a list of vertex IDs per cluster
+    order = np.argsort(labels, kind='stable')
+    starts = np.flatnonzero(np.r_[True, labels[order][1:] != labels[order][:-1]])
+    clusters = np.split(order, starts[1:])
 
     # Get positions of clusters
     if cluster_pos == 'center':
@@ -140,7 +153,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
         cl_coords = np.array(cl_coords)
 
     # Generate edges
-    cl_edges = np.array(mesh.edges_unique)
+    cl_edges = np.array(get_edges_unique(mesh))
     if fastremap:
         mapping = {n: i for i, l in enumerate(clusters) for n in l}
         cl_edges = fastremap.remap(cl_edges, mapping, preserve_missing_labels=False, in_place=True)
@@ -181,14 +194,18 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
                        drop_disconnected=False, fix_tree=True)
 
     # Generate a mesh vertex -> skeleton vertex map
-    # Note that nodes are labeled by index of the cluster
-    vertex_to_node_map = [i for i, cl in enumerate(clusters) for n in cl]
+    # Note that nodes are labeled by index of the cluster. This has to be
+    # indexed *by vertex ID*: the clusters are discovered in traversal order, so
+    # concatenating them does not walk the vertices in order.
+    vertex_to_node_map = np.full(n_verts, -1, dtype=int)
+    for i, cl in enumerate(clusters):
+        vertex_to_node_map[cl] = i
 
     # Generate SWC
     swc, new_ids = make_swc(G, cl_coords, reindex=True, validate=False)
 
     # Update mesh map
-    vertex_to_node_map = np.array([new_ids[n] for n in vertex_to_node_map])
+    vertex_to_node_map = np.array([new_ids.get(n, -1) for n in vertex_to_node_map])
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
                     method='vertex_clusters')

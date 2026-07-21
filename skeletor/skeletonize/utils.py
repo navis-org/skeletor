@@ -31,6 +31,9 @@ import scipy.sparse
 import scipy.sparse.csgraph
 import scipy.spatial
 
+from .. import _fastcore
+from ..utilities import get_edges_unique
+
 
 def mst_over_mesh(mesh, verts, limit='auto'):
     """Generate minimum spanning tree by subsetting mesh to given vertices.
@@ -64,24 +67,37 @@ def mst_over_mesh(mesh, verts, limit='auto'):
 
     # Get some shorthands
     verts = mesh.vertices
-    edges = mesh.edges_unique
-    edge_lengths = mesh.edges_unique_length
-
-    # Produce adjacency matrix from edges and edge lengths
-    adj = scipy.sparse.coo_matrix((edge_lengths,
-                                   (edges[:, 0], edges[:, 1])),
-                                  shape=(verts.shape[0], verts.shape[0]))
 
     if limit == 'auto':
         distances = scipy.spatial.distance.pdist(verts[keep])
         limit = np.max(distances) * 3
 
     # Get geodesic distances between vertices
-    dist_matrix = scipy.sparse.csgraph.dijkstra(csgraph=adj, directed=False,
-                                                indices=keep, limit=limit)
+    if _fastcore.has('geodesic_matrix_mesh'):
+        # Note that we only ever allocate the `keep` columns here - scipy has no
+        # notion of targets and would materialise a (len(keep), len(verts))
+        # matrix for us to subset afterwards.
+        dist_matrix = _fastcore.fastcore.geodesic_matrix_mesh(
+            mesh.faces, vertices=verts, sources=keep, targets=keep,
+            limit=None if not np.isfinite(limit) else float(limit))
+        # Unreachable comes back as -1 where scipy uses infinity. The MST below
+        # reads anything non-positive as "no edge" but would take -1 at face
+        # value as a *negative* weight.
+        dist_matrix = np.where(dist_matrix < 0, np.inf,
+                               dist_matrix).astype(np.float64)
+    else:
+        edges, edge_lengths = get_edges_unique(mesh, lengths=True)
 
-    # Subset along second axis
-    dist_matrix = dist_matrix[:, keep]
+        # Produce adjacency matrix from edges and edge lengths
+        adj = scipy.sparse.coo_matrix((edge_lengths,
+                                       (edges[:, 0], edges[:, 1])),
+                                      shape=(verts.shape[0], verts.shape[0]))
+
+        dist_matrix = scipy.sparse.csgraph.dijkstra(csgraph=adj, directed=False,
+                                                    indices=keep, limit=limit)
+
+        # Subset along second axis
+        dist_matrix = dist_matrix[:, keep]
 
     # Get minimum spanning tree
     mst = scipy.sparse.csgraph.minimum_spanning_tree(dist_matrix, overwrite=True)

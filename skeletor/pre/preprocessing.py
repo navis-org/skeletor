@@ -21,7 +21,7 @@ import numpy as np
 import scipy as sp
 import trimesh as tm
 
-from ..utilities import make_trimesh
+from ..utilities import make_trimesh, get_edges_unique
 
 try:
     import fastremap
@@ -134,7 +134,7 @@ def merge_vertices(mesh, dist='auto', inplace=False):
     tree = sp.spatial.cKDTree(mesh.vertices)
 
     if dist == 'auto':
-        dist = mesh.edges_unique_length.mean() / 100
+        dist = get_edges_unique(mesh, lengths=True)[1].mean() / 100
 
     # Query tree
     pairs = tree.query_pairs(dist)

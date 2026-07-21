@@ -23,7 +23,7 @@ import numpy as np
 import scipy.spatial
 import pandas as pd
 
-from ..utilities import make_trimesh
+from ..utilities import make_trimesh, get_edges_unique
 
 
 def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
@@ -259,9 +259,10 @@ def recenter_vertices(s, mesh=None, inplace=False):
     # try harder to get strictly inside
     still_outside = ~coll.contains(final_pos)
     if still_outside.any():
+        edge_len = get_edges_unique(mesh, lengths=True)[1]
         push = (
-            mesh.edges_unique_length.mean() / 100
-            if mesh.edges_unique_length.size
+            edge_len.mean() / 100
+            if edge_len.size
             else 1e-4
         )  # for high-res meshes
         push = max(push, 1e-6)
@@ -401,7 +402,7 @@ def fix_outside_edges(
         if eps.lower() != "auto":
             raise ValueError("Invalid value for `eps`. Must be a number or 'auto'.")
         try:
-            mean_length = float(np.nanmean(mesh.edges_unique_length))
+            mean_length = float(np.nanmean(get_edges_unique(mesh, lengths=True)[1]))
         except Exception:
             mean_length = np.nan
         eps = (
