@@ -79,11 +79,11 @@ def laplacian_cotangent(mesh, normalized=False):
     ----------
     mesh :          trimesh.Trimesh
     normalized :    bool
-                    If True will L2-normalize each row of the weights. This
-                    requires ``scikit-learn`` to be installed. Note this is only
-                    meant for visualization (see ``visualizeLaplaceWeights``);
-                    do NOT use it for contraction as it decouples the operator's
-                    magnitude from the mesh geometry.
+                    If True will L2-normalize each row of the weights. Note this
+                    is only meant for visualization (see
+                    ``visualizeLaplaceWeights``); do NOT use it for contraction
+                    as it decouples the operator's magnitude from the mesh
+                    geometry.
 
     Returns
     -------
@@ -146,8 +146,15 @@ def laplacian_cotangent(mesh, normalized=False):
         W.setdiag(diag.flatten())
 
     if normalized:
-        from sklearn.preprocessing import normalize
-        W = normalize(W)
+        # L2-normalize each row (equivalent to sklearn.preprocessing.normalize)
+        counts = np.diff(W.indptr)
+        rows = np.repeat(np.arange(W.shape[0]), counts)
+        norms = np.sqrt(np.bincount(rows, weights=W.data ** 2,
+                                    minlength=W.shape[0]))
+        # Empty rows have a norm of 0 - leave them as they are
+        norms[norms == 0] = 1
+        W = W.copy()
+        W.data /= norms[rows]
 
     return W
 

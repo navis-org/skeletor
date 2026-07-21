@@ -23,7 +23,6 @@ Automatically installed with `pip`:
 - `numpy`
 - `pandas`
 - `scipy`
-- `scikit-learn`
 - `trimesh`
 - `tqdm`
 - `python-igraph`
