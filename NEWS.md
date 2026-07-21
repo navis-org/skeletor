@@ -1,5 +1,37 @@
 # News
 
+## 1.7.0 (2026-07-21)
+- fix: `by_vertex_clusters` produced a scrambled `mesh_map` - vertices were
+  mapped to essentially arbitrary skeleton nodes (mean distance to the assigned
+  node was ~100x the distance to the nearest one). The map was indexed by
+  cluster-discovery order rather than by vertex ID
+- fix: `by_vertex_clusters` clusters now hold the vertices within
+  `sampling_dist` geodesic distance of their seed, as documented. Previously
+  the distance was accumulated along whatever path the traversal happened to
+  take, which overshoots, so clusters were too large and skeletons too coarse.
+  Expect noticeably more nodes for a given `sampling_dist`
+- fix: `by_teasar` raised on meshes containing isolated vertices
+- `by_teasar` now raises a descriptive `ValueError` when `min_length` filters
+  out every path (or the mesh has no edges) instead of an opaque `IndexError`
+- `navis-fastcore` is now used to accelerate most methods if it is installed
+  (`pip install navis-fastcore`); without it skeletor falls back to equivalent
+  implementations
+  - affected: `by_wavefront` (~2x faster; no graph object is built at all),
+  `by_teasar` (~2x), `by_edge_collapse` (~2x), `by_tangent_ball` (~2x),
+  `by_vertex_clusters` (~4-5x), `by_wavefront_exact`, and the shared
+  mesh -> edge list conversion used by every method (~3.8x)
+  - results are the same either way except where the underlying problem has more
+  than one correct answer: `by_wavefront` with `waves > 1` produces many exactly
+  tied edge weights, and the two spanning tree implementations break those ties
+  differently (the trees have identical total weight). `by_teasar` with a small
+  `inv_dist` is similar - it zeroes the weights along each extracted path, and
+  equidistant routes are then resolved differently (2 of 5773 edges on the
+  example mesh, with identical node positions)
+
+## 1.6.1 (2026-07-16)
+- fixed `by_edge_collapse` method
+- general improvements to `by_wavefront` and `by_tangent_ball` methods
+
 ## 1.6.0 (2026-06-27)
 - new skeletonization method: `skeletor.skeletonize.by_mean_curvature`
 - `sk.skeletonize.by_wavefront_exact` now returns a `mesh_map` property in the `Skeleton` object
