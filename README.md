@@ -98,8 +98,8 @@ background are the fits for all the other methods, so you can compare them at a
 glance (note the shared, logarithmic time axis).
 
 [Benchmarks](benchmarks/skeletor_benchmark.ipynb)
-were run on an Apple M3 Max (36 Gb memory) with the optional `fastremap`
-dependency installed. Note some of these functions (e.g. contraction and
+were run on an Apple M3 Max (36 Gb memory) with the optional `fastremap` and
+`navis-fastcore` dependencies installed. Note some of these functions (e.g. contraction and
 TEASAR/vertex cluster skeletonization) can vary a lot in speed based on
 parameterization.
 
