@@ -25,7 +25,7 @@ from tqdm.auto import tqdm
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import make_swc, edges_to_graph
+from .utils import make_swc, edges_to_graph, group_by_label, split_by_label
 
 try:
     from fastremap import unique
@@ -254,13 +254,10 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
 
     # Split into connected components, largest first. `connected_components_graph`
     # labels each vertex with the lowest vertex ID in its component, so the
-    # stable sort reproduces igraph's ordering before we re-sort by size (which
-    # is stable too, so equal-sized components keep that order).
+    # grouping reproduces igraph's ordering before we re-sort by size (which is
+    # stable too, so equal-sized components keep that order).
     comp = fc.connected_components_graph(edges_unique, n_verts)
-    srt = np.argsort(comp, kind='stable')
-    comp_srt = comp[srt]
-    starts = np.flatnonzero(np.r_[True, comp_srt[1:] != comp_srt[:-1]])
-    ccs = sorted(np.split(srt, starts[1:]), key=len, reverse=True)
+    ccs = sorted(split_by_label(comp), key=len, reverse=True)
 
     # Group the edge list by component up front, so the loop below can take each
     # component's edges as a slice.
@@ -271,21 +268,15 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     # it measured ~29s of a 33s run on a 447k-vertex, 12463-component mesh,
     # against 4s for every fastcore call in this function put together.
     #
-    # An edge never spans components, so either endpoint labels it. The sort is
-    # stable, which keeps each component's edges in their original relative
+    # An edge never spans components, so either endpoint labels it. The grouping
+    # is stable, which keeps each component's edges in their original relative
     # order - `key_order`/`eids` below and the extracted paths are unchanged.
-    if len(edges_unique):
-        ecomp = comp[edges_unique[:, 0]]
-        esrt = np.argsort(ecomp, kind='stable')
-        edges_by_cc = edges_unique[esrt]
-        lengths_by_cc = edges_unique_length[esrt]
-        ecomp_srt = ecomp[esrt]
-        estarts = np.flatnonzero(np.r_[True, ecomp_srt[1:] != ecomp_srt[:-1]])
-        espan = dict(zip(ecomp_srt[estarts].tolist(),
-                         zip(estarts.tolist(),
-                             np.r_[estarts[1:], len(edges_by_cc)].tolist())))
-    else:
-        edges_by_cc, lengths_by_cc, espan = edges_unique, edges_unique_length, {}
+    ecomp = comp[edges_unique[:, 0]]
+    eorder, estarts, esizes = group_by_label(ecomp)
+    edges_by_cc = edges_unique[eorder]
+    lengths_by_cc = edges_unique_length[eorder]
+    espan = dict(zip(ecomp[eorder[estarts]].tolist(),
+                     zip(estarts.tolist(), (estarts + esizes).tolist())))
 
     # Reused across components; only the `cc` entries are ever set (and reset)
     glob2loc = np.full(n_verts, -1, dtype=np.int64)

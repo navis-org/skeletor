@@ -172,6 +172,75 @@ class TestSkeletonization:
         assert isinstance(s.get_graph(), nx.DiGraph)
 
 
+class TestUtils:
+    """`group_by_label` underpins component/cluster/wavefront grouping.
+
+    Its stability is what keeps the fastcore and igraph backends producing the
+    same component order, so it is worth pinning down directly rather than only
+    through the skeletonization results.
+    """
+
+    @pytest.mark.parametrize('labels', [
+        [],                                  # empty
+        [0],                                 # single item
+        [7, 7, 7],                           # one group, label != 0
+        [2, 0, 1, 0, 2, 1],                  # contiguous, interleaved
+        [50, 3, 50, 3, 999],                 # sparse labels
+        [-1, 5, -1, 5, -1],                  # negative labels (the -1 sentinel)
+        [0, 0, 0, 1],                        # unequal group sizes
+    ])
+    def test_group_by_label(self, labels):
+        from skeletor.skeletonize.utils import group_by_label, split_by_label
+
+        labels = np.asarray(labels, dtype=np.int64)
+        order, starts, sizes = group_by_label(labels)
+        groups = split_by_label(labels)
+
+        # Every item appears exactly once, and the runs tile `order`
+        assert sorted(order.tolist()) == list(range(len(labels)))
+        assert sizes.sum() == len(labels)
+        assert np.array_equal(starts, np.cumsum(np.r_[0, sizes])[:-1].astype(starts.dtype))
+
+        # Groups come out in ascending label order...
+        keys = labels[order[starts]] if len(starts) else np.zeros(0, dtype=labels.dtype)
+        assert np.array_equal(keys, np.unique(labels))
+
+        # ...and are stable: ascending item index within each group
+        for start, size in zip(starts, sizes):
+            run = order[start:start + size]
+            assert np.array_equal(run, np.sort(run))
+            assert len(np.unique(labels[run])) == 1
+
+        # `split_by_label` agrees with the run form, and with a naive reference
+        if len(labels):
+            assert [g.tolist() for g in groups] == [
+                np.flatnonzero(labels == k).tolist() for k in np.unique(labels)]
+            assert [g.tolist() for g in groups] == [
+                order[s:s + n].tolist() for s, n in zip(starts, sizes)]
+
+    def test_group_by_label_matches_igraph_components(self):
+        """The ordering invariant the two skeletonization backends share."""
+        pytest.importorskip('navis_fastcore')
+        import igraph as ig
+        from skeletor import _fastcore
+        from skeletor.skeletonize.utils import split_by_label
+        from skeletor.utilities import make_trimesh, get_edges_unique
+
+        m = make_trimesh(tm.util.concatenate(
+            [sk.example_mesh()] + [tm.creation.box().apply_translation([i * 5, 1e4, 0])
+                                   for i in range(15)]), validate=False)
+        edges = get_edges_unique(m)
+        n_verts = m.vertices.shape[0]
+
+        comp = _fastcore.fastcore.connected_components_graph(edges, n_verts)
+        ours = split_by_label(comp)
+        theirs = ig.Graph(n=n_verts, edges=edges, directed=False).connected_components()
+
+        assert len(ours) == len(theirs)
+        for a, b in zip(ours, theirs):
+            assert a.tolist() == sorted(b)
+
+
 class TestPostprocessing:
     def test_cleanup(self):
         mesh = sk.example_mesh()

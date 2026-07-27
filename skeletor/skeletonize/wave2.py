@@ -27,6 +27,7 @@ from scipy.spatial import cKDTree
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
+from .utils import split_by_label
 
 try:
     import fastremap
@@ -428,12 +429,9 @@ def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=Tr
 
             # Group the node IDs by wavefront. Both branches above number the
             # fronts in order of first appearance scanning nodes low to high, so
-            # a stable sort recovers igraph's component order along with its
-            # ascending members.
-            order = np.argsort(front_ids, kind="stable")
-            ids_srt = front_ids[order]
-            starts = np.flatnonzero(np.r_[True, ids_srt[1:] != ids_srt[:-1]])
-            fronts = np.split(order, starts[1:])
+            # the stable grouping recovers igraph's component order along with
+            # its ascending members.
+            fronts = split_by_label(front_ids)
 
             # Now we collapse each wavefront into a single node at its center
             new_mapping = np.arange(

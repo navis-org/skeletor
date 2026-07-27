@@ -26,7 +26,7 @@ from tqdm.auto import tqdm
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import forest_to_swc
+from .utils import forest_to_swc, group_by_label
 
 try:
     from fastremap import unique
@@ -321,15 +321,12 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     radii = np.full((n_verts, waves), fill_value=np.nan)
 
     # Split into connected components. `connected_components_graph` labels each
-    # vertex with the lowest vertex ID in its component, so a stable sort on
-    # that label groups components in ascending ID order with their members
-    # sorted ascending too - the same order igraph produces, which keeps the
-    # seed selection below identical between the two backends.
+    # vertex with the lowest vertex ID in its component, so grouping by that
+    # label yields components in ascending ID order with their members sorted
+    # ascending too - the same order igraph produces, which keeps the seed
+    # selection below identical between the two backends.
     comp = fc.connected_components_graph(edges, n_verts)
-    srt = np.argsort(comp, kind='stable')
-    comp_srt = comp[srt]
-    starts = np.flatnonzero(np.r_[True, comp_srt[1:] != comp_srt[:-1]])
-    sizes = np.diff(np.r_[starts, n_verts])
+    srt, starts, sizes = group_by_label(comp)
 
     # Pick each component's seeds, grouped by the wave they belong to.
     # Components with fewer vertices than `waves` yield fewer seeds; the

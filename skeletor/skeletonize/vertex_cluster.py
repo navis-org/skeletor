@@ -32,7 +32,7 @@ from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 
 from .base import Skeleton
-from .utils import edges_to_graph, make_swc
+from .utils import edges_to_graph, make_swc, split_by_label
 
 __all__ = ['by_vertex_clusters']
 
@@ -134,9 +134,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
             edges_unique, edges_unique_length, n_verts, sampling_dist, progress)
 
     # Turn the labels into a list of vertex IDs per cluster
-    order = np.argsort(labels, kind='stable')
-    starts = np.flatnonzero(np.r_[True, labels[order][1:] != labels[order][:-1]])
-    clusters = np.split(order, starts[1:])
+    clusters = split_by_label(labels)
 
     # Get positions of clusters
     if cluster_pos == 'center':

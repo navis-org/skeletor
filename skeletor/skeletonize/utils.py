@@ -35,6 +35,71 @@ from .. import _fastcore
 from ..utilities import get_edges_unique
 
 
+def group_by_label(labels):
+    """Group item indices by their label.
+
+    The workhorse behind "give me the vertices of each connected component"
+    (and of each cluster, and of each wavefront). Sorting by label puts every
+    group in one contiguous run, which is both cheaper than a per-group pass
+    over the whole array and the form the vectorized callers want.
+
+    Parameters
+    ----------
+    labels :    (N, ) array
+                One label per item. Need not be contiguous or start at zero.
+
+    Returns
+    -------
+    order :     (N, ) array
+                Item indices sorted by label. The sort is **stable**, so items
+                stay in ascending index order within a label - that is what
+                reproduces igraph's component ordering, and several call sites
+                rely on the two backends agreeing on it.
+    starts :    (n_groups, ) array
+                Where each group's run begins in ``order``, groups in ascending
+                label order.
+    sizes :     (n_groups, ) array
+                Length of each run. ``labels[order[starts]]`` gives the label
+                each run belongs to.
+
+    See Also
+    --------
+    :func:`split_by_label`
+                The same thing as a list of per-group index arrays.
+
+    """
+    labels = np.asarray(labels)
+    order = np.argsort(labels, kind='stable')
+    if not len(order):
+        empty = np.zeros(0, dtype=np.int64)
+        return order, empty, empty
+    srt = labels[order]
+    starts = np.flatnonzero(np.r_[True, srt[1:] != srt[:-1]])
+    return order, starts, np.diff(np.r_[starts, len(order)])
+
+
+def split_by_label(labels):
+    """Group item indices by their label, as a list of arrays.
+
+    The convenience form of :func:`group_by_label` for callers that loop over
+    groups rather than working on the runs directly.
+
+    Parameters
+    ----------
+    labels :    (N, ) array
+                One label per item.
+
+    Returns
+    -------
+    list of arrays
+                Item indices, one array per label, in ascending label order and
+                ascending index order within each group.
+
+    """
+    order, starts, _ = group_by_label(labels)
+    return np.split(order, starts[1:])
+
+
 def mst_over_mesh(mesh, verts, limit='auto'):
     """Generate minimum spanning tree by subsetting mesh to given vertices.
 
