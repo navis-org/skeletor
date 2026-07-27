@@ -1,5 +1,8 @@
 # News
 
+## 1.7.1 (2026-07-27)
+- fix: on heavily fragmented meshes `by_wavefront` was ~50x slower instead of ~13x faster, and `by_teasar` was ~2x slower instead of 3x faster on the fastcore path than with the standard igraph implementation
+
 ## 1.7.0 (2026-07-21)
 - fix: `by_vertex_clusters` produced a scrambled `mesh_map` - vertices were
   mapped to essentially arbitrary skeleton nodes (mean distance to the assigned
