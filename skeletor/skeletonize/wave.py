@@ -240,7 +240,12 @@ def _grouped_agg(values, ids, radius_agg, rad_agg_func):
 def _pick_seeds(cc, waves, origins):
     """Pick the wave origins for one connected component.
 
-    Returns seeds as positions *within* ``cc``.
+    Returns at most ``min(waves, len(cc))`` seeds, as positions *within* ``cc``.
+    Callers index the wave axis with the result, so that bound is part of the
+    contract, not an accident of how the seeds are drawn.
+
+    Without `origins` the RNG is re-seeded per call, which makes the result a
+    pure function of ``len(cc)`` - `_cast_waves_fastcore` leans on that.
     """
     n_waves = min(waves, len(cc))
     pot_seeds = np.arange(len(cc))
@@ -264,7 +269,9 @@ def _pick_seeds(cc, waves, origins):
     else:
         seeds = np.random.choice(pot_seeds, size=n_waves, replace=False)
 
-    return seeds.astype(int)
+    # More `origins` can land in one component than it has waves to run - keep
+    # the first, or the extras would spill past the end of the wave axis.
+    return seeds.astype(int)[:n_waves]
 
 
 def _cast_waves(mesh, edges, waves=1, origins=None, step_size=1,
@@ -313,12 +320,6 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     centers = np.full((n_verts, 3, waves), fill_value=np.nan)
     radii = np.full((n_verts, waves), fill_value=np.nan)
 
-    # Level (i.e. binned distance from the seed) of every vertex, one row per
-    # wave. -1 marks vertices a wave never reached, which is exactly the value
-    # `level_set_components` treats as "excluded" rather than as a level of its
-    # own - so unreachable vertices can't fuse into a phantom ring.
-    labels = np.full((waves, n_verts), fill_value=-1, dtype=np.int64)
-
     # Split into connected components. `connected_components_graph` labels each
     # vertex with the lowest vertex ID in its component, so a stable sort on
     # that label groups components in ascending ID order with their members
@@ -328,40 +329,76 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     srt = np.argsort(comp, kind='stable')
     comp_srt = comp[srt]
     starts = np.flatnonzero(np.r_[True, comp_srt[1:] != comp_srt[:-1]])
-    ccs = np.split(srt, starts[1:])
+    sizes = np.diff(np.r_[starts, n_verts])
 
-    # Go over each connected component
-    with tqdm(desc='Skeletonizing', total=n_verts, disable=not progress,
-              leave=False) as pbar:
-        for cc in ccs:
-            # Select seeds according to the number of waves (positions within cc)
-            seeds = _pick_seeds(cc, waves, origins)
+    # Pick each component's seeds, grouped by the wave they belong to.
+    # Components with fewer vertices than `waves` yield fewer seeds; the
+    # remaining waves simply never reach them. Seeds are collected as offsets
+    # into `srt`, i.e. `srt[start + s]` is the vertex `_pick_seeds` chose.
+    #
+    # Without `origins` the pick depends on nothing but the component's size, so
+    # memoise on that: a shattered mesh has tens of thousands of components but
+    # only a hundred-odd distinct sizes between them, and `_pick_seeds` is
+    # otherwise the most expensive thing left in this function.
+    seeds_per_wave = [[] for _ in range(waves)]
+    by_size = {} if not len(origins) else None
+    for start, size in zip(starts.tolist(), sizes.tolist()):
+        if by_size is None:
+            seeds = _pick_seeds(srt[start:start + size], waves, origins)
+        elif size not in by_size:
+            seeds = by_size[size] = _pick_seeds(np.arange(size), waves, origins)
+        else:
+            seeds = by_size[size]
+        for w, s in enumerate(seeds):
+            seeds_per_wave[w].append(start + s)
 
-            # Get the distance between the seeds and all nodes in this
-            # component. Restricting `targets` to `cc` means only those columns
-            # are ever allocated, so this stays component-sized - no subgraph
-            # copy needed to keep the scratch space local.
-            dist = fc.geodesic_matrix_graph(edges, n_verts,
-                                            sources=cc[seeds], targets=cc)
+    # Level (i.e. binned distance from its component's seed) of every vertex,
+    # one row per wave. -1 marks vertices a wave never reached, which is exactly
+    # the value `level_set_components` treats as "excluded" rather than as a
+    # level of its own - so unreachable vertices can't fuse into a phantom ring.
+    #
+    # Asking for those distances one component at a time is the obvious reading,
+    # and it is a trap: every `geodesic_matrix_graph` call rebuilds the CSR
+    # adjacency from the *whole* edge list, so it costs O(E) no matter how few
+    # vertices it is asked about, and a mesh that shatters into thousands of
+    # specks then pays O(components * E).
+    #
+    # So join one virtual node to all of a wave's seeds and search from that
+    # instead. Components are disjoint, so the only way into a vertex is via its
+    # own component's seed and a single whole-mesh BFS yields every distance at
+    # once - offset by the one hop out of the virtual node.
+    super_id = np.uint32(n_verts)
+    edges_u32 = np.asarray(edges).astype(np.uint32, copy=False)
+    labels = np.full((waves, n_verts), fill_value=-1, dtype=np.int64)
+    for w, seeds in enumerate(tqdm(seeds_per_wave, desc='Skeletonizing',
+                                   disable=not progress, leave=False)):
+        if not seeds:
+            continue
+        seeds = srt[seeds].astype(np.uint32)
+        spokes = np.column_stack((np.full_like(seeds, super_id), seeds))
+        d = fc.geodesic_matrix_graph(np.vstack((edges_u32, spokes)),
+                                     n_verts + 1,
+                                     sources=np.array([super_id]))[0, :n_verts]
+        # Unreachable comes back as -1; leave those at -1 rather than letting
+        # the offset shift them to -2.
+        reached = d >= 0
+        labels[w, reached] = d[reached].astype(np.int64) - 1
 
-            # Unreachable comes back as -1. Within a component there shouldn't
-            # be any, but mask them before binning: `np.digitize` would happily
-            # sort -1 into the first bin alongside the seed itself.
-            unreachable = dist < 0
+    unreachable = labels < 0
 
-            if step_size > 1:
-                mx = dist[~unreachable].max()
-                dist = np.digitize(dist, bins=np.arange(0, mx, step_size))
+    if step_size > 1 and n_verts:
+        # The binning, written out rather than done with `np.digitize` so that
+        # all components can be handled in one pass:
+        # `digitize(x, arange(0, mx, step_size))` is `x // step_size + 1`
+        # everywhere except the topmost bin, which absorbs everything from the
+        # last edge upwards. `mx` is the maximum over a whole component *and all
+        # of its waves* - matching how the igraph backend derives its bins.
+        mx = np.maximum.reduceat(labels.max(axis=0)[srt], starts)
+        cap = np.empty(n_verts, dtype=np.int64)
+        cap[srt] = np.repeat(-(-mx // step_size), sizes)  # ceil(mx / step_size)
+        labels = np.minimum(labels // step_size + 1, cap)
 
-            lvl = dist.astype(np.int64)
-            lvl[unreachable] = -1
-
-            # Components with fewer vertices than `waves` produce fewer rows;
-            # the remaining waves stay at -1 and are skipped below.
-            for w in range(lvl.shape[0]):
-                labels[w, cc] = lvl[w]
-
-            pbar.update(len(cc))
+    labels[unreachable] = -1
 
     # Now collect the rings: for each wave, the connected components of every
     # level set. Since mesh components are disjoint they can't be joined by an

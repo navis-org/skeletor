@@ -52,6 +52,43 @@ class TestSkeletonization:
             assert len(s.mesh_map) == len(s.mesh.vertices)
             assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
+    @pytest.mark.parametrize('waves,step_size', [(1, 1), (1, 3), (2, 1), (3, 4)])
+    @pytest.mark.parametrize('fragmented', [False, True])
+    def test_wave_backends_agree(self, waves, step_size, fragmented):
+        """The fastcore and igraph `_cast_waves` backends must not drift apart.
+
+        They are structurally very different - fastcore vectorizes over the
+        whole mesh, igraph loops per component - and several invariants keeping
+        them in step (component ordering, the per-component binning bounds) are
+        otherwise only asserted in comments. Levels are integer, so unlike the
+        spanning tree there is no tie-breaking slack to excuse a difference.
+        """
+        pytest.importorskip('navis_fastcore')
+
+        from skeletor.skeletonize import wave
+        from skeletor.utilities import make_trimesh, get_edges_unique
+
+        m = sk.example_mesh()
+        if fragmented:
+            # Lots of tiny components is the case that separates the two: it is
+            # what made the per-component backend quadratic in the first place.
+            m = tm.util.concatenate([m] + [tm.creation.box().apply_translation(
+                [i * 5, 1e4, 0]) for i in range(20)])
+        m = make_trimesh(m, validate=False)
+        edges = get_edges_unique(m)
+
+        kwargs = dict(origins=np.array([]), step_size=step_size)
+        fc_c, fc_r = wave._cast_waves_fastcore(m, edges, waves,
+                                               radius_agg='mean',
+                                               rad_agg_func=np.mean,
+                                               progress=False, **kwargs)
+        ig_c, ig_r = wave._cast_waves_igraph(m, edges, waves,
+                                             rad_agg_func=np.mean,
+                                             progress=False, **kwargs)
+
+        assert np.allclose(fc_c, ig_c, atol=1e-9, equal_nan=True)
+        assert np.allclose(fc_r, ig_r, atol=1e-9, equal_nan=True)
+
     def test_wave_exact(self):
         s = sk.skeletonize.by_wavefront_exact(sk.example_mesh(), step_size=50)
 
