@@ -90,7 +90,7 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
 
     edges_unique, edges_unique_length = get_edges_unique(mesh, lengths=True)
 
-    if not root:
+    if root is None:
         root = 0
 
     # The penalised-path loop re-weights the graph on every iteration (each
@@ -262,6 +262,31 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     starts = np.flatnonzero(np.r_[True, comp_srt[1:] != comp_srt[:-1]])
     ccs = sorted(np.split(srt, starts[1:]), key=len, reverse=True)
 
+    # Group the edge list by component up front, so the loop below can take each
+    # component's edges as a slice.
+    #
+    # Selecting them per component instead - the obvious reading - means one
+    # pass over the *whole* edge list per component, i.e. O(components * E). On
+    # a mesh that shatters into thousands of specks that dwarfs the actual work:
+    # it measured ~29s of a 33s run on a 447k-vertex, 12463-component mesh,
+    # against 4s for every fastcore call in this function put together.
+    #
+    # An edge never spans components, so either endpoint labels it. The sort is
+    # stable, which keeps each component's edges in their original relative
+    # order - `key_order`/`eids` below and the extracted paths are unchanged.
+    if len(edges_unique):
+        ecomp = comp[edges_unique[:, 0]]
+        esrt = np.argsort(ecomp, kind='stable')
+        edges_by_cc = edges_unique[esrt]
+        lengths_by_cc = edges_unique_length[esrt]
+        ecomp_srt = ecomp[esrt]
+        estarts = np.flatnonzero(np.r_[True, ecomp_srt[1:] != ecomp_srt[:-1]])
+        espan = dict(zip(ecomp_srt[estarts].tolist(),
+                         zip(estarts.tolist(),
+                             np.r_[estarts[1:], len(edges_by_cc)].tolist())))
+    else:
+        edges_by_cc, lengths_by_cc, espan = edges_unique, edges_unique_length, {}
+
     # Reused across components; only the `cc` entries are ever set (and reset)
     glob2loc = np.full(n_verts, -1, dtype=np.int64)
 
@@ -277,11 +302,12 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
             n_local = len(cc)
             glob2loc[cc] = np.arange(n_local)
 
-            # Subset the edge list to this component and localise the indices.
-            # Testing one endpoint suffices - an edge never spans components.
-            in_cc = glob2loc[edges_unique[:, 0]] >= 0
-            sub_edges = glob2loc[edges_unique[in_cc]]
-            w0 = edges_unique_length[in_cc]
+            # This component's edges, localised. `comp` labels every vertex with
+            # the lowest vertex ID in its component and `cc` is ascending, so
+            # `cc[0]` is that label and keys straight into `espan`.
+            lo, hi = espan[int(cc[0])]
+            sub_edges = glob2loc[edges_by_cc[lo:hi]]
+            w0 = lengths_by_cc[lo:hi]
             w = w0.copy()  # zeroed along each extracted path
 
             # Find root within component
