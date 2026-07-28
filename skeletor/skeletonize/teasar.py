@@ -17,7 +17,6 @@
 import igraph as ig
 import networkx as nx
 import numpy as np
-import scipy.sparse
 
 from scipy.sparse.csgraph import dijkstra
 from tqdm.auto import tqdm
@@ -93,12 +92,9 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
     if root is None:
         root = 0
 
-    # The penalised-path loop re-weights the graph on every iteration (each
-    # extracted path is zeroed so it can be re-traversed for free), so there is
-    # nothing to cache between searches - which is exactly what fastcore's
-    # edge-list API suits.
-    if _fastcore.has('connected_components_graph', 'geodesic_matrix_graph',
-                     'geodesic_path'):
+    if _fastcore.has('connected_components_graph',
+                     'GeodesicGraph.path', 'GeodesicGraph.distances',
+                     'GeodesicGraph.ball', 'GeodesicGraph.set_weights'):
         edges, mesh_map = _invalidate_fastcore(mesh, edges_unique,
                                                edges_unique_length, inv_dist,
                                                min_length, root, progress)
@@ -240,11 +236,26 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
                          min_length, root, progress):
     """TEASAR path extraction + invalidation, using navis-fastcore.
 
-    Same algorithm as :func:`_invalidate_igraph`, but the graph is never
-    materialised: each component is a slice of the edge list plus a weight
-    vector we zero out in place as paths are extracted.
+    Same algorithm as :func:`_invalidate_igraph`, driven off two prepared
+    `GeodesicGraph`s per connected component. Both matter, and they are not
+    interchangeable:
+
+    - the *penalised* graph, which the loop re-weights as it goes. Each
+      extracted path is zeroed so later ones may re-traverse it for free, which
+      is what makes TEASAR pick branches rather than re-walk the trunk.
+      `set_weights` edits those few hundred arcs in place, where rebuilding the
+      graph to change them would cost O(E) per iteration - the very thing a
+      prepared graph is for.
+    - the *pristine* graph, over the original lengths, for the invalidation
+      radius. The igraph backend snapshots its adjacency for the same reason:
+      the ball around a path is measured on the mesh, not on the penalised
+      weights the path search sees.
+
+    The one behavioural difference from :func:`_invalidate_igraph` is which
+    equidistant path node a vertex is mapped to - see the `ball` call in the
+    loop below.
     """
-    fc = _fastcore.fastcore
+    fastcore = _fastcore.fastcore
     n_verts = mesh.vertices.shape[0]
     edges_unique = np.asarray(edges_unique)
     edges_unique_length = np.asarray(edges_unique_length, dtype=np.float64)
@@ -256,7 +267,7 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     # labels each vertex with the lowest vertex ID in its component, so the
     # grouping reproduces igraph's ordering before we re-sort by size (which is
     # stable too, so equal-sized components keep that order).
-    comp = fc.connected_components_graph(edges_unique, n_verts)
+    comp = fastcore.connected_components_graph(edges_unique, n_verts)
     ccs = sorted(split_by_label(comp), key=len, reverse=True)
 
     # Group the edge list by component up front, so the loop below can take each
@@ -270,7 +281,15 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     #
     # An edge never spans components, so either endpoint labels it. The grouping
     # is stable, which keeps each component's edges in their original relative
-    # order - `key_order`/`eids` below and the extracted paths are unchanged.
+    # order, so the extracted paths - and the `min_length` edge index below, when
+    # there is one - are unchanged.
+    #
+    # The graphs below are built per component rather than once for the whole
+    # mesh for the same reason the loop is per component: every array it carries
+    # (`paths`, `valid`) is indexed by local vertex, so a whole-mesh graph would
+    # make each of them n_verts wide and each sweep over them O(components *
+    # n_verts). Building per component is O(V + E) in total, since the components
+    # partition the mesh.
     ecomp = comp[edges_unique[:, 0]]
     eorder, estarts, esizes = group_by_label(ecomp)
     edges_by_cc = edges_unique[eorder]
@@ -297,94 +316,103 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
             # the lowest vertex ID in its component and `cc` is ascending, so
             # `cc[0]` is that label and keys straight into `espan`.
             lo, hi = espan[int(cc[0])]
-            sub_edges = glob2loc[edges_by_cc[lo:hi]]
+            sub_edges = glob2loc[edges_by_cc[lo:hi]].astype(np.uint32)
             w0 = lengths_by_cc[lo:hi]
-            w = w0.copy()  # zeroed along each extracted path
 
             # Find root within component
             this_root = int(glob2loc[root]) if glob2loc[root] >= 0 else 0
 
-            # Sorted (min, max) keys, so a path's edge IDs are one searchsorted
-            lo = np.minimum(sub_edges[:, 0], sub_edges[:, 1]).astype(np.int64)
-            hi = np.maximum(sub_edges[:, 0], sub_edges[:, 1]).astype(np.int64)
-            key_order = np.argsort(lo * n_local + hi)
-            key_sorted = (lo * n_local + hi)[key_order]
+            # The graph the loop re-weights, and a pristine one for the
+            # invalidation radius - see this function's docstring.
+            G = fastcore.GeodesicGraph(sub_edges, n_local, weights=w0)
+            G_orig = fastcore.GeodesicGraph(sub_edges, n_local, weights=w0)
 
-            # Adjacency for the invalidation search below. Built from the
-            # *original* lengths and never updated - as with the igraph version,
-            # which snapshots it before the weights start getting zeroed.
-            sp = scipy.sparse.coo_matrix(
-                (w0, (sub_edges[:, 0], sub_edges[:, 1])),
-                shape=(n_local, n_local)).tocsr()
+            # `min_length` is the only thing that needs the *length* of a path
+            # rather than the path itself, and the graph does not hand its
+            # weights back - so that one case shadows them here. Skip the whole
+            # apparatus when there is no `min_length` to test, which is the
+            # default.
+            if min_length:
+                w = w0.copy()  # kept in step with `G` alongside `set_weights`
+                # Sorted (min, max) keys, so a path's edge IDs are one searchsorted
+                keys = (np.minimum(sub_edges[:, 0], sub_edges[:, 1]).astype(np.int64)
+                        * n_local + np.maximum(sub_edges[:, 0], sub_edges[:, 1]))
+                key_order = np.argsort(keys)
+                key_sorted = keys[key_order]
 
-            # Get lengths of paths to all nodes from root
-            paths = fc.geodesic_matrix_graph(sub_edges, n_local, weights=w,
-                                             sources=[this_root])[0]
-            paths = paths.astype(np.float64)
+            # Get lengths of paths to all nodes from root. Left as the float32
+            # `distances` returns: `paths` is only ever argmaxed and zeroed, so
+            # widening it would double the bytes scanned to no end.
+            paths = G.distances(sources=[this_root])[0]
 
             # Prep array for invalidation. Anything unreachable is retired up
             # front: it can never be picked as `farthest`, so leaving it valid
             # would spin the loop forever.
             valid = paths >= 0
             paths[~valid] = 0
-            invalidated = int((~valid).sum())
+            invalidated = n_local - int(np.count_nonzero(valid))
 
-            while np.any(valid):
+            while invalidated < n_local:
                 # Find the farthest point
                 farthest = int(np.argmax(paths))
 
                 # Get path from root to farthest point, over the *current*
                 # weights - already-extracted stretches are free to re-traverse
-                path = fc.geodesic_path(sub_edges, n_local, this_root,
-                                        [farthest], weights=w)[0]
-                path = path.astype(np.int64)
+                path = G.path(this_root, [farthest])[0]
 
                 if not len(path):
                     valid[farthest] = False
                     paths[farthest] = 0
+                    invalidated += 1
+                    pbar.update(1)
                     continue
 
-                # Get IDs of edges along the path
-                a, b = path[:-1], path[1:]
-                q = np.minimum(a, b) * n_local + np.maximum(a, b)
-                eids = key_order[np.searchsorted(key_sorted, q)]
+                path_edges = np.column_stack((path[:-1], path[1:]))
 
                 # Stop if farthest point is closer than min_length
                 add = True
                 if min_length:
-                    # This should only be distance to the first branchpoint
-                    # from the tip since we set other weights to zero
-                    if w[eids].sum() < min_length:
-                        add = False
+                    # Get IDs of edges along the path. This should only be
+                    # distance to the first branchpoint from the tip since we
+                    # set other weights to zero
+                    q = (np.minimum(path_edges[:, 0], path_edges[:, 1]).astype(np.int64)
+                         * n_local + np.maximum(path_edges[:, 0], path_edges[:, 1]))
+                    eids = key_order[np.searchsorted(key_sorted, q)]
+                    add = w[eids].sum() >= min_length
 
                 if add:
                     # Add these new edges
-                    all_edges.append(np.vstack((cc[a], cc[b])).T)
-
-                # Invalidate points in the path
-                valid[path] = False
-                paths[path] = 0
+                    all_edges.append(cc[path_edges])
 
                 # Must set weights along path to 0 so that this path is
                 # taken again in future iterations
-                w[eids] = 0
+                G.set_weights(path_edges, 0.0)
+                if min_length:
+                    w[eids] = 0  # the shadow copy, kept in step right here
 
-                # Get all nodes within `inv_dist` to this path
-                dist, _, sources = dijkstra(sp, directed=False, indices=path,
-                                            limit=inv_dist, min_only=True,
-                                            return_predecessors=True)
+                # Get all nodes within `inv_dist` to this path, and which node of
+                # it each is nearest. Ties among equidistant path nodes break
+                # differently here than in `_invalidate_igraph`, which lets scipy
+                # decide - so a vertex sitting exactly between two of them can map
+                # to either. The pick is arbitrary in both.
+                #
+                # The path itself needs no separate retiring: every source comes
+                # back in `near` at distance 0.
+                near, _, sources = G_orig.ball(path, inv_dist)
 
-                # Invalidate
-                in_dist = dist <= inv_dist
-                to_invalidate = np.where(in_dist)[0]
-                valid[to_invalidate] = False
-                paths[to_invalidate] = 0
+                # Invalidate. Counting the still-valid ones *before* clearing them
+                # keeps the tally O(ball) rather than an O(n_local) rescan per
+                # iteration - which on a fine `inv_dist` is tens of thousands of
+                # sweeps over the whole component.
+                newly = int(np.count_nonzero(valid[near]))
+                invalidated += newly
+                valid[near] = False
+                paths[near] = 0
 
                 # Update mesh vertex to skeleton node map
-                mesh_map[cc[in_dist]] = cc[sources[in_dist]]
+                mesh_map[cc[near]] = cc[sources]
 
-                pbar.update((~valid).sum() - invalidated)
-                invalidated = int((~valid).sum())
+                pbar.update(newly)
 
             glob2loc[cc] = -1
 

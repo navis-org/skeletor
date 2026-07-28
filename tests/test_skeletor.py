@@ -149,6 +149,49 @@ class TestSkeletonization:
         with pytest.raises(ValueError, match='min_length'):
             sk.skeletonize.by_teasar(sk.example_mesh(), 500, min_length=1e9)
 
+    @pytest.mark.parametrize('inv_dist,min_length', [(500, None), (200, None),
+                                                     (500, 300)])
+    def test_teasar_backends_agree(self, inv_dist, min_length):
+        """The fastcore and igraph `_invalidate` backends must not drift apart.
+
+        The fastcore one drives two prepared `GeodesicGraph`s - one it
+        re-weights as it extracts paths, one pristine for the invalidation
+        radius - where the igraph one rebuilds a subgraph and hands scipy a
+        snapshot adjacency. Very different machinery for an algorithm whose
+        every step depends on the last, so the skeletons are pinned to each
+        other here rather than only to their own shape.
+
+        Only the *edges* are pinned. `mesh_map` is allowed to differ: a vertex
+        equidistant from two nodes of the path invalidating it goes to whichever
+        the underlying search settled first, which the two decide differently.
+        The vertices that do differ are checked to be plausible ties rather than
+        one backend picking a distant node - not proof of a geodesic tie, which
+        would mean re-running the invalidation search here, but enough to catch
+        a map that has gone wrong rather than merely gone the other way.
+        """
+        pytest.importorskip('navis_fastcore')
+
+        from skeletor.skeletonize import teasar
+        from skeletor.utilities import make_trimesh, get_edges_unique
+
+        def as_set(e):
+            return set(map(tuple, np.sort(e, axis=1)))
+
+        m = make_trimesh(sk.example_mesh(), validate=False)
+        edges, lengths = get_edges_unique(m, lengths=True)
+        args = (m, edges, lengths, inv_dist, min_length, 0, False)
+
+        fc_edges, fc_map = teasar._invalidate_fastcore(*args)
+        ig_edges, ig_map = teasar._invalidate_igraph(*args)
+
+        assert as_set(fc_edges) == as_set(ig_edges)
+
+        differ = np.flatnonzero(fc_map != ig_map)
+        v = np.asarray(m.vertices)
+        assert np.allclose(np.linalg.norm(v[differ] - v[fc_map[differ]], axis=1),
+                           np.linalg.norm(v[differ] - v[ig_map[differ]], axis=1))
+        assert len(differ) < 0.01 * len(fc_map)
+
     def test_mean_curvature(self):
         s = sk.skeletonize.by_mean_curvature(sk.example_mesh(), progress=False)
 

@@ -34,10 +34,12 @@ The two are equivalent but not always bit-identical, for two reasons:
    those ties differently, so `by_wavefront` with several waves can return trees
    that differ in a few percent of their edges - at identical total weight, so
    both are valid. `by_tangent_ball` likewise picks a different, equally
-   arbitrary target among equidistant ones. Individual call sites note these.
+   arbitrary target among equidistant ones, and `by_teasar` maps a vertex that
+   sits exactly between two nodes of the path invalidating it to either one
+   (~0.2% of vertices on the example mesh). Individual call sites note these.
 
 The primitives were added at different times, so testing that the module
-imports is not enough - each call site must check for the specific function it
+imports is not enough - each call site must check for the specific feature it
 wants via :func:`has`::
 
     from .. import _fastcore
@@ -46,6 +48,14 @@ wants via :func:`has`::
         ids, n = _fastcore.fastcore.level_set_components(edges, n_nodes, labels)
     else:
         ...  # igraph fallback
+
+Some of those features are methods rather than functions - ``GeodesicGraph`` is
+the same primitives with the per-call adjacency build hoisted out, for call sites
+that ask many small questions of one graph, and its methods likewise arrived at
+different times. :func:`has` takes a dotted name for those::
+
+    if _fastcore.has('GeodesicGraph.set_weights'):
+        ...
 
 """
 
@@ -65,14 +75,25 @@ def has(*funcs):
     Parameters
     ----------
     *funcs :    str
-                Names of the ``navis_fastcore`` functions required by the
-                caller.
+                Names of the ``navis_fastcore`` features required by the caller.
+                A dotted name walks into the attribute, so
+                ``'GeodesicGraph.set_weights'`` asks for the method rather than
+                just the class - which a call site needing it has to do, since
+                the class grew its methods at different times.
 
     Returns
     -------
     bool
 
     """
+    def resolve(name):
+        obj = fastcore
+        for part in name.split('.'):
+            obj = getattr(obj, part, None)
+            if obj is None:
+                return False
+        return True
+
     if fastcore is None:
         return False
-    return all(hasattr(fastcore, f) for f in funcs)
+    return all(resolve(f) for f in funcs)
