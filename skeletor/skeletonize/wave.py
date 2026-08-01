@@ -26,7 +26,7 @@ from tqdm.auto import tqdm
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import forest_to_swc, group_by_label
+from .utils import forest_to_swc, group_by_label, prep_origins
 
 try:
     from fastremap import unique
@@ -280,15 +280,7 @@ def _cast_waves(mesh, edges, waves=1, origins=None, step_size=1,
 
     Returns the per-vertex ring centers and radii, averaged over all waves.
     """
-    if not isinstance(origins, type(None)):
-        if isinstance(origins, int):
-            origins = [origins]
-        elif not isinstance(origins, (set, list)):
-            raise TypeError('`origins` must be vertex ID (int) or list '
-                            f'thereof, got "{type(origins)}"')
-        origins = np.asarray(origins).astype(int)
-    else:
-        origins = np.array([])
+    origins = prep_origins(origins)
 
     # Wave must be a positive integer >= 1
     waves = int(waves)

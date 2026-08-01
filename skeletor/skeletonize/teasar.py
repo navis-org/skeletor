@@ -15,7 +15,6 @@
 #    along with this program.
 
 import igraph as ig
-import networkx as nx
 import numpy as np
 
 from scipy.sparse.csgraph import dijkstra
@@ -24,7 +23,7 @@ from tqdm.auto import tqdm
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import make_swc, edges_to_graph, group_by_label, split_by_label
+from .utils import edges_to_swc, group_edges_by_component
 
 try:
     from fastremap import unique
@@ -116,13 +115,11 @@ def by_teasar(mesh, inv_dist, min_length=None, root=None, progress=True):
     # Make unique edges (paths will have overlapped!)
     edges = unique(edges, axis=0)
 
-    # Create a directed acyclic and hierarchical graph
-    G_nx = edges_to_graph(edges=edges[:, [1, 0]],
-                          fix_tree=True, fix_edges=False,
-                          weight=False)
-
-    # Generate the SWC table
-    swc, new_ids = make_swc(G_nx, coords=mesh.vertices, reindex=True)
+    # Generate the SWC table. The extracted paths overlap and can close cycles,
+    # so this has to break those as well as orient and re-index - which is what
+    # it does. Duplicate and reciprocal edges left by the `unique` above (it
+    # dedupes directed pairs) are tolerated.
+    swc, new_ids = edges_to_swc(edges, coords=mesh.vertices)
 
     # Update vertex to node ID map
     mesh_map = np.array([new_ids.get(n, -1) for n in mesh_map])
@@ -263,26 +260,10 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     all_edges = []
     mesh_map = np.full(n_verts, fill_value=-1)
 
-    # Split into connected components, largest first. `connected_components_graph`
-    # labels each vertex with the lowest vertex ID in its component, so the
-    # grouping reproduces igraph's ordering before we re-sort by size (which is
-    # stable too, so equal-sized components keep that order).
-    comp = fastcore.connected_components_graph(edges_unique, n_verts)
-    ccs = sorted(split_by_label(comp), key=len, reverse=True)
-
-    # Group the edge list by component up front, so the loop below can take each
-    # component's edges as a slice.
-    #
-    # Selecting them per component instead - the obvious reading - means one
-    # pass over the *whole* edge list per component, i.e. O(components * E). On
-    # a mesh that shatters into thousands of specks that dwarfs the actual work:
-    # it measured ~29s of a 33s run on a 447k-vertex, 12463-component mesh,
-    # against 4s for every fastcore call in this function put together.
-    #
-    # An edge never spans components, so either endpoint labels it. The grouping
-    # is stable, which keeps each component's edges in their original relative
-    # order, so the extracted paths - and the `min_length` edge index below, when
-    # there is one - are unchanged.
+    # Split into connected components, largest first. Components are labelled by
+    # their lowest vertex ID, so the grouping reproduces igraph's ordering before
+    # we re-sort by size (which is stable too, so equal-sized components keep
+    # that order).
     #
     # The graphs below are built per component rather than once for the whole
     # mesh for the same reason the loop is per component: every array it carries
@@ -290,12 +271,10 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
     # make each of them n_verts wide and each sweep over them O(components *
     # n_verts). Building per component is O(V + E) in total, since the components
     # partition the mesh.
-    ecomp = comp[edges_unique[:, 0]]
-    eorder, estarts, esizes = group_by_label(ecomp)
+    _, ccs, eorder, espan = group_edges_by_component(edges_unique, n_verts)
+    ccs = sorted(ccs, key=len, reverse=True)
     edges_by_cc = edges_unique[eorder]
     lengths_by_cc = edges_unique_length[eorder]
-    espan = dict(zip(ecomp[eorder[estarts]].tolist(),
-                     zip(estarts.tolist(), (estarts + esizes).tolist())))
 
     # Reused across components; only the `cc` entries are ever set (and reset)
     glob2loc = np.full(n_verts, -1, dtype=np.int64)
@@ -420,20 +399,3 @@ def _invalidate_fastcore(mesh, edges_unique, edges_unique_length, inv_dist,
              else np.zeros((0, 2), dtype=np.int64))
 
     return edges, mesh_map
-
-
-def find_far_points(G):
-    """Find the most distal points in the graph."""
-    # Use the first node in graph as seed
-    source = target = list(G.nodes)[0]
-    dist = 0
-    while True:
-        # Turn into a depth-first
-        tree = nx.bfs_tree(G, source=target)
-        lp = nx.dag_longest_path(tree, weight=None)
-        if len(lp) <= dist:
-            break
-        source, target = lp[0], lp[-1]
-        dist = len(lp)
-
-    return source, target

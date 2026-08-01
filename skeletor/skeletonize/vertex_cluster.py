@@ -32,7 +32,7 @@ from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 
 from .base import Skeleton
-from .utils import edges_to_graph, make_swc, split_by_label
+from .utils import edges_to_swc, split_by_label
 
 __all__ = ['by_vertex_clusters']
 
@@ -159,11 +159,14 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
         for i, c in enumerate(clusters):
             cl_edges[np.isin(cl_edges, c)] = i
 
-    # Remove directionality from cluster edges
-    cl_edges = np.sort(cl_edges, axis=1)
-
-    # Get unique edges
-    cl_edges = np.unique(cl_edges, axis=0)
+    # Remove directionality from cluster edges, then dedupe. Packing each pair
+    # into one int64 rather than `unique(axis=0)`, which takes a void-dtype view
+    # and lexsorts it - 140 ms of this function's 210 ms on a 105k-vertex mesh.
+    # `np.unique` returns sorted keys, so unpacking gives the same rows.
+    lo = np.minimum(cl_edges[:, 0], cl_edges[:, 1]).astype(np.int64)
+    hi = np.maximum(cl_edges[:, 0], cl_edges[:, 1]).astype(np.int64)
+    stride = int(cl_edges.max()) + 1
+    cl_edges = np.column_stack(np.divmod(np.unique(lo * stride + hi), stride))
 
     # Calculate edge lengths
     co1 = cl_coords[cl_edges[:, 0]]
@@ -187,10 +190,6 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
     # Extract edge list
     edges = np.array([coo.row, coo.col]).T
 
-    # Produce final graph - this also takes care of some fixing
-    G = edges_to_graph(edges, nodes=np.unique(cl_edges.flatten()),
-                       drop_disconnected=False, fix_tree=True)
-
     # Generate a mesh vertex -> skeleton vertex map
     # Note that nodes are labeled by index of the cluster. This has to be
     # indexed *by vertex ID*: the clusters are discovered in traversal order, so
@@ -199,8 +198,12 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
     for i, cl in enumerate(clusters):
         vertex_to_node_map[cl] = i
 
-    # Generate SWC
-    swc, new_ids = make_swc(G, cl_coords, reindex=True, validate=False)
+    # Generate SWC. This orients the tree (the MST above only picked which edges
+    # survive, not which way they point) and re-indexes so that parents always
+    # have lower IDs than their children. `nodes` keeps clusters that no surviving
+    # edge names, which would otherwise drop out of the skeleton entirely.
+    swc, new_ids = edges_to_swc(edges, cl_coords,
+                                nodes=np.unique(cl_edges.flatten()))
 
     # Update mesh map
     vertex_to_node_map = np.array([new_ids.get(n, -1) for n in vertex_to_node_map])

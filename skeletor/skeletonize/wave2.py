@@ -14,26 +14,21 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-import math
-
 import igraph as ig
 import numpy as np
 import pandas as pd
+import scipy.sparse
+import scipy.sparse.csgraph
 
 from tqdm.auto import tqdm
-from itertools import combinations
 from scipy.spatial import cKDTree
 
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import split_by_label
-
-try:
-    import fastremap
-except ModuleNotFoundError:
-    fastremap = None
-
+from .utils import (adjacency, connected_components, group_by_label,
+                    group_edges_by_component, prep_origins)
+from .wave import _grouped_agg
 
 __all__ = ["by_wavefront_exact"]
 
@@ -113,6 +108,7 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
         mesh,
         step_size=step_size,
         origins=origins,
+        radius_agg=radius_agg,
         rad_agg_func=rad_agg_func,
         progress=progress,
     )
@@ -129,448 +125,479 @@ def by_wavefront_exact(mesh, step_size, origins=None, radius_agg="mean", progres
     return Skeleton(swc=swc, mesh=mesh, mesh_map=mesh_map, method="wavefront_exact")
 
 
-def _cast_waves(mesh, step_size, origins=None, rad_agg_func=np.mean, progress=True):
-    """Cast waves across mesh."""
-    if not isinstance(origins, type(None)):
-        if isinstance(origins, int):
-            origins = [origins]
-        elif not isinstance(origins, (set, list)):
-            raise TypeError(
-                "`origins` must be vertex ID (int) or list "
-                f'thereof, got "{type(origins)}"'
-            )
-        origins = np.asarray(origins).astype(int)
+# -----------------------------------------------------------------------------
+# Graph primitives.
+#
+# `_cast_waves` below carries its graph as a plain edge list plus parallel
+# per-vertex arrays rather than as a graph object. That is what lets the
+# bookkeeping around it vectorize - it used to be the bulk of the runtime - and
+# it leaves only a handful of genuine graph questions, which these answer.
+#
+# Each has a navis-fastcore implementation and a fallback, and the two agree:
+# same partition, same tree, same distances. Only the primitives differ, not the
+# algorithm, so there is one implementation of `_cast_waves` to keep correct.
+# -----------------------------------------------------------------------------
+
+
+def _geodesic(edges, n_nodes, sources, weights=None):
+    """Geodesic distance from the nearest of `sources`, in float64.
+
+    The width is not incidental. `round(dist / step_size)` decides which
+    wavefront a vertex belongs to, and float32 Dijkstra drifts by ~5e-7 relative
+    over a few thousand hops - enough to put vertices in a neighbouring front.
+    That is a topology change, not a rounding wobble. At float64 fastcore and
+    scipy agree bit for bit, so the two backends give the same skeleton.
+
+    `weights=None` gives hop counts, i.e. breadth-first layers.
+    """
+    if _fastcore.has('geodesic_matrix_graph(dtype)'):
+        dist = _fastcore.fastcore.geodesic_matrix_graph(
+            edges, n_nodes, weights=weights, sources=sources, dtype=np.float64)
+        dist[dist < 0] = np.inf          # fastcore marks unreachable with -1
+        return dist.min(axis=0)
+
+    return scipy.sparse.csgraph.dijkstra(adjacency(edges, n_nodes, weights).tocsr(),
+                                         directed=False, indices=sources,
+                                         min_only=True)
+
+
+def _level_set_components(edges, n_nodes, labels):
+    """Connected components of every level set at once.
+
+    I.e. the components of the graph with all edges spanning two different labels
+    removed - which is what a wavefront is. Negative labels are excluded rather
+    than grouped (`_cast_waves` never produces one, but the two backends agree on
+    it either way).
+
+    The two number the components differently; only the partition is used.
+    """
+    if _fastcore.has('level_set_components'):
+        ids, n = _fastcore.fastcore.level_set_components(edges, n_nodes, labels)
+        return np.asarray(ids, dtype=np.int64), int(n)
+
+    ends = labels[edges]
+    within = (ends[:, 0] == ends[:, 1]) & (ends[:, 0] >= 0)
+    n, ids = scipy.sparse.csgraph.connected_components(
+        adjacency(edges[within], n_nodes), directed=False)
+    ids = ids.astype(np.int64)
+    ids[labels < 0] = -1
+    return ids, n
+
+
+def _contract(edges, mapping):
+    """Collapse nodes onto `mapping` and return the simplified edge list.
+
+    Self-loops (both ends in one group) and duplicates are dropped. The result is
+    sorted and deduplicated in *both* branches on purpose: `orient_forest` picks
+    among equal-depth parents by the order it meets them, so an edge list in a
+    different order would give a different - equally valid, but different - tree,
+    and the two backends would drift apart.
+    """
+    if _fastcore.has('contract_vertices'):
+        el = np.asarray(_fastcore.fastcore.contract_vertices(
+            edges, mapping.astype(np.uint32)))
     else:
-        origins = np.array([])
+        el = mapping[edges]
+    el = el.reshape(-1, 2).astype(np.int64)
+    el = el[el[:, 0] != el[:, 1]]
+    if not len(el):
+        return el
+    # Pack each (lo, hi) pair into one int64 and dedupe that. `unique(axis=0)`
+    # takes a void-dtype view and lexsorts it - 538 ms against 26 ms here at 1M
+    # rows, which is a quarter of the whole fallback. `np.unique` returns sorted
+    # keys, so unpacking gives the same lexicographically ordered rows.
+    lo = np.minimum(el[:, 0], el[:, 1])
+    hi = np.maximum(el[:, 0], el[:, 1])
+    keys = np.unique(lo * (int(el.max()) + 1) + hi)
+    return np.column_stack(np.divmod(keys, int(el.max()) + 1))
 
-    # Step size must be positive
+
+def _bfs_tree(edges, n_nodes, root):
+    """Breadth-first tree, breaking ties towards the lowest node ID.
+
+    Breadth-first because a depth-first walk mangles branch points, turning
+    ``0-1-2-3`` with ``4`` hanging off ``1`` into ``0-1-4-2-3``.
+
+    :func:`~skeletor.skeletonize.utils.orient_forest` gives *a* breadth-first
+    tree, but which one depends on the order its search happens to settle
+    equal-depth nodes in, and the two backends do not agree on that. The
+    contracted graph still holds cycles - only non-bridge edges were dropped - so
+    that choice decides which cycle edge gets broken, and the skeletons come out
+    differing by a few tenths of a percent of cable. Both are valid; neither is
+    more correct. Fixing the rule here is what makes the two interchangeable,
+    which matters because whether fastcore is installed is not something a user
+    should be able to see in their skeleton.
+
+    Depths are the part both backends already agree on: they are the breadth-first
+    layers, which are unique. Only the choice of parent *within* a layer is free,
+    and taking the lowest ID settles it.
+    """
+    if not len(edges):
+        return np.full(n_nodes, -1, dtype=np.int64)
+
+    # Named root, plus the lowest node of any component it cannot reach.
+    # `_components` labels each node with its component's lowest, so the labels
+    # *are* those fallback roots - no traversal needed to find them.
+    labels = connected_components(edges, n_nodes)
+    roots = np.unique(labels)
+    if root >= 0:
+        roots = np.append(roots[roots != labels[root]], root)
+    depth = _geodesic(edges, n_nodes, roots)
+
+    d_ends = depth[edges]
+    closer = d_ends[:, 0] < d_ends[:, 1]
+    child = np.where(closer, edges[:, 1], edges[:, 0])
+    parent = np.where(closer, edges[:, 0], edges[:, 1])
+    # Only edges between adjacent layers can be tree edges
+    step = np.abs(d_ends[:, 0] - d_ends[:, 1]) == 1
+    child, parent = child[step], parent[step]
+
+    parents = np.full(n_nodes, -1, dtype=np.int64)
+    if len(child):
+        # Lowest parent per child: sort, then take the first of each run
+        srt = np.lexsort((parent, child))
+        child, parent = child[srt], parent[srt]
+        first = np.flatnonzero(np.r_[True, child[1:] != child[:-1]])
+        parents[child[first]] = parent[first]
+    return parents
+
+
+def _bridges(edges, n_nodes):
+    """Mask of edges whose removal would disconnect their component."""
+    if _fastcore.has('bridges'):
+        return np.asarray(_fastcore.fastcore.bridges(edges, n_nodes), dtype=bool)
+
+    # No scipy equivalent, so igraph - which skeletor requires anyway - does it.
+    G = ig.Graph(n=n_nodes, edges=edges.tolist(), directed=False)
+    mask = np.zeros(len(edges), dtype=bool)
+    mask[G.bridges()] = True
+    return mask
+
+
+def _edge_to_face_csr(mesh, n_edges):
+    """Inverse of ``faces_unique_edges``: which faces each unique edge belongs to.
+
+    CSR rather than a padded (E, 2) array because a non-manifold edge can carry
+    more than two faces, and skeletor does not require manifold input.
+    """
+    fue = np.asarray(mesh.faces_unique_edges)
+    edge_ids = fue.ravel()
+    face_ids = np.repeat(np.arange(len(fue), dtype=np.int64), fue.shape[1])
+
+    # A counting sort, not `argsort`: the keys are bounded by `n_edges`, and the
+    # bucket offsets below are its first half anyway. scipy's `coo_tocsr` is that
+    # sort in C - 14 ms against 113 ms for the comparison sort at 2.6M keys.
+    indptr = np.zeros(n_edges + 1, dtype=np.int64)
+    np.cumsum(np.bincount(edge_ids, minlength=n_edges), out=indptr[1:])
+    indices = scipy.sparse.coo_matrix(
+        (face_ids + 1, (edge_ids, np.arange(len(edge_ids)))),
+        shape=(n_edges, len(edge_ids))).tocsr().data - 1
+    return indptr, indices
+
+
+def _pairs_within_groups(order, starts, sizes):
+    """Every unordered pair within each group, from `group_by_label` output.
+
+    Loops over the distinct group *sizes* - there are a handful - rather than
+    over the groups, of which there are hundreds of thousands.
+    """
+    out = []
+    for s in np.unique(sizes):
+        if s < 2:
+            continue
+        which = np.flatnonzero(sizes == s)
+        members = order[starts[which][:, None] + np.arange(s)[None, :]]
+        a, b = np.triu_indices(s, k=1)
+        out.append(np.column_stack((members[:, a].ravel(), members[:, b].ravel())))
+    if not out:
+        return np.zeros((0, 2), dtype=np.int64)
+    return np.vstack(out).astype(np.int64)
+
+
+def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
+                rad_agg_func=np.mean, progress=True):
+    """Cast waves across mesh.
+
+    Unlike :func:`skeletor.skeletonize.wave._cast_waves`, which hops from vertex
+    to vertex, the front here advances exactly ``step_size`` at a time: synthetic
+    vertices are inserted along mesh edges at every multiple of it, those sitting
+    on the same face at the same multiple are joined, and each resulting ring
+    collapses to its centre.
+
+    Returns
+    -------
+    centers :   (N, 3) array
+    radii :     (N, ) array
+    parents :   (N, ) array
+                Child -> parent, ``-1`` at the roots.
+    mesh_map :  (n_vertices, ) array
+                Skeleton node for each mesh vertex.
+
+    """
+    origins = prep_origins(origins)
+
     if step_size <= 0:
-        raise ValueError("`step_size` must be > 0")
+        raise ValueError('`step_size` must be > 0')
 
-    # Plain ndarray view of the vertices. Indexing `mesh.vertices` directly
-    # hands back trimesh TrackedArrays, and every subsequent arithmetic op on
-    # one of those pays for a `__array_wrap__` call - which adds up fast in the
-    # per-wavefront loop below.
+    # Plain ndarray view of the vertices. Indexing `mesh.vertices` directly hands
+    # back trimesh TrackedArrays, and every arithmetic op on one of those pays
+    # for a `__array_wrap__` call.
     verts = np.asarray(mesh.vertices)
+    n_verts = len(verts)
 
-    # Generate Graph (must be undirected)
     edges_unique, edges_unique_length = get_edges_unique(mesh, lengths=True)
-    G = ig.Graph(edges=edges_unique, directed=False)
-    G.es["weight"] = edges_unique_length
+    edges_unique = np.asarray(edges_unique, dtype=np.int64)
+    edges_unique_length = np.asarray(edges_unique_length, dtype=np.float64)
 
-    # For each edge, track which faces in the mesh it belong to
-    edge2face = [[] for _ in range(len(edges_unique))]
-    for i, f in enumerate(mesh.faces_unique_edges):
-        for e in f:
-            edge2face[e].append(i)
-    G.es["faces"] = [edge2face[i] for i in range(len(G.es))]
+    e2f_indptr, e2f_indices = _edge_to_face_csr(mesh, len(edges_unique))
 
-    # Prepare empty array to fill with centers
-    centers = []
-    radii = []
-    parents = []
+    # Accumulated per component and concatenated at the end, rather than one
+    # Python object appended per skeleton node
+    centers, radii, parents = [], [], []
+    n_nodes = 0
+    mesh_map = np.full(n_verts, -1, dtype=np.int64)
 
-    # Maps each mesh vertex to its skeleton node (filled in below). Final node
-    # IDs equal positions in `centers`, so we can assign these as we go.
-    mesh_map = np.full(mesh.vertices.shape[0], -1, dtype=int)
+    def emit_single(cc, vertex):
+        """Collapse a whole component onto one node at `vertex`."""
+        nonlocal n_nodes
+        mesh_map[cc] = n_nodes
+        centers.append(verts[vertex][None, :])
+        radii.append(np.zeros(1))
+        parents.append(np.full(1, -1, dtype=np.int64))
+        n_nodes += 1
 
-    # Go over each connected component
-    with tqdm(
-        desc="Skeletonizing", total=len(G.vs), disable=not progress, leave=False
-    ) as pbar:
-        for k, cc in enumerate(G.connected_components()):
-            # Make a subgraph for this connected component
-            SG = G.subgraph(cc)
-            cc = np.array(cc)
+    _, ccs, eorder, espan = group_edges_by_component(edges_unique, n_verts)
 
-            # Select seeds according to the number of waves
-            pot_seeds = np.arange(len(cc))
-            np.random.seed(1985)  # make seeds predictable
-            # See if we can use any of the provided origins
-            if len(origins):
-                # Get those origins in this cc
-                in_cc = np.isin(origins, cc)
-                if any(in_cc):
-                    # Map origins into cc
-                    cc_map = dict(zip(cc, np.arange(0, len(cc))))
-                    seed = np.array([cc_map[o] for o in origins[in_cc]])[0]
-                else:
-                    seed = np.random.choice(pot_seeds)
-            else:
-                # Use the vertex with the "peakiest" vertex degree as seed
-                seed = np.argmin(SG.degree())
+    glob2loc = np.full(n_verts, -1, dtype=np.int64)
 
-            # Track the seed
-            SG.vs["is_seed"] = False
-            SG.vs[seed]["is_seed"] = True
+    with tqdm(desc='Skeletonizing', total=n_verts,
+              disable=not progress, leave=False) as pbar:
+        for cc in ccs:
+            pbar.update(len(cc))
+            n_orig = len(cc)
+            glob2loc[cc] = np.arange(n_orig)
 
-            # Get the distance between the seed and all other nodes
-            dist = np.array(
-                SG.distances(source=seed, target=None, mode="all", weights="weight")
-            )[0]
-
-            # Pre-emptively check if any of the distances is close to a multiple of step_size
-            dist_is_step = np.isclose(dist % step_size, 0)
-
-            # What's the max distance we can reach?
-            mx = dist[dist < float("inf")].max()
-
-            # If the max distance is less than the step size, we can just add the seed
-            if mx < step_size:
-                # All vertices in this component collapse to that single node
-                mesh_map[cc] = len(centers)
-                centers.append(verts[cc[seed]])
-                radii.append(0)
-                parents.append(-1)
+            # Components are labelled by their lowest vertex and `cc` is
+            # ascending, so `cc[0]` is this component's label
+            span = espan.get(int(cc[0]))
+            if span is None:                  # isolated vertex, no edges at all
+                emit_single(cc, cc[0])
                 continue
 
-            # A dictionary to keep track of which vertices are at which `step_size`` distance.
-            # We key by the integer step index (i.e. `round(distance / step_size)`) rather than
-            # by the float distance itself: the distances we insert below are computed via
-            # separate `np.arange` calls and floating point arithmetic means e.g. `3 * step_size`
-            # from one call is not bit-identical to `3 * step_size` from another, which would
-            # cause `KeyError`s on lookup. The integer index sidesteps that entirely.
-            n_steps = int(math.floor(mx / step_size)) + 1
-            nodes_at_stepsize = {k: set() for k in range(n_steps + 1)}
-            nodes_at_stepsize[0].add(seed)
+            lo, hi = span
+            gedge = eorder[lo:hi]             # global edge ids, for face lookup
+            sub_edges = glob2loc[edges_unique[gedge]]
+            weights = edges_unique_length[gedge]
 
-            # A dictionary to track, for each new vertex, which face it belongs to
-            new_verts_faces = {}
-
-            # Prepare some data (trying to serialise as much as possible to speed up the loop below)
-            edges_srt = np.array(SG.get_edgelist())
-            dist_srt = np.argsort(dist[edges_srt], axis=1)
-            edges_srt = np.vstack(
-                (
-                    edges_srt[np.arange(edges_srt.shape[0]), dist_srt[:, 0]],
-                    edges_srt[np.arange(edges_srt.shape[0]), dist_srt[:, 1]],
-                )
-            ).T
-
-            # For each edge calculate the unit vector from proximal -> distal vertex
-            edges_prox_pos = verts[cc][edges_srt[:, 0]]
-            edges_distal_pos = verts[cc][edges_srt[:, 1]]
-            edges_vect_norm = edges_distal_pos - edges_prox_pos
-            edges_vect_norm = (
-                edges_vect_norm / np.linalg.norm(edges_vect_norm, axis=1)[:, None]
-            )
-
-            # Iterate over all edge and see if we need to insert a new vertex along the edge
-            edges_to_delete = []  # edges we need to remove
-            edges_to_add = []  # edges we need to add
-            new_vertices = []  # vertices we need to add
-            for i, edge in enumerate(SG.es):
-                v1, v2 = edge.source, edge.target
-                # Figure out which vertex is proximal and which one is distal wrt the seed
-                prox, distal = edges_srt[i]
-
-                # If the proximal vertex is at a distance that is a multiple of the step size
-                # we can start inserting new vertices at the next multiple of the step size + 1
-                # In reality this really onla happens for the seed vertex
-                if dist_is_step[prox]:
-                    nodes_at_stepsize[round(dist[prox] / step_size)].add(prox)
-                    start_inserting = (
-                        math.ceil(dist[prox] / step_size) + 1
-                    ) * step_size
-                # If not, we need to start inserting at the next multiple of the step size
-                else:
-                    start_inserting = math.ceil(dist[prox] / step_size) * step_size
-
-                # If the distal vertex is further away than the start_inserting, we need to insert
-                if dist[distal] > start_inserting:
-                    edges_to_delete.append((v1, v2))
-
-                    start = prox
-                    this_to_add = np.arange(
-                        start_inserting,
-                        dist[distal],
-                        step_size,
-                    )
-                    # Note to self: this block is currently the most expensive step in the whole function.
-                    # I tried vectorising this but unless we split every edge many times, the overhead is
-                    # not worth it. We could try vectorising outside the loop but that would get complicated.
-                    if len(this_to_add):
-                        # Calculate the unit vector along the edge
-                        vect_norm = edges_vect_norm[i]
-                        edges_prox_pos_ = edges_prox_pos[i]
-
-                        # Add the new vertices along that vector
-                        for d in this_to_add:
-                            d_along_edge = d - dist[prox]
-                            new_v_ix = len(cc) + len(new_vertices)  # new vertex ID
-                            new_v_pos = edges_prox_pos_ + vect_norm * d_along_edge
-                            edges_to_add.append(
-                                (start, new_v_ix, d_along_edge, edge["faces"])
-                            )
-                            nodes_at_stepsize[round(d / step_size)].add(new_v_ix)
-                            new_vertices.append(new_v_pos)
-
-                            new_verts_faces[new_v_ix] = edge["faces"]
-
-                            start = new_v_ix  # update start for next iteration
-
-                        # Add the last edge (from the last inserted vertex to the distal vertex)
-                        edges_to_add.append(
-                            (new_v_ix, distal, dist[distal] - d, edge["faces"])
-                        )
-
-            # Turn the new vertices into an array
-            new_vertices = np.array(new_vertices)
-
-            # Add the new vertices to the graph
-            SG.add_vertices(len(new_vertices))
-
-            # Set is_seed to False for all new vertices
-            # (this avoids having "None" value for this attribute which will cause problems during the vertex contraction step)
-            SG.vs[len(cc) :]["is_seed"] = False
-
-            # Track, for each graph vertex, which original mesh vertices it
-            # represents (synthetic vertices represent none). This rides through
-            # the vertex contraction below so we can recover the mesh -> node map.
-            # Length must match the current vertex count exactly.
-            SG.vs["orig"] = [[i] for i in range(len(cc))] + [
-                [] for _ in range(len(new_vertices))
-            ]
-
-            # Delete the old edges
-            SG.delete_edges(edges_to_delete)
-
-            # Add new edges
-            SG.add_edges(
-                [(e[0], e[1]) for e in edges_to_add],
-                attributes={
-                    "weight": [e[2] for e in edges_to_add],
-                    "faces": [e[3] for e in edges_to_add],
-                },
-            )
-
-            # To collect groups of new vertices that make up a wavefront, we need to connect new vertices
-            # that are on the same face and have the same step distance from the seed.
-            edges_to_add = []
-            for d_, nodes_ in nodes_at_stepsize.items():
-                if d_ == 0:
-                    continue  # skip the seed
-
-                # Collect the faces we need to connect across
-                faces_to_connect = {}
-                for n in nodes_:
-                    for face in new_verts_faces[n]:
-                        if face not in faces_to_connect:
-                            faces_to_connect[face] = []
-                        faces_to_connect[face].append(n)
-
-                # Collect edges
-                for nodes_on_face in faces_to_connect.values():
-                    if len(nodes_on_face) <= 1:
-                        continue
-                    for i, j in combinations(nodes_on_face, 2):
-                        edges_to_add.append((i, j))
-
-            # Add edges (note we're setting non-sense weights here because we don't really need it anyome)
-            SG.add_edges(edges_to_add, attributes={"weight": [1.0] * len(edges_to_add)})
-
-            # Remove duplicate edges
-            SG = SG.simplify()
-
-            # Array with all vertex coordinates (old + new)
-            all_vertices = np.vstack([verts[cc], new_vertices])
-
-            # Now we need to know which vertices are step-vertices
-            all_step_nodes = np.concatenate(
-                [list(s) for s in nodes_at_stepsize.values()]
-            )
-            is_step_node = np.isin(np.arange(0, len(SG.vs)), all_step_nodes)
-
-            # Map nodes to their step index (same integer indexing as `nodes_at_stepsize`)
-            nodes2step = {n: d for d, nodes in nodes_at_stepsize.items() for n in nodes}
-
-            # Assign non-step (original) nodes to the closest step index by rounding
-            dist_round = np.round(dist / step_size).astype(int)
-            nodes2step.update(dict(zip(np.arange(len(dist_round)), dist_round)))
-
-            # We now want the groups of connected nodes that sit at the same
-            # distance from the seed, i.e. the connected components of the graph
-            # with all edges spanning two different distances removed.
-            step_of_node = np.array(
-                [nodes2step[n] for n in range(len(SG.vs))], dtype=np.int64
-            )
-            sg_edges = np.asarray(SG.get_edgelist(), dtype=np.int64).reshape(-1, 2)
-
-            if _fastcore.has("level_set_components"):
-                # A single DSU sweep that unions an edge only where its two
-                # endpoints agree on their step - no graph copy, no edge
-                # deletion pass, no separate component search.
-                front_ids, _ = _fastcore.fastcore.level_set_components(
-                    sg_edges, len(SG.vs), step_of_node
-                )
+            # ---- seed -----------------------------------------------------
+            here = origins[np.isin(origins, cc)] if len(origins) else origins
+            if len(here):
+                seed = int(glob2loc[here[0]])
+            elif len(origins):
+                np.random.seed(1985)          # make seeds predictable
+                seed = int(np.random.choice(np.arange(n_orig)))
             else:
-                # The same thing the long way round: copy the graph, delete
-                # every edge that spans two steps, then search for components.
-                SG_no_across = SG.copy()
-                SG_no_across.delete_edges(
-                    [
-                        i
-                        for i, e in enumerate(sg_edges)
-                        if step_of_node[e[0]] != step_of_node[e[1]]
-                    ]
-                )
-                front_ids = np.empty(len(SG.vs), dtype=np.int64)
-                for i, cc2 in enumerate(SG_no_across.connected_components()):
-                    front_ids[cc2] = i
+                # The vertex with the "peakiest" vertex degree
+                seed = int(np.argmin(np.bincount(sub_edges.ravel(),
+                                                 minlength=n_orig)))
 
-            # Note: we could additionally check for weakly connected components.
-            # Something like this:
-            # 0 - 1   5 - 7
-            # |   |   |   |
-            # 2 - 3 - 4 - 6
-            # where we would want to remove the connections between 3 and 4.
-            # In practice this can lead to lots of side branches though which is
-            # why we are not doing this.
+            dist = _geodesic(sub_edges, n_orig, [seed], weights)
 
-            # Group the node IDs by wavefront. Both branches above number the
-            # fronts in order of first appearance scanning nodes low to high, so
-            # the stable grouping recovers igraph's component order along with
-            # its ascending members.
-            fronts = split_by_label(front_ids)
+            finite = dist[np.isfinite(dist)]
+            mx = finite.max() if len(finite) else 0.0
+            if mx < step_size:
+                # Nothing is a full step away, so the component is one node
+                emit_single(cc, cc[seed])
+                continue
 
-            # Now we collapse each wavefront into a single node at its center
-            new_mapping = np.arange(
-                0, len(SG.vs)
-            )  # note: we're still mapping to SG, not the front IDs!
-            this_centers = {}
-            this_radii = {}
-            edges_to_delete = []
-            for cc2 in fronts:
-                # Subset cc2 to only step nodes (i.e. remove the "rounded" original nodes)
-                cc2_step = cc2[is_step_node[cc2]]
+            dist_is_step = np.isclose(dist % step_size, 0)
 
-                if not len(cc2_step):
-                    # Connected components without a step node happen when there are normal
-                    # nodes (typically just one or two) furher out than the last step node.
-                    # We will manually disconnect these nodes.
-                    for n in cc2:
-                        edges_to_delete.extend(
-                            [e.index for e in SG.es.select(_source=int(n))]
-                        )
-                    continue
+            # ---- orient every edge proximal -> distal wrt the seed ---------
+            d_ends = dist[sub_edges]
+            flip = d_ends[:, 0] > d_ends[:, 1]
+            prox = np.where(flip, sub_edges[:, 1], sub_edges[:, 0])
+            distal = np.where(flip, sub_edges[:, 0], sub_edges[:, 1])
 
-                # Get the center of all step nodes in this connected component
-                this_center = all_vertices[cc2_step].mean(axis=0)
+            cc_pos = verts[cc]
+            prox_pos = cc_pos[prox]
+            vect = cc_pos[distal] - prox_pos
+            vect /= np.linalg.norm(vect, axis=1)[:, None]
 
-                # Calculate the radius of this connected component
-                this_radius = rad_agg_func(
-                    np.sqrt(((all_vertices[cc2_step] - this_center) ** 2).sum(axis=1))
-                )
+            # ---- how many synthetic vertices does each edge get? -----------
+            # A vertex already sitting on a multiple of `step_size` is itself the
+            # front there, so insertion starts one multiple further out.
+            d_prox, d_dist = dist[prox], dist[distal]
+            start_ins = np.where(dist_is_step[prox],
+                                 (np.ceil(d_prox / step_size) + 1) * step_size,
+                                 np.ceil(d_prox / step_size) * step_size)
+            # `np.arange(start, stop, step)` yields ceil((stop - start) / step)
+            n_ins = np.where(np.isfinite(d_dist) & (d_dist > start_ins),
+                             np.ceil((d_dist - start_ins) / step_size),
+                             0).astype(np.int64)
+            total_new = int(n_ins.sum())
 
-                # If this is more than a single node, we need to collapse those nodes
-                if len(cc2) > 1:
-                    # If this is a group of nodes, we need to collapse them into a single node
-                    # We will do this by mapping all nodes in `cc2` to the first node in `cc2`
-                    new_mapping[cc2[1:]] = cc2[0]
+            # ---- create them, all at once ---------------------------------
+            owner = np.repeat(np.arange(len(sub_edges)), n_ins)  # edge of each
+            offs = np.zeros(len(sub_edges) + 1, dtype=np.int64)
+            np.cumsum(n_ins, out=offs[1:])
+            j = np.arange(total_new) - offs[owner]      # index along its edge
 
-                this_centers[int(cc2[0])] = this_center
-                this_radii[int(cc2[0])] = this_radius
+            d_new = start_ins[owner] + j * step_size
+            new_ids = n_orig + np.arange(total_new)
+            new_pos = prox_pos[owner] + vect[owner] * (d_new - d_prox[owner])[:, None]
 
-            # Remove the spurious edges (need to do that first before simplifying)
-            SG.delete_edges(np.unique(edges_to_delete))
+            n_total = n_orig + total_new
+            all_vertices = np.vstack([cc_pos, new_pos])
 
-            # Contract vertices
-            # Note that we're trying to mak sure to preserve the is_seed status:
-            # if any of the vertices in the connected component is a seed, the resulting vertex will be a seed.
-            # We're using a function because the built-in functions ("max", "first", etc.) run into issues
-            # with e.g. None values or empty lists.
-            def combine_is_seed(values):
-                if any(values):
-                    return True
-                else:
-                    return False
+            # ---- rebuild the edge list ------------------------------------
+            # A split edge becomes prox -> v0 -> v1 -> ... -> distal. The
+            # predecessor of the j-th insertion is `prox` when j == 0 and the
+            # previous insertion otherwise.
+            split = n_ins > 0
+            chain = np.column_stack((np.where(j == 0, prox[owner], new_ids - 1),
+                                     new_ids))
+            closing = np.column_stack((new_ids[offs[1:][split] - 1], distal[split]))
+            untouched = np.column_stack((prox[~split], distal[~split]))
+            edges = np.vstack([untouched, chain, closing]).astype(np.int64)
 
-            SG.contract_vertices(
-                new_mapping,
-                combine_attrs={
-                    "is_seed": combine_is_seed,
-                    # Concatenate the original-vertex membership lists so each
-                    # contracted node knows which mesh vertices it absorbed.
-                    "orig": lambda values: [v for sub in values for v in sub],
-                },
-            )
-            SG = SG.simplify()
+            # ---- which step is each vertex on? -----------------------------
+            step_of = np.zeros(n_total, dtype=np.int64)
+            is_step = np.zeros(n_total, dtype=bool)
 
-            # Add properties before we delete vertices (which renumbers them).
-            # Note we index by plain integer rather than iterating `SG.vs`: that
-            # would build a throwaway `Vertex` object per vertex.
-            vids = range(SG.vcount())
-            SG.vs["center"] = [this_centers.get(i, None) for i in vids]
-            SG.vs["radius"] = [this_radii.get(i, None) for i in vids]
+            step_of[new_ids] = np.round(d_new / step_size).astype(np.int64)
+            is_step[new_ids] = True
+            is_step[:n_orig] |= dist_is_step & np.isfinite(dist)
+            is_step[seed] = True
+            # Original vertices take the rounded distance, whether or not they
+            # landed on a step
+            step_of[:n_orig] = np.round(
+                np.where(np.isfinite(dist), dist, 0) / step_size).astype(np.int64)
 
-            # For debugging:
-            SG.vs["has_center"] = [i in this_centers for i in vids]
-            SG.vs["step_dist"] = [nodes2step.get(i, None) for i in vids]
-            SG.vs["position"] = list(all_vertices)
+            # ---- stitch each front across the faces it crosses --------------
+            # A synthetic vertex sits on a mesh edge, so it belongs to that edge's
+            # faces; two of them on the same face at the same step are part of the
+            # same ring and get joined.
+            if total_new:
+                g = gedge[owner]
+                nf = e2f_indptr[g + 1] - e2f_indptr[g]
+                rep = np.repeat(np.arange(total_new), nf)
+                slot = np.arange(len(rep)) - np.repeat(
+                    np.concatenate(([0], np.cumsum(nf)[:-1])), nf)
+                face = e2f_indices[e2f_indptr[g][rep] + slot]
 
-            # Drop disconnected nodes (nodes will be disconnected because they got contracted)
-            # The graph is simplified, so a zero degree means no neighbours.
-            SG.delete_vertices(np.flatnonzero(np.asarray(SG.degree()) == 0))
+                # Group by (face, step) - both non-negative, so one key does
+                new_step = step_of[new_ids]
+                key = face * (new_step.max() + 2) + new_step[rep]
+                order, starts, sizes = group_by_label(key)
+                # `cross` indexes the (vertex, face) rows, so hop back via `rep`
+                cross = _pairs_within_groups(order, starts, sizes)
+                if len(cross):
+                    edges = np.vstack([edges, new_ids[rep[cross]]])
 
-            # Last but not least: remove edges that do not connect nodes across adjacent
-            # step distances. `step_dist` is an integer step index (see `nodes2step` above),
-            # so neighbouring wavefronts differ by exactly 1.
-            edge_dists = np.asarray(SG.vs["step_dist"])[
-                np.asarray(SG.get_edgelist(), dtype=np.int64).reshape(-1, 2)]
-            edge_dists_diff = np.abs(edge_dists[:, 0] - edge_dists[:, 1])
-            edges_to_delete = np.where(edge_dists_diff != 1)[0]
+            # ---- the fronts themselves --------------------------------------
+            # Note we could additionally check for weakly connected components,
+            # i.e. splitting  0-1  5-7  where 3-4 bridges two rings. In practice
+            #                 | |  | |
+            #                 2-3--4-6
+            # that leads to lots of side branches, so we don't.
+            front_ids, n_fronts = _level_set_components(edges, n_total, step_of)
 
-            # Make sure we don't break the connected components
-            edges_to_delete = edges_to_delete[~np.isin(edges_to_delete, SG.bridges())]
-            SG.delete_edges(edges_to_delete)
+            # ---- collapse each front to its centre --------------------------
+            # Every step here is a grouped reduction. Doing it per front is a
+            # Python loop over as many fronts as the skeleton has nodes.
+            #
+            # A front collapses onto its lowest-numbered member, which is what
+            # `order[starts]` gives - `group_by_label` is stable, so members come
+            # out in ascending order.
+            # Lowest-numbered member of each front. A reverse scatter, not
+            # `group_by_label`: that argsorts all `n_total` nodes to extract
+            # `n_fronts` minima (39 ms against 1 ms at 700k nodes). Walking
+            # backwards means the smallest index is written last and wins.
+            rep = np.empty(n_fronts, dtype=np.int64)
+            rep[front_ids[::-1]] = np.arange(n_total)[::-1]
+            mapping = rep[front_ids]
 
-            # Generate a directed tree from the root
-            # We need to use breadth-first because depth-first messes up branch points
-            # We want this:
-            # 0 - 1 - 2 - 3
-            #     |
-            #     4
-            # But depth-first might get us this:
-            # 0 - 1  2 - 3
-            #     | /
-            #     4
-            # Also note that we're looking up the seed instead of using the original `seed`.
-            # That's because the index may have changed due to the vertex contractions.
-            _, _, this_parents = SG.bfs(SG.vs.find(is_seed=True))
+            # Centre and radius are measured over a front's *step* nodes only. A
+            # front with none of them is not a ring at all - it is a stray tip
+            # beyond the last step - and gets detached rather than collapsed.
+            step_nodes = np.flatnonzero(is_step)
+            fid = front_ids[step_nodes]
+            n_step = np.bincount(fid, minlength=n_fronts)
 
-            this_parents = np.array(this_parents)
-            this_parents[this_parents >= 0] += len(centers)  # offset parents
-            parents.extend(this_parents)
+            # `_grouped_agg` wants contiguous ids covering every group, so
+            # renumber over the fronts that actually have step nodes
+            live = np.flatnonzero(n_step > 0)
+            dense = np.full(n_fronts, -1, dtype=np.int64)
+            dense[live] = np.arange(len(live))
 
-            # Map mesh vertices to their final skeleton node. A surviving vertex
-            # at position `j` becomes node `offset + j` (same convention as the
-            # parent offset above, since node IDs are positions in `centers`).
-            offset = len(centers)
-            for j, members in enumerate(SG.vs["orig"]):
-                for m in members:  # m = original vertex's index within `cc`
-                    mesh_map[cc[m]] = offset + j
+            sums = np.stack([np.bincount(fid, weights=all_vertices[step_nodes, k],
+                                         minlength=n_fronts) for k in range(3)],
+                            axis=1)
+            front_center = np.zeros((n_fronts, 3))
+            front_center[live] = sums[live] / n_step[live, None]
+            d = np.sqrt(((all_vertices[step_nodes] - front_center[fid]) ** 2).sum(axis=1))
+            front_radius = _grouped_agg(d, dense[fid], radius_agg, rad_agg_func)
 
-            # A handful of tip vertices may have had their contracted node dropped
-            # as isolated (the "no step node in cc2" case above). Assign each to
-            # the nearest surviving node center in this component.
-            orphans = cc[mesh_map[cc] == -1]
+            has_center = np.zeros(n_total, dtype=bool)
+            this_center = np.zeros((n_total, 3))
+            this_radius = np.zeros(n_total)
+            has_center[rep[live]] = True
+            this_center[rep[live]] = front_center[live]
+            this_radius[rep[live]] = front_radius
+
+            if len(live) != n_fronts:
+                dead = n_step[front_ids] == 0
+                edges = edges[~(dead[edges[:, 0]] | dead[edges[:, 1]])]
+
+            # ---- contract, then drop what is left isolated ------------------
+            el = _contract(edges, mapping)
+
+            deg = np.bincount(el.ravel(), minlength=n_total)
+            keep = np.flatnonzero((deg > 0) & has_center)
+            if not len(keep):
+                continue
+            renum = np.full(n_total, -1, dtype=np.int64)
+            renum[keep] = np.arange(len(keep))
+            el = renum[el]
+            el = el[(el >= 0).all(axis=1)]
+
+            # ---- drop edges that skip a front, but never disconnect ---------
+            # `step_of` is an integer step index, so neighbouring fronts differ
+            # by exactly 1.
+            if len(el):
+                sd = step_of[keep][el]
+                bad = np.abs(sd[:, 0] - sd[:, 1]) != 1
+                bad &= ~_bridges(el, len(keep))
+                el = el[~bad]
+
+            # ---- orient the tree from the seed -------------------------------
+            root = renum[mapping[seed]]
+            this_parents = _bfs_tree(el, len(keep), root)
+
+            offset = n_nodes
+            parents.append(np.where(this_parents >= 0, this_parents + offset, -1))
+            centers.append(this_center[keep])
+            radii.append(this_radius[keep])
+            n_nodes += len(keep)
+
+            # ---- mesh vertex -> skeleton node --------------------------------
+            node_of_local = renum[mapping[:n_orig]]
+            got = node_of_local >= 0
+            mesh_map[cc[got]] = offset + node_of_local[got]
+
+            # A handful of tip vertices lose their node (the detached fronts
+            # above); each goes to the nearest surviving centre
+            orphans = cc[~got]
             if len(orphans):
-                cc_centers = np.vstack(SG.vs["center"])
-                d = verts[orphans][:, None, :] - cc_centers[None, :, :]
-                mesh_map[orphans] = offset + (d**2).sum(-1).argmin(1)
+                mesh_map[orphans] = offset + cKDTree(this_center[keep]).query(
+                    verts[orphans])[1]
 
-            radii.extend(SG.vs["radius"])
-            centers.extend(SG.vs["center"])
-
-            pbar.update(len(cc))
 
     centers = np.vstack(centers)
 
-    # Catch any mesh vertices that never made it into the graph (e.g. fully
-    # isolated vertices not part of any edge) by mapping them to the nearest
-    # skeleton node. Normally a no-op.
-    still = np.where(mesh_map == -1)[0]
+    # Catch any mesh vertices that never made it into the graph. Normally a no-op.
+    still = np.flatnonzero(mesh_map == -1)
     if len(still):
         mesh_map[still] = cKDTree(centers).query(verts[still])[1]
 
-    return centers, np.array(radii), np.array(parents), mesh_map
+    return centers, np.concatenate(radii), np.concatenate(parents), mesh_map

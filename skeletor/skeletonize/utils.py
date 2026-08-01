@@ -29,7 +29,6 @@ import pandas as pd
 import trimesh as tm
 import scipy.sparse
 import scipy.sparse.csgraph
-import scipy.spatial
 
 from .. import _fastcore
 from ..utilities import get_edges_unique
@@ -100,6 +99,85 @@ def split_by_label(labels):
     return np.split(order, starts[1:])
 
 
+def prep_origins(origins):
+    """Coerce the `origins` argument the wavefront skeletonizers share.
+
+    Returns
+    -------
+    (N, ) int array
+                Empty when ``origins`` is None.
+
+    """
+    if origins is None:
+        return np.array([], dtype=np.int64)
+    if isinstance(origins, (int, np.integer)):
+        origins = [origins]
+    elif not isinstance(origins, (set, list, tuple, np.ndarray)):
+        raise TypeError('`origins` must be vertex ID (int) or list thereof, got '
+                        f'"{type(origins)}"')
+    return np.asarray(list(origins)).astype(np.int64)
+
+
+def adjacency(edges, n_nodes, weights=None):
+    """COO adjacency matrix for an undirected edge list."""
+    if weights is None:
+        weights = np.ones(len(edges))
+    return scipy.sparse.coo_matrix((weights, (edges[:, 0], edges[:, 1])),
+                                   shape=(n_nodes, n_nodes))
+
+
+def connected_components(edges, n_nodes):
+    """Connected components, each labelled by its lowest node ID.
+
+    The label is part of the contract: callers key per-component data by it (see
+    :func:`group_edges_by_component`), and it is what lets the fastcore and scipy
+    backends agree on which component is which.
+    """
+    if _fastcore.has('connected_components_graph'):
+        return np.asarray(_fastcore.fastcore.connected_components_graph(edges, n_nodes),
+                          dtype=np.int64)
+
+    _, labels = scipy.sparse.csgraph.connected_components(adjacency(edges, n_nodes),
+                                                          directed=False)
+    # scipy numbers components in discovery order. The first occurrence of a
+    # label is the lowest node carrying it, so this relabels to the convention.
+    return np.unique(labels, return_index=True)[1][labels]
+
+
+def group_edges_by_component(edges, n_nodes):
+    """Label components and group the edge list by them.
+
+    Lets a per-component loop take its edges as a slice. Selecting them per
+    component instead - the obvious reading - is one pass over the *whole* edge
+    list per component, i.e. ``O(components * E)``. On a mesh that shatters into
+    thousands of specks that dwarfs the actual work: it measured ~29s of a 33s
+    run on a 447k-vertex, 12463-component mesh.
+
+    Returns
+    -------
+    comp :      (n_nodes, ) array
+                Component label of each node, being its component's lowest ID.
+    ccs :       list of arrays
+                Node indices per component, ascending.
+    eorder :    (E, ) array
+                Edge indices sorted by component. The grouping is stable, so each
+                component's edges keep their original relative order.
+    espan :     dict
+                ``label -> (start, stop)`` into ``eorder``. A component with no
+                edges at all is absent.
+
+    """
+    comp = connected_components(edges, n_nodes)
+
+    # An edge never spans two components, so either endpoint labels it
+    ecomp = comp[edges[:, 0]]
+    eorder, estarts, esizes = group_by_label(ecomp)
+    espan = dict(zip(ecomp[eorder[estarts]].tolist(),
+                     zip(estarts.tolist(), (estarts + esizes).tolist())))
+
+    return comp, split_by_label(comp), eorder, espan
+
+
 def mst_over_mesh(mesh, verts, limit='auto'):
     """Generate minimum spanning tree by subsetting mesh to given vertices.
 
@@ -110,32 +188,79 @@ def mst_over_mesh(mesh, verts, limit='auto'):
     ----------
     mesh :      trimesh.Trimesh
                 Mesh to subset.
-    verst :     iterable
+    verts :     iterable
                 Vertex indices to keep for the tree.
     limit :     float | np.inf | "auto"
-                Use this to limit the distance for shortest path search
-                (``scipy.sparse.csgraph.dijkstra``). Can greatly speed up this
-                function at the risk of producing disconnected components. By
-                default (auto), we are using 3x the max observed Euclidean
-                distance between ``verts``.
+                Use this to limit the distance for shortest path search. Can
+                greatly speed up this function at the risk of producing
+                disconnected components. By default (auto), we are using 3x the
+                diagonal of the bounding box around ``verts`` - i.e. between 3x
+                and 5.2x the largest distance between any two of them.
 
     Returns
     -------
-    edges :     np.ndarray
-                List of `node` -> `parent` edges. Note that these edges are
-                already hiearchical, i.e. each node has at exactly 1 parent
-                except for the root node(s) which has parent ``-1``.
+    edges :     (N, 2) array
+                The spanning tree as an undirected edge list, in vertex indices.
+                Isolated vertices - ones the search reached from nothing else -
+                contribute no row. Use :func:`orient_forest` to give it a
+                direction.
 
     """
     # Make sure vertices to keep are unique
     keep = unique(verts)
 
-    # Get some shorthands
-    verts = mesh.vertices
-
     if limit == 'auto':
-        distances = scipy.spatial.distance.pdist(verts[keep])
-        limit = np.max(distances) * 3
+        # 3x the bounding box diagonal, which bounds the largest distance between
+        # any two kept vertices from above (and by at most sqrt(3)x). This used to
+        # take that largest distance exactly, via `pdist` - but exactly costs
+        # O(k**2) in time *and* memory, 218 ms and 1.6 GB at k=20000 against
+        # 0.6 ms and nothing here, and bought nothing for it: the search below
+        # runs at the same speed under either limit.
+        #
+        # Being an upper bound the limit is never tighter than it was, only
+        # looser - the safe direction, since it can only join more vertices,
+        # never fewer. See `test_mst_auto_limit_is_an_upper_bound`.
+        #
+        # A single vertex has nothing to connect to, so any limit will do.
+        if len(keep) > 1:
+            v = mesh.vertices[keep]
+            limit = float(np.linalg.norm(v.max(axis=0) - v.min(axis=0))) * 3
+        else:
+            limit = np.inf
+
+    if _fastcore.has('geodesic_mst_mesh'):
+        return _mst_over_mesh_fastcore(mesh, keep, limit)
+
+    return _mst_over_mesh_scipy(mesh, keep, limit)
+
+
+def _mst_over_mesh_fastcore(mesh, keep, limit):
+    """``mst_over_mesh`` backend using navis-fastcore.
+
+    ``geodesic_mst_mesh`` spans ``keep`` under the geodesic metric without ever
+    forming the ``k x k`` distance matrix the scipy backend needs - which is
+    ``k**2`` distances to use ``k - 1`` of them, filled by ``k`` separate
+    searches. It sweeps once, partitioning every mesh vertex by which of ``keep``
+    is nearest, so the cost is flat in ``k`` rather than quadratic.
+
+    ``limit`` prunes that sweep rather than merely discarding results, so unlike
+    the scipy backend it buys time as well as bounding the output.
+    """
+    # Rows come back as positions *in* `keep`, so map them out to vertex indices
+    mst_edges, _ = _fastcore.fastcore.geodesic_mst_mesh(
+        mesh.faces, keep, vertices=np.asarray(mesh.vertices),
+        limit=None if not np.isfinite(limit) else float(limit))
+
+    return keep[mst_edges].reshape(-1, 2)
+
+
+def _mst_over_mesh_scipy(mesh, keep, limit):
+    """``mst_over_mesh`` backend without ``geodesic_mst_mesh``.
+
+    Materialises the ``k x k`` geodesic distance matrix and hands it to scipy's
+    matrix MST.
+    """
+    verts = mesh.vertices
 
     # Get geodesic distances between vertices
     if _fastcore.has('geodesic_matrix_mesh'):
@@ -154,9 +279,7 @@ def mst_over_mesh(mesh, verts, limit='auto'):
         edges, edge_lengths = get_edges_unique(mesh, lengths=True)
 
         # Produce adjacency matrix from edges and edge lengths
-        adj = scipy.sparse.coo_matrix((edge_lengths,
-                                       (edges[:, 0], edges[:, 1])),
-                                      shape=(verts.shape[0], verts.shape[0]))
+        adj = adjacency(edges, verts.shape[0], edge_lengths)
 
         dist_matrix = scipy.sparse.csgraph.dijkstra(csgraph=adj, directed=False,
                                                     indices=keep, limit=limit)
@@ -170,50 +293,7 @@ def mst_over_mesh(mesh, verts, limit='auto'):
     # Turn into COO matrix
     coo = mst.tocoo()
 
-    # Extract edge list
-    edges = np.array([keep[coo.row], keep[coo.col]]).T
-
-    # Last but not least we have to run a depth first search to turn this
-    # into a hierarchical tree, i.e. make edges are orientated in a way that
-    # each node only has a single parent (turn a<-b->c into a->b->c)
-
-    # Generate and populate undirected graph
-    G = nx.Graph()
-    G.add_edges_from(edges)
-
-    # Generate list of parents
-    edges = []
-    # Go over all connected components
-    for c in nx.connected_components(G):
-        # Get subgraph of this connected component
-        SG = nx.subgraph(G, c)
-
-        # Use first node as root
-        r = list(SG.nodes)[0]
-
-        # List of parents: {node: [parent], root: []}
-        this_lop = nx.predecessor(SG, r)
-
-        # Note that we assign -1 as root's parent
-        edges += [(k, v[0] if v else -1) for k, v in this_lop.items()]
-
-    return np.array(edges).astype(int)
-
-
-def dfs(G, n, dist_traveled, max_dist, seen):
-    """Depth first graph traversal that stops at a given max distance."""
-    visited = [n]
-    seen.add(n)
-    if dist_traveled <= max_dist:
-        for nn in nx.neighbors(G, n):
-            if nn not in seen:
-                new_dist = dist_traveled + G.edges[(nn, n)]['weight']
-                traversed, seen = dfs(G=G, n=nn,
-                                      dist_traveled=new_dist,
-                                      max_dist=max_dist,
-                                      seen=seen)
-                visited += traversed
-    return visited, seen
+    return np.column_stack((keep[coo.row], keep[coo.col])).astype(np.int64)
 
 
 def make_swc(x, coords, reindex=True, validate=True):
@@ -312,20 +392,93 @@ def make_swc(x, coords, reindex=True, validate=True):
     return swc
 
 
-def forest_to_swc(edges, coords, radii, n_nodes):
-    """Generate SWC table directly from a forest (i.e. one tree per component).
+def orient_forest(edges, n_nodes):
+    """Orient an undirected edge list into a rooted forest.
 
-    This is a fast alternative to the ``edges_to_graph`` -> ``make_swc`` ->
-    ``reindex_swc`` pipeline for the case where the edges already form a
-    spanning forest: each tree is rooted at its lowest node ID and oriented
-    child -> parent, and new node IDs are assigned in BFS order which
-    guarantees that parents have lower IDs than their children.
+    The half of "I have an edge list and I want a tree" that a minimum spanning
+    tree does not answer: the MST picks *which* edges survive, this picks which
+    way they point. Cycles are fine - each component contributes a spanning tree
+    of itself - so this doubles as the cycle-breaker.
 
     Parameters
     ----------
     edges :     (N, 2) array
-                Edge list describing a forest (no cycles!) over nodes
-                ``0..n_nodes-1``. Isolated nodes are allowed and become roots.
+                Edge list over nodes ``0..n_nodes-1``. Direction is ignored.
+                Self-loops and duplicate edges are tolerated.
+    n_nodes :   int
+                Total number of nodes. Nodes named by no edge are isolated roots.
+
+    Returns
+    -------
+    parents :   (n_nodes, ) array
+                Parent of each node, ``-1`` for roots. Each component is rooted
+                at its lowest node ID.
+    order :     (n_nodes, ) array
+                Every node in the order it settled. A node always settles after
+                its parent, so relabelling by this puts parents before their
+                children - which is what SWC requires.
+
+    """
+    edges = np.asarray(edges, dtype=np.int64).reshape(-1, 2)
+
+    if _fastcore.has('parents_from_edges'):
+        parents, order = _fastcore.fastcore.parents_from_edges(edges, n_nodes)
+        return np.asarray(parents, dtype=np.int64), np.asarray(order, dtype=np.int64)
+
+    return _orient_forest_scipy(edges, n_nodes)
+
+
+def _orient_forest_scipy(edges, n_nodes):
+    """``orient_forest`` fallback. Same contract, an order of magnitude slower.
+
+    Where fastcore sweeps the components one after another into a single
+    ``n_nodes``-long column, this pays for a full ``connected_components`` pass
+    plus a multi-source Dijkstra to get the same answer.
+    """
+    if not n_nodes:
+        empty = np.zeros(0, dtype=np.int64)
+        return empty, empty
+
+    adj = adjacency(edges, n_nodes)
+    _, labels = scipy.sparse.csgraph.connected_components(adj, directed=False)
+
+    # First occurrence of each label = lowest node ID in that component, which
+    # is the root `parents_from_edges` picks too
+    roots = np.unique(labels, return_index=True)[1]
+
+    # With unit weights this is effectively a BFS from all roots at once. On a
+    # forest the resulting orientation is unique; where the input has cycles this
+    # is a shortest-path tree, which breaks them just as validly (though not
+    # necessarily in the same place fastcore would).
+    dist, pred, _ = scipy.sparse.csgraph.dijkstra(adj, directed=False,
+                                                  indices=roots,
+                                                  return_predecessors=True,
+                                                  min_only=True)
+
+    # `pred` uses -9999 for roots and isolated nodes; we promise -1
+    parents = np.where(pred < 0, -1, pred).astype(np.int64)
+
+    # Sorting by BFS depth puts parents before their children
+    return parents, np.argsort(dist, kind='stable')
+
+
+def forest_to_swc(edges, coords, radii, n_nodes):
+    """Generate SWC table directly from an edge list over ``0..n_nodes-1``.
+
+    This is a fast alternative to the ``edges_to_graph`` -> ``make_swc`` ->
+    ``reindex_swc`` pipeline for the case where the nodes are already numbered
+    contiguously: each tree is rooted at its lowest node ID and oriented
+    child -> parent, and new node IDs are assigned in traversal order which
+    guarantees that parents have lower IDs than their children.
+
+    See :func:`edges_to_swc` for the same thing over an arbitrary node space.
+
+    Parameters
+    ----------
+    edges :     (N, 2) array
+                Edge list over nodes ``0..n_nodes-1``. Isolated nodes are
+                allowed and become roots; cycles are broken (see
+                :func:`orient_forest`).
     coords :    (n_nodes, 3) array
                 X/Y/Z locations of nodes.
     radii :     (n_nodes, ) array
@@ -340,31 +493,12 @@ def forest_to_swc(edges, coords, radii, n_nodes):
                 Maps original node IDs (positional) to re-indexed node IDs.
 
     """
-    edges = np.asarray(edges, dtype=np.int64).reshape(-1, 2)
-    adj = scipy.sparse.coo_matrix((np.ones(len(edges)),
-                                   (edges[:, 0], edges[:, 1])),
-                                  shape=(n_nodes, n_nodes))
-    _, labels = scipy.sparse.csgraph.connected_components(adj, directed=False)
+    parents, order = orient_forest(edges, n_nodes)
 
-    # First occurrence of each label = lowest node ID in that component
-    roots = np.unique(labels, return_index=True)[1]
-
-    # With unit weights this is effectively a BFS from all roots at once;
-    # because the graph is a forest the resulting orientation is unique
-    dist, pred, _ = scipy.sparse.csgraph.dijkstra(adj, directed=False,
-                                                  indices=roots,
-                                                  return_predecessors=True,
-                                                  min_only=True)
-
-    # Sorting by BFS depth puts parents before their children
-    order = np.argsort(dist, kind='stable')
     new_ids = np.empty(n_nodes, dtype=np.int64)
     new_ids[order] = np.arange(n_nodes)
 
-    parent_ord = pred[order].astype(np.int64)  # -9999 for roots/isolated nodes
-    parent_new = np.full(n_nodes, -1, dtype=np.int64)
-    has_parent = parent_ord >= 0
-    parent_new[has_parent] = new_ids[parent_ord[has_parent]]
+    parent_new = _reindex_parents(parents, order, new_ids)
 
     swc = pd.DataFrame({'node_id': np.arange(n_nodes),
                         'parent_id': parent_new,
@@ -372,6 +506,97 @@ def forest_to_swc(edges, coords, radii, n_nodes):
                         'y': coords[order, 1],
                         'z': coords[order, 2],
                         'radius': radii[order]})
+
+    return swc, new_ids
+
+
+def _reindex_parents(parents, order, new_ids):
+    """Express ``parents`` in the relabelled ID space, row-ordered by ``order``.
+
+    Kept separate because the masking is the easy thing to get wrong: ``parents``
+    carries ``-1`` for roots and ``new_ids[-1]`` silently reads the *last* node
+    rather than raising.
+    """
+    parent_ord = parents[order]
+    parent_new = np.full(len(order), -1, dtype=np.int64)
+    has_parent = parent_ord >= 0
+    parent_new[has_parent] = new_ids[parent_ord[has_parent]]
+    return parent_new
+
+
+def edges_to_swc(edges, coords, nodes=None):
+    """Generate SWC table from an edge list over an arbitrary node space.
+
+    Does in one pass what ``edges_to_graph(fix_tree=True)`` followed by
+    ``make_swc(reindex=True)`` does via networkx: break cycles, orient every
+    component child -> parent, and renumber so parents come before their
+    children. Self-loops and duplicate edges are tolerated.
+
+    :func:`forest_to_swc` is the same thing for nodes already numbered
+    ``0..n_nodes-1``; this one accepts any node IDs (e.g. a subset of mesh
+    vertices) and hands back the ID mapping as a dict, like :func:`make_swc`.
+
+    Parameters
+    ----------
+    edges :     (N, 2) array
+                Edge list. Node IDs index ``coords``.
+    coords :    trimesh.Trimesh | (M, 3) array
+                X/Y/Z locations, indexed by the *original* node IDs.
+    nodes :     iterable, optional
+                Additional node IDs to keep. Use this for isolated nodes that no
+                edge names - without it the SWC holds exactly the nodes ``edges``
+                mentions.
+    Returns
+    -------
+    swc :       pandas.DataFrame
+    new_ids :   dict
+                Maps original node IDs to re-indexed node IDs. ``-1`` maps to
+                itself so the root sentinel survives a lookup.
+
+    """
+    if isinstance(coords, tm.Trimesh):
+        coords = coords.vertices
+
+    edges = np.asarray(edges, dtype=np.int64).reshape(-1, 2)
+
+    # The node space: everything an edge names, plus whatever the caller wants
+    # kept on top. `unique` sorts, which is what makes the searchsorted below
+    # a valid original -> local index map.
+    ids = edges.ravel()
+    if nodes is not None:
+        ids = np.concatenate((ids, np.asarray(nodes, dtype=np.int64).ravel()))
+    ids = unique(ids)
+
+    # Node IDs index `coords`, so a negative one would quietly pick a vertex off
+    # the end rather than fail. Worth refusing outright: the natural mistake here
+    # is feeding in a child -> parent list with its -1 roots still attached.
+    if len(ids) and ids[0] < 0:
+        raise ValueError('Node IDs must be non-negative, got '
+                         f'{ids[ids < 0].tolist()[:5]}. If these are the `-1` '
+                         'roots of a child -> parent edge list, drop those rows '
+                         'and pass the root node IDs as `nodes` instead.')
+
+    parents, order = orient_forest(np.searchsorted(ids, edges), len(ids))
+
+    new_ids_arr = np.empty(len(ids), dtype=np.int64)
+    new_ids_arr[order] = np.arange(len(ids))
+
+    swc = pd.DataFrame({'node_id': np.arange(len(ids), dtype=np.int64),
+                        'parent_id': _reindex_parents(parents, order,
+                                                      new_ids_arr)})
+
+    # `ids[order]` are the original IDs in their new row order
+    original = ids[order]
+    if len(ids):
+        swc['x'] = coords[original, 0]
+        swc['y'] = coords[original, 1]
+        swc['z'] = coords[original, 2]
+    else:
+        swc['x'] = swc['y'] = swc['z'] = None
+    swc['radius'] = None       # a placeholder, as `make_swc` leaves it
+
+    new_ids = dict(zip(ids.tolist(), new_ids_arr.tolist()))
+    new_ids[-1] = -1  # as `reindex_swc` does - the root's parent stays -1
 
     return swc, new_ids
 

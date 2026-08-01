@@ -160,9 +160,10 @@ def _unique_edges_fastcore(mesh, faces, lengths, extras):
     """``get_edges_unique`` backend using ``navis_fastcore.unique_edges``.
 
     Returns ``(edges, lengths, index, inverse)`` where all but ``edges`` are
-    ``None`` if they weren't asked for. ``unique_edges`` is documented to match
-    trimesh's output order, dtype and first-occurrence semantics exactly, so the
-    values are interchangeable with the numpy backend's.
+    ``None`` if they weren't asked for. ``unique_edges`` matches trimesh's output
+    order and first-occurrence semantics exactly, so the values are
+    interchangeable with the numpy backend's - but see :func:`_as_node_ids` for
+    the one thing we have to put right ourselves.
     """
     verts = np.asarray(mesh.vertices) if lengths else None
 
@@ -173,15 +174,36 @@ def _unique_edges_fastcore(mesh, faces, lengths, extras):
 
     # Only the bare edge array comes back when nothing extra was requested
     if not extras and verts is None:
-        return out, None, None, None
+        return _as_node_ids(out), None, None, None
 
     out = list(out)
-    eu = out.pop(0)
+    eu = _as_node_ids(out.pop(0))
+    # `index`/`inverse` are positions in the 3F edge list rather than node ids,
+    # and fastcore already hands those back as int64 - leave them be
     idx = out.pop(0) if extras else None
     inverse = out.pop(0) if extras else None
     el = out.pop(0) if verts is not None else None
 
     return eu, el, idx, inverse
+
+
+def _as_node_ids(edges):
+    """Coerce a fastcore edge array to the dtype the rest of skeletor expects.
+
+    fastcore returns node ids as ``uint32`` (its documented dtype rule); trimesh
+    and :func:`_unique_edges_numpy` both use ``int64``. Left alone, the two
+    backends would hand back different dtypes for the same values, and unsigned
+    arithmetic wraps rather than going negative - ``eu[:, 0] - eu[:, 1]`` is
+    4294960971 where the numpy backend gives -6325. That makes any signed
+    arithmetic downstream depend on whether fastcore happens to be installed,
+    which is exactly the divergence :mod:`skeletor._fastcore` exists to prevent.
+
+    This normalises the one return that reaches callers outside skeletor's own
+    modules. ``contract_vertices`` and ``connected_components_graph`` hand back
+    uint32 too, but each of their call sites consumes the result immediately and
+    coerces it there.
+    """
+    return np.asarray(edges, dtype=np.int64)
 
 
 def _unique_edges_numpy(mesh, faces, lengths, extras):

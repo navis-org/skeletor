@@ -24,7 +24,7 @@ from tqdm.auto import tqdm
 
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import mst_over_mesh, edges_to_graph, make_swc
+from .utils import mst_over_mesh, edges_to_swc
 
 __all__ = ['by_edge_collapse']
 
@@ -421,10 +421,6 @@ def by_edge_collapse(mesh, shape_weight=1, sample_weight=0.1,
     # by extracting a minimum spanning tree over the mesh.
     corrected_edges = mst_over_mesh(mesh, edges[keep].flatten())
 
-    # Generate graph
-    G = edges_to_graph(corrected_edges, vertices=mesh.vertices, fix_tree=True,
-                       weight=False, drop_disconnected=False)
-
-    swc, new_ids = make_swc(G, mesh, reindex=True)
+    swc, new_ids = edges_to_swc(corrected_edges, mesh.vertices)
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=None, method='edge_collapse')
