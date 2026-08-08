@@ -422,44 +422,96 @@ class TestUtils:
             new_ids[order] = np.arange(n)
             assert (new_ids[parents[has_parent]] < new_ids[child]).all()
 
-    def test_edges_to_swc_matches_networkx(self):
+    @pytest.mark.parametrize('case', ['cyclic', 'isolated'])
+    def test_edges_to_swc_matches_networkx(self, case):
         """`edges_to_swc` must reproduce `edges_to_graph` -> `make_swc`.
 
         It replaced that pipeline at three call sites. Node *IDs* are allowed to
         differ - the two renumber differently - so this compares the skeleton in
         the original ID space, plus the isolated nodes `nodes=` is there to keep.
+
+        On a forest that pins the edges exactly. Where the input has cycles it
+        cannot: which edge gets dropped to break one is a free choice, and the
+        three routes here make it differently - networkx spans with an MST, and
+        the two `orient_forest` backends each root-first-search their own way.
+        So there this asks what `test_orient_forest_backends_agree` asks of that
+        pair: same nodes, same partition into components, and every edge kept is
+        one the input named.
         """
         from skeletor.skeletonize.utils import edges_to_swc, edges_to_graph, make_swc
 
         coords = np.random.default_rng(3).random((900, 3)) * 100
-        rng = np.random.default_rng(7)
-        cyclic = np.unique(np.column_stack((rng.integers(0, 800, 1200),
-                                            rng.integers(0, 800, 1200))), axis=0)
+        if case == 'cyclic':
+            rng = np.random.default_rng(7)
+            edges = np.unique(np.column_stack((rng.integers(0, 800, 1200),
+                                               rng.integers(0, 800, 1200))), axis=0)
+            nodes = None
+        else:
+            edges = np.array([[1, 2], [2, 3], [7, 8]])
+            nodes = [1, 2, 3, 7, 8, 42]
 
-        for edges, nodes in [(cyclic, None),
-                             (np.array([[1, 2], [2, 3], [7, 8]]), [1, 2, 3, 7, 8, 42])]:
-            new, new_ids = edges_to_swc(edges, coords, nodes=nodes)
-            G = edges_to_graph(np.asarray(edges), nodes=nodes, fix_tree=True,
-                               weight=False, drop_disconnected=False)
-            old, old_ids = make_swc(G, coords, reindex=True, validate=False)
+        new, new_ids = edges_to_swc(edges, coords, nodes=nodes)
+        G = edges_to_graph(np.asarray(edges), nodes=nodes, fix_tree=True,
+                           weight=False, drop_disconnected=False)
+        old, old_ids = make_swc(G, coords, reindex=True, validate=False)
 
-            def original(swc, ids):
-                inv = {v: k for k, v in ids.items() if k != -1}
-                e = swc[swc.parent_id >= 0][['node_id', 'parent_id']].values
-                edges_ = {tuple(sorted((inv[a], inv[b]))) for a, b in e}
-                return edges_, {inv[n] for n in swc.node_id.values}
+        def original(swc, ids):
+            """The skeleton back in the original ID space: edges and nodes."""
+            inv = {v: k for k, v in ids.items() if k != -1}
+            e = swc[swc.parent_id >= 0][['node_id', 'parent_id']].values
+            edges_ = {tuple(sorted((int(inv[a]), int(inv[b])))) for a, b in e}
+            return edges_, {int(inv[n]) for n in swc.node_id.values}
 
-            assert original(new, new_ids) == original(old, old_ids)
+        def partition(edges_, nodes_):
+            """`nodes_` grouped into the components `edges_` connects them into."""
+            parent = {n: n for n in nodes_}
 
-            # SWC invariants that `make_swc(validate=True)` would have checked
-            assert not new.node_id.duplicated().any()
-            not_root = new[new.parent_id >= 0]
-            assert (not_root.parent_id.values < not_root.node_id.values).all()
+            def find(n):
+                while parent[n] != n:
+                    parent[n] = parent[parent[n]]
+                    n = parent[n]
+                return n
 
-            # Coordinates must follow the node through the renumbering
-            inv = {v: k for k, v in new_ids.items() if k != -1}
-            orig = np.array([inv[n] for n in new.node_id.values])
-            assert np.allclose(new[['x', 'y', 'z']].values, coords[orig])
+            for a, b in edges_:
+                parent[find(a)] = find(b)
+
+            groups = {}
+            for n in nodes_:
+                groups.setdefault(find(n), set()).add(n)
+            return {frozenset(g) for g in groups.values()}
+
+        new_edges, new_nodes = original(new, new_ids)
+        old_edges, old_nodes = original(old, old_ids)
+
+        # Compare *before* asserting, and hand `assert` the bare bool: on sets
+        # this size pytest's `==` explanation spends 20+ minutes in difflib only
+        # to give up with a RecursionError.
+        same = new_nodes == old_nodes
+        assert same, f'{len(new_nodes ^ old_nodes)} nodes differ'
+
+        if case != 'cyclic':
+            same = new_edges == old_edges
+            assert same, f'{len(new_edges ^ old_edges)} edges differ'
+        else:
+            # Same shape of forest ...
+            assert len(new_edges) == len(old_edges)
+            same = partition(new_edges, new_nodes) == partition(old_edges, old_nodes)
+            assert same, 'components differ'
+
+            # ... spanning the same graph, with no edge invented along the way
+            undirected = {tuple(sorted((int(a), int(b)))) for a, b in edges if a != b}
+            assert not new_edges - undirected
+            assert not old_edges - undirected
+
+        # SWC invariants that `make_swc(validate=True)` would have checked
+        assert not new.node_id.duplicated().any()
+        not_root = new[new.parent_id >= 0]
+        assert (not_root.parent_id.values < not_root.node_id.values).all()
+
+        # Coordinates must follow the node through the renumbering
+        inv = {v: k for k, v in new_ids.items() if k != -1}
+        orig = np.array([inv[n] for n in new.node_id.values])
+        assert np.allclose(new[['x', 'y', 'z']].values, coords[orig])
 
     def test_mst_over_mesh_backends_agree(self):
         """The `geodesic_mst_mesh` backend must span exactly what scipy's did.
