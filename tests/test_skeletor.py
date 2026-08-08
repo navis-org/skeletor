@@ -259,10 +259,18 @@ class TestSkeletonization:
         Only the *edges* are pinned. `mesh_map` is allowed to differ: a vertex
         equidistant from two nodes of the path invalidating it goes to whichever
         the underlying search settled first, which the two decide differently.
-        The vertices that do differ are checked to be plausible ties rather than
-        one backend picking a distant node - not proof of a geodesic tie, which
-        would mean re-running the invalidation search here, but enough to catch
-        a map that has gone wrong rather than merely gone the other way.
+        The vertices that do differ must be exactly that - tied - which is a
+        question about geodesic distance, so it gets asked in those terms. The
+        invalidation search measures over the component's pristine weighted
+        adjacency, snapshotted before any path is zeroed out, and a component's
+        distances are the whole mesh graph's; so one dijkstra per differing
+        vertex over that graph reproduces what it saw.
+
+        Do not be tempted back to comparing *euclidean* distance as a stand-in.
+        Two paths of identical geodesic length can wander off in quite different
+        directions: at `inv_dist=200` vertex 2904 sits 167.081273 from both
+        candidates, yet 132.9 from one in a straight line and 144.0 from the
+        other.
         """
         pytest.importorskip('navis_fastcore')
 
@@ -282,9 +290,19 @@ class TestSkeletonization:
         assert as_set(fc_edges) == as_set(ig_edges)
 
         differ = np.flatnonzero(fc_map != ig_map)
-        v = np.asarray(m.vertices)
-        assert np.allclose(np.linalg.norm(v[differ] - v[fc_map[differ]], axis=1),
-                           np.linalg.norm(v[differ] - v[ig_map[differ]], axis=1))
+        n = len(m.vertices)
+        adj = scipy.sparse.coo_matrix((lengths, (edges[:, 0], edges[:, 1])),
+                                      shape=(n, n))
+        dist = scipy.sparse.csgraph.dijkstra(adj, directed=False, indices=differ)
+        row = np.arange(len(differ))
+        to_fc, to_ig = dist[row, fc_map[differ]], dist[row, ig_map[differ]]
+
+        # Both searches sum the same edge lengths along the tied paths, so these
+        # come out bit-identical - no tolerance needed
+        assert np.array_equal(to_fc, to_ig)
+
+        # A tie the search never saw would mean it reached past its own radius
+        assert (to_fc <= inv_dist).all()
         assert len(differ) < 0.01 * len(fc_map)
 
     def test_mean_curvature(self):
