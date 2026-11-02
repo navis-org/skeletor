@@ -239,22 +239,93 @@ class TestSkeletonization:
         assert len(s.mesh_map) == len(s.mesh.vertices)
         assert all(np.isin(s.mesh_map, s.swc.node_id.values))
 
+    @pytest.mark.parametrize('root', [0, 100, 2000])
+    @pytest.mark.parametrize('min_length', [100, 300, 1000])
+    def test_teasar_min_length_prunes_twigs(self, min_length, root):
+        """`min_length` is a property of the result, not of extraction order.
+
+        It used to be tested as each branch was extracted, which could only ask
+        whether a branch was short *as found*: one rejected as noise came back
+        whole as soon as a later path ran through it, so whether a twig survived
+        depended on the order branches were picked. Now it is applied to the
+        finished skeleton, so the contract is checkable - that is what this
+        does, rather than pinning particular nodes.
+        """
+        m = sk.example_mesh()
+        full = sk.skeletonize.by_teasar(m, 500, root=root, progress=False)
+        pruned = sk.skeletonize.by_teasar(m, 500, min_length=min_length,
+                                          root=root, progress=False)
+
+        def twig_lengths(s):
+            """Length of every terminal branch: a tip up to its first fork.
+
+            Measured on the *undirected* skeleton. Walking `parent_id` instead
+            would inherit the rooting's blind spot: the root holds a child
+            rather than a parent, so if it is itself a tip its branch is never
+            a leaf and the test would agree with the bug it is checking for.
+            """
+            xyz = s.swc[['x', 'y', 'z']].values      # node_id is 0..n-1
+            e = np.asarray(s.edges)
+            deg = np.bincount(e.ravel(), minlength=len(s.swc))
+            nbr = [[] for _ in range(len(s.swc))]
+            for a, b in e:
+                nbr[a].append(b)
+                nbr[b].append(a)
+            out = []
+            for tip in np.flatnonzero(deg == 1):
+                node, prev, length = tip, -1, 0.0
+                while True:
+                    nxt = next((u for u in nbr[node] if u != prev), None)
+                    if nxt is None:
+                        break
+                    length += np.linalg.norm(xyz[node] - xyz[nxt])
+                    if deg[nxt] != 2:
+                        break
+                    prev, node = node, nxt
+                out.append(length)
+            return np.array(out)
+
+        # The contract: nothing short is left standing
+        short = twig_lengths(pruned)
+        assert (short >= min_length).all(), f'{(short < min_length).sum()} twigs left'
+
+        # Pruning only ever removes. Compared in coordinate space, since the
+        # two runs renumber their nodes independently - node IDs are not
+        # comparable across skeletons, coordinates are.
+        def edge_coords(s):
+            xyz = s.swc[['x', 'y', 'z']].values     # node_id is 0..n-1
+            return {tuple(sorted((tuple(xyz[a]), tuple(xyz[b]))))
+                    for a, b in s.edges}
+
+        assert len(pruned.swc) < len(full.swc)
+        assert edge_coords(pruned) <= edge_coords(full)
+
+        # Vertices whose node was pruned away are unmapped, as documented
+        assert set(np.unique(pruned.mesh_map)) <= set(pruned.swc.node_id) | {-1}
+
     def test_teasar_nothing_left(self):
         """A `min_length` nothing can satisfy must say so, not IndexError."""
         with pytest.raises(ValueError, match='min_length'):
             sk.skeletonize.by_teasar(sk.example_mesh(), 500, min_length=1e9)
 
-    @pytest.mark.parametrize('inv_dist,min_length', [(500, None), (200, None),
-                                                     (500, 300)])
-    def test_teasar_backends_agree(self, inv_dist, min_length):
+    @pytest.mark.parametrize('inv_dist', [500, 200, 100])
+    def test_teasar_backends_agree(self, inv_dist):
         """The fastcore and igraph `_invalidate` backends must not drift apart.
 
-        The fastcore one drives two prepared `GeodesicGraph`s - one it
-        re-weights as it extracts paths, one pristine for the invalidation
-        radius - where the igraph one rebuilds a subgraph and hands scipy a
-        snapshot adjacency. Very different machinery for an algorithm whose
-        every step depends on the last, so the skeletons are pinned to each
-        other here rather than only to their own shape.
+        The igraph one zeroes each path it extracts and re-searches from the
+        root, where the fastcore one never re-weights anything and walks the new
+        stretch back from the tip to the skeleton instead. Very different
+        machinery for an algorithm whose every step depends on the last, so the
+        skeletons are pinned to each other here rather than only to their own
+        shape.
+
+        The equality holds because the example mesh has no exactly tied routes.
+        It is not a general guarantee: where a mesh does have them - a
+        subdivided one, say - the two can pick different tied routes, and that
+        choice cascades into different invalidation and different later tips,
+        so the skeletons come out different sizes. Both are valid; this fixture
+        is pinned because it is tie-free, which makes it a regression test
+        rather than a coin flip.
 
         Only the *edges* are pinned. `mesh_map` is allowed to differ: a vertex
         equidistant from two nodes of the path invalidating it goes to whichever
@@ -262,9 +333,8 @@ class TestSkeletonization:
         The vertices that do differ must be exactly that - tied - which is a
         question about geodesic distance, so it gets asked in those terms. The
         invalidation search measures over the component's pristine weighted
-        adjacency, snapshotted before any path is zeroed out, and a component's
-        distances are the whole mesh graph's; so one dijkstra per differing
-        vertex over that graph reproduces what it saw.
+        adjacency, and a component's distances are the whole mesh graph's; so one
+        dijkstra per differing vertex over that graph reproduces what it saw.
 
         Do not be tempted back to comparing *euclidean* distance as a stand-in.
         Two paths of identical geodesic length can wander off in quite different
@@ -282,12 +352,21 @@ class TestSkeletonization:
 
         m = make_trimesh(sk.example_mesh(), validate=False)
         edges, lengths = get_edges_unique(m, lengths=True)
-        args = (m, edges, lengths, inv_dist, min_length, 0, False)
+        args = (m, edges, lengths, inv_dist, 0, False)
 
         fc_edges, fc_map = teasar._invalidate_fastcore(*args)
         ig_edges, ig_map = teasar._invalidate_igraph(*args)
 
         assert as_set(fc_edges) == as_set(ig_edges)
+
+        # Each backend promises every skeleton edge exactly once - the fastcore
+        # one by clearing each parent as it walks the tip back, igraph by
+        # de-duplicating the overlapping paths it appends. Worth pinning because
+        # `as_set` above would hide a double emission, and so would the SWC
+        # step, which tolerates duplicates: a regression in that walk would have
+        # nothing else to trip over.
+        for name, e in (('fastcore', fc_edges), ('igraph', ig_edges)):
+            assert len(e) == len(as_set(e)), f'{name} emitted a duplicate edge'
 
         differ = np.flatnonzero(fc_map != ig_map)
         n = len(m.vertices)
@@ -297,9 +376,13 @@ class TestSkeletonization:
         row = np.arange(len(differ))
         to_fc, to_ig = dist[row, fc_map[differ]], dist[row, ig_map[differ]]
 
-        # Both searches sum the same edge lengths along the tied paths, so these
-        # come out bit-identical - no tolerance needed
-        assert np.array_equal(to_fc, to_ig)
+        # Tied, but the two routes sum the same edge lengths in a different
+        # order, which can move the total by a few ulp. 1e-9 brackets that: it
+        # is ~5 orders looser than the drift actually seen here (~2e-14
+        # relative), so ties pass, and ~9 orders tighter than a genuinely
+        # different node, which sits whole units away - so a real divergence
+        # still fails.
+        assert np.allclose(to_fc, to_ig, rtol=1e-9, atol=0)
 
         # A tie the search never saw would mean it reached past its own radius
         assert (to_fc <= inv_dist).all()
@@ -475,7 +558,11 @@ class TestUtils:
 
         def original(swc, ids):
             """The skeleton back in the original ID space: edges and nodes."""
-            inv = {v: k for k, v in ids.items() if k != -1}
+            if isinstance(ids, dict):            # what `make_swc` hands back
+                inv = {v: k for k, v in ids.items() if k != -1}
+            else:                                # `edges_to_swc`, positional
+                kept = np.flatnonzero(ids >= 0)
+                inv = {int(ids[o]): int(o) for o in kept}
             e = swc[swc.parent_id >= 0][['node_id', 'parent_id']].values
             edges_ = {tuple(sorted((int(inv[a]), int(inv[b])))) for a, b in e}
             return edges_, {int(inv[n]) for n in swc.node_id.values}
@@ -526,9 +613,10 @@ class TestUtils:
         not_root = new[new.parent_id >= 0]
         assert (not_root.parent_id.values < not_root.node_id.values).all()
 
-        # Coordinates must follow the node through the renumbering
-        inv = {v: k for k, v in new_ids.items() if k != -1}
-        orig = np.array([inv[n] for n in new.node_id.values])
+        # Coordinates must follow the node through the renumbering. `new_ids`
+        # is positional, so inverting it is one argsort over the kept nodes.
+        kept = np.flatnonzero(new_ids >= 0)
+        orig = kept[np.argsort(new_ids[kept])][new.node_id.values]
         assert np.allclose(new[['x', 'y', 'z']].values, coords[orig])
 
     def test_mst_over_mesh_backends_agree(self):

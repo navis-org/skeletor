@@ -206,7 +206,7 @@ def by_vertex_clusters(mesh, sampling_dist, cluster_pos='median', progress=True)
                                 nodes=np.unique(cl_edges.flatten()))
 
     # Update mesh map
-    vertex_to_node_map = np.array([new_ids.get(n, -1) for n in vertex_to_node_map])
+    vertex_to_node_map = new_ids[vertex_to_node_map]
 
     return Skeleton(swc=swc, mesh=mesh, mesh_map=vertex_to_node_map,
                     method='vertex_clusters')

@@ -491,6 +491,10 @@ def forest_to_swc(edges, coords, radii, n_nodes):
     swc :       pandas.DataFrame
     new_ids :   (n_nodes, ) array
                 Maps original node IDs (positional) to re-indexed node IDs.
+                Unlike :func:`edges_to_swc`'s, this one has no spare slot on the
+                end and holds no ``-1``: every node is in the skeleton, so there
+                is nothing to miss. A ``-1`` fed to it therefore reads the last
+                node rather than coming back ``-1``.
 
     """
     parents, order = orient_forest(edges, n_nodes)
@@ -534,7 +538,7 @@ def edges_to_swc(edges, coords, nodes=None):
 
     :func:`forest_to_swc` is the same thing for nodes already numbered
     ``0..n_nodes-1``; this one accepts any node IDs (e.g. a subset of mesh
-    vertices) and hands back the ID mapping as a dict, like :func:`make_swc`.
+    vertices).
 
     Parameters
     ----------
@@ -549,9 +553,16 @@ def edges_to_swc(edges, coords, nodes=None):
     Returns
     -------
     swc :       pandas.DataFrame
-    new_ids :   dict
-                Maps original node IDs to re-indexed node IDs. ``-1`` maps to
-                itself so the root sentinel survives a lookup.
+    new_ids :   (len(coords) + 1, ) array
+                Maps original node IDs to re-indexed node IDs, as
+                :func:`forest_to_swc` does; ``-1`` for any node that did not
+                make it into the skeleton. Callers remap whole arrays with it
+                (``new_ids[mesh_map]``), so it is an array rather than a dict:
+                through a dict that is one Python-level lookup per mesh vertex,
+                which on a mesh of millions dominates the call that built it.
+                The spare slot on the end carries the ``-1`` sentinel - a ``-1``
+                index lands on it and comes back ``-1``, so a root's parent and
+                an unmapped vertex both survive the lookup.
 
     """
     if isinstance(coords, tm.Trimesh):
@@ -595,8 +606,8 @@ def edges_to_swc(edges, coords, nodes=None):
         swc['x'] = swc['y'] = swc['z'] = None
     swc['radius'] = None       # a placeholder, as `make_swc` leaves it
 
-    new_ids = dict(zip(ids.tolist(), new_ids_arr.tolist()))
-    new_ids[-1] = -1  # as `reindex_swc` does - the root's parent stays -1
+    new_ids = np.full(len(coords) + 1, -1, dtype=np.int64)
+    new_ids[ids] = new_ids_arr
 
     return swc, new_ids
 
