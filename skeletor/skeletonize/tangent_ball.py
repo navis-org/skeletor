@@ -15,9 +15,7 @@
 #    along with this program.
 
 import itertools
-import ncollpyde
 
-import igraph as ig
 import numpy as np
 import scipy.sparse
 import scipy.spatial
@@ -173,6 +171,7 @@ def by_tangent_ball(mesh):
     centers = np.zeros(mesh.vertices.shape)
     radii = np.zeros(mesh.vertices.shape[0])
 
+    import ncollpyde
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
     sources = mesh.vertices - mesh.vertex_normals * 0.01
     targets = mesh.vertices - mesh.vertex_normals * (dist.max() * 10)
@@ -232,8 +231,10 @@ def by_tangent_ball(mesh):
                                  'geodesic_nearest_mesh',
                                  'contract_vertices',
                                  'minimum_spanning_tree')
-    G = None if use_fastcore else ig.Graph(n=n_verts, edges=edges,
-                                           directed=False)
+    G = None
+    if not use_fastcore:
+        import igraph as ig
+        G = ig.Graph(n=n_verts, edges=edges, directed=False)
 
     # Make sure that every connected component has at least one valid target
     if use_fastcore:

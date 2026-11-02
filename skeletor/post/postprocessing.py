@@ -14,7 +14,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-import ncollpyde
 import numbers
 import warnings
 
@@ -134,6 +133,7 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
 
     if los_only:
         # Initialize ncollpyde Volume
+        import ncollpyde
         coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
         # Remove twigs that aren't inside the volume
@@ -208,6 +208,7 @@ def recenter_vertices(s, mesh=None, inplace=False):
         s = s.copy()
 
     # Find nodes that are outside the mesh
+    import ncollpyde
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
     outside = ~coll.contains(s.vertices)
 
@@ -421,6 +422,7 @@ def fix_outside_edges(
     if smooth_iters < 0:
         raise ValueError("`smooth_iters` must be >= 0")
 
+    import ncollpyde
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
     # 1. Recenter any nodes outside the mesh
@@ -638,6 +640,7 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist="auto", inplace=False):
         max_dist = s.swc.parent_dist.max()
 
     # Initialize ncollpyde Volume
+    import ncollpyde
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
     # Find twigs

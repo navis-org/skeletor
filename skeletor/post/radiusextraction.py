@@ -15,7 +15,6 @@
 #    along with this program.
 
 import math
-import ncollpyde
 import numbers
 import random
 
@@ -212,6 +211,7 @@ def get_radius_ray(swc, mesh, n_rays=20, aggregate='mean', projection='sphere',
         targets = sources + cx_norm + cy_norm
 
     # Initialize ncollpyde Volume
+    import ncollpyde
     coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
 
     # Get intersections: `ix` points to index of line segment; `loc` is the
