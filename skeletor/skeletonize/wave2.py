@@ -14,7 +14,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-import igraph as ig
 import numpy as np
 import pandas as pd
 import scipy.sparse
@@ -268,6 +267,7 @@ def _bridges(edges, n_nodes):
         return np.asarray(_fastcore.fastcore.bridges(edges, n_nodes), dtype=bool)
 
     # No scipy equivalent, so igraph - which skeletor requires anyway - does it.
+    import igraph as ig
     G = ig.Graph(n=n_nodes, edges=edges.tolist(), directed=False)
     mask = np.zeros(len(edges), dtype=bool)
     mask[G.bridges()] = True

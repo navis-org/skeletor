@@ -36,7 +36,16 @@ The two are equivalent but not always bit-identical, for two reasons:
    both are valid. `by_tangent_ball` likewise picks a different, equally
    arbitrary target among equidistant ones, and `by_teasar` maps a vertex that
    sits exactly between two nodes of the path invalidating it to either one
-   (~0.2% of vertices on the example mesh). Individual call sites note these.
+   (3 of 6582 vertices on the example mesh at `inv_dist=200`, and none at all
+   at the 500 the tests and docs use). `by_teasar` also searches for a branch
+   from the opposite end to igraph, so where two routes to the same junction are
+   the same length it can take the other one. On a mesh with no exact ties the
+   two agree edge for edge; where ties do occur the choice *cascades* - a
+   different route invalidates a different set of vertices, which moves every
+   later tip - so the skeletons can end up different sizes, not merely routed
+   differently. A subdivided mesh, whose midpoints sit at exactly equal
+   distances, is the easy way to see it: 81 edges against 74 on one 122-vertex
+   case. Both remain valid TEASAR skeletons. Individual call sites note these.
 
 The primitives were added at different times, so testing that the module
 imports is not enough - each call site must check for the specific feature it
@@ -54,7 +63,7 @@ the same primitives with the per-call adjacency build hoisted out, for call site
 that ask many small questions of one graph, and its methods likewise arrived at
 different times. :func:`has` takes a dotted name for those::
 
-    if _fastcore.has('GeodesicGraph.set_weights'):
+    if _fastcore.has('GeodesicGraph.nearest'):
         ...
 
 Arguments arrive late too, and a function that exists but does not take the
@@ -102,7 +111,7 @@ def has(*funcs):
     *funcs :    str
                 Names of the ``navis_fastcore`` features required by the caller.
                 A dotted name walks into the attribute, so
-                ``'GeodesicGraph.set_weights'`` asks for the method rather than
+                ``'GeodesicGraph.nearest'`` asks for the method rather than
                 just the class - which a call site needing it has to do, since
                 the class grew its methods at different times. A trailing
                 ``(arg)`` additionally requires that keyword argument, for the

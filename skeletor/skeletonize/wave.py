@@ -14,7 +14,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.
 
-import igraph as ig
 import numpy as np
 import pandas as pd
 
@@ -161,6 +160,7 @@ def by_wavefront(mesh,
     if _fastcore.has('contract_vertices'):
         el = _fastcore.fastcore.contract_vertices(edges, vertex_to_node_map)
     else:
+        import igraph as ig
         G = ig.Graph(n=n_verts, edges=edges, directed=False)
         G.contract_vertices(vertex_to_node_map)
         el = np.array(G.simplify().get_edgelist())
@@ -200,6 +200,7 @@ def by_wavefront(mesh,
                                                         maximize=True)
         tree_edges = el[keep]
     else:
+        import igraph as ig
         G = ig.Graph(n=n_nodes, edges=el, directed=False)
         tree_edges = np.array(G.spanning_tree(weights=1 / weights).get_edgelist())
 
@@ -424,6 +425,7 @@ def _cast_waves_igraph(mesh, edges, waves, origins, step_size,
                        rad_agg_func, progress):
     """`_cast_waves` backend using igraph."""
     # Generate Graph (must be undirected)
+    import igraph as ig
     G = ig.Graph(n=mesh.vertices.shape[0], edges=edges, directed=False)
 
     # Prepare empty array to fill with centers
