@@ -27,12 +27,6 @@ from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
 from .utils import forest_to_swc, group_by_label, prep_origins
 
-try:
-    from fastremap import unique
-except ModuleNotFoundError:
-    from numpy import unique
-except BaseException:
-    raise
 __all__ = ['by_wavefront']
 
 # This flag determines whether we use inverse radii or edge lengths for the MST.
@@ -137,22 +131,20 @@ def by_wavefront(mesh,
     edges = get_edges_unique(mesh)
     n_verts = mesh.vertices.shape[0]
 
-    centers_final, radii_final = _cast_waves(mesh, edges,
-                                             waves=waves,
-                                             origins=origins,
-                                             step_size=step_size,
-                                             radius_agg=radius_agg,
-                                             rad_agg_func=rad_agg_func,
-                                             progress=progress)
-
-    # Collapse vertices into nodes
     (node_centers,
-     vertex_to_node_map) = unique(centers_final, return_inverse=True, axis=0)
+     vertex_to_node_map,
+     radii_final) = _cast_waves(mesh, edges,
+                                waves=waves,
+                                origins=origins,
+                                step_size=step_size,
+                                radius_agg=radius_agg,
+                                rad_agg_func=rad_agg_func,
+                                progress=progress)
     n_nodes = len(node_centers)
 
     # Map radii for individual vertices to the collapsed nodes
-    # (node IDs from unique() are contiguous 0..M-1, so the sorted groupby
-    # output aligns positionally with node IDs)
+    # (node IDs are contiguous 0..M-1, so the sorted groupby output aligns
+    # positionally with node IDs)
     node_radii = _grouped_agg(radii_final, vertex_to_node_map,
                               radius_agg, rad_agg_func)
 
@@ -277,9 +269,18 @@ def _pick_seeds(cc, waves, origins):
 
 def _cast_waves(mesh, edges, waves=1, origins=None, step_size=1,
                 radius_agg='mean', rad_agg_func=np.mean, progress=True):
-    """Cast waves across mesh.
+    """Cast waves across mesh and collapse the rings into skeleton nodes.
 
-    Returns the per-vertex ring centers and radii, averaged over all waves.
+    Returns
+    -------
+    node_centers :          (M, 3) array
+                            Ring centers averaged over all waves, one row per
+                            distinct center, in lexicographic order.
+    vertex_to_node_map :    (N, ) array
+                            Row of `node_centers` each vertex collapses onto.
+    radii_final :           (N, ) array
+                            Per-vertex ring radius, averaged over all waves.
+
     """
     origins = prep_origins(origins)
 
@@ -309,10 +310,6 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     verts = np.asarray(mesh.vertices)
     n_verts = verts.shape[0]
 
-    # Prepare empty array to fill with centers
-    centers = np.full((n_verts, 3, waves), fill_value=np.nan)
-    radii = np.full((n_verts, waves), fill_value=np.nan)
-
     # Split into connected components. `connected_components_graph` labels each
     # vertex with the lowest vertex ID in its component, so grouping by that
     # label yields components in ascending ID order with their members sorted
@@ -320,6 +317,7 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     # selection below identical between the two backends.
     comp = fc.connected_components_graph(edges, n_verts)
     srt, starts, sizes = group_by_label(comp)
+    del comp
 
     # Pick each component's seeds, grouped by the wave they belong to.
     # Components with fewer vertices than `waves` yield fewer seeds; the
@@ -357,14 +355,25 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     # instead. Components are disjoint, so the only way into a vertex is via its
     # own component's seed and a single whole-mesh BFS yields every distance at
     # once - offset by the one hop out of the virtual node.
-    super_id = np.uint32(n_verts)
+    #
+    # `GeodesicGraph.ball` is that search done properly: one multi-source BFS
+    # giving every vertex its distance to the nearest seed, over an adjacency
+    # built once and shared by all waves. Fall back to the virtual node where
+    # fastcore predates it.
     edges_u32 = np.asarray(edges).astype(np.uint32, copy=False)
     labels = np.full((waves, n_verts), fill_value=-1, dtype=np.int64)
+    G = fc.GeodesicGraph(edges_u32, n_verts) if _fastcore.has('GeodesicGraph.ball') else None
+    super_id = np.uint32(n_verts)
     for w, seeds in enumerate(tqdm(seeds_per_wave, desc='Skeletonizing',
                                    disable=not progress, leave=False)):
         if not seeds:
             continue
         seeds = srt[seeds].astype(np.uint32)
+        if G is not None:
+            # Vertices no seed reaches are simply absent, so they stay at -1.
+            reached, d, _ = G.ball(seeds)
+            labels[w, reached] = d.astype(np.int64)
+            continue
         spokes = np.column_stack((np.full_like(seeds, super_id), seeds))
         d = fc.geodesic_matrix_graph(np.vstack((edges_u32, spokes)),
                                      n_verts + 1,
@@ -394,31 +403,107 @@ def _cast_waves_fastcore(mesh, edges, waves, origins, step_size,
     # level set. Since mesh components are disjoint they can't be joined by an
     # edge, so this runs across the whole mesh at once - one O(E) sweep per wave
     # instead of a subgraph construction plus component search per level.
+    #
+    # Everything from here on is kept per *ring* rather than per vertex: a ring's
+    # center and radius are the same for all its vertices, and a 4M-vertex mesh
+    # has only ~130k rings per wave.
+    ring_ids = np.empty((waves, n_verts), dtype=np.int64)  # -1 = not reached
+    ring_centers, ring_radii = [], []
     for w in range(waves):
-        ids, n_rings = fc.level_set_components(edges, n_verts, labels[w])
+        ids, n_rings = fc.level_set_components(edges_u32, n_verts, labels[w])
+        ring_ids[w] = ids
 
         ix = np.flatnonzero(ids >= 0)
-        if not len(ix):
-            continue
         ring = ids[ix]
 
         # Ring centers: with contiguous ring IDs a bincount is the grouped mean
         counts = np.bincount(ring, minlength=n_rings)
-        ring_centers = np.empty((n_rings, 3))
+        this_centers = np.empty((n_rings, 3))
         for k in range(3):
-            ring_centers[:, k] = np.bincount(ring, weights=verts[ix, k],
+            this_centers[:, k] = np.bincount(ring, weights=verts[ix, k],
                                              minlength=n_rings)
-        ring_centers /= counts[:, None]
+        this_centers /= counts[:, None]
 
         # Ring radii: aggregate each vertex's distance to its ring's center
-        to_center = np.linalg.norm(verts[ix] - ring_centers[ring], axis=1)
-        ring_radii = _grouped_agg(to_center, ring, radius_agg, rad_agg_func)
+        if n_rings:
+            to_center = np.linalg.norm(verts[ix] - this_centers[ring], axis=1)
+            this_radii = _grouped_agg(to_center, ring, radius_agg, rad_agg_func)
+        else:
+            this_radii = np.empty(0)
 
-        centers[ix, :, w] = ring_centers[ring]
-        radii[ix, w] = ring_radii[ring]
+        ring_centers.append(this_centers)
+        ring_radii.append(this_radii)
+
+    # Collapse vertices into nodes. A vertex's center is the mean over waves of
+    # its rings' centers, so two vertices sharing a ring in every wave share a
+    # center bit for bit - and the way to find the nodes is to group vertices by
+    # their tuple of ring IDs (hashing integers, O(N)), average centers once per
+    # group and only then run the row-wise unique that merges any groups whose
+    # centers coincide regardless (duplicated geometry, in practice). Running
+    # that unique straight on the N x 3 float centers was two thirds of the
+    # whole run on a 4M-vertex mesh.
+    group, n_groups = _factorize_columns(ring_ids)
+    group_rings = np.empty((waves, n_groups), dtype=np.int64)
+    for w in range(waves):
+        # All vertices of a group carry the same ring, so it does not matter
+        # which of them this scatter lets win.
+        group_rings[w, group] = ring_ids[w]
+    del ring_ids
+
+    centers = np.full((n_groups, 3, waves), fill_value=np.nan)
+    radii = np.full((n_groups, waves), fill_value=np.nan)
+    for w in range(waves):
+        ok = np.flatnonzero(group_rings[w] >= 0)
+        ring = group_rings[w, ok]
+        centers[ok, :, w] = ring_centers[w][ring]
+        radii[ok, w] = ring_radii[w][ring]
 
     # Get mean centers and radii over all the waves we casted
-    return np.nanmean(centers, axis=2), np.nanmean(radii, axis=1)
+    node_centers, remap = _collapse_centers(np.nanmean(centers, axis=2))
+    radii_final = np.nanmean(radii, axis=1)
+
+    return node_centers, remap[group], radii_final[group]
+
+
+def _factorize_columns(ids):
+    """Group the columns of an ``(k, N)`` integer array.
+
+    Returns a contiguous group ID per column, equal columns sharing one, and the
+    number of groups. Built up one row at a time with ``pd.factorize``, which is
+    hash-based: ``np.unique(axis=1)`` would sort N rows instead, and the ids
+    being integers is the whole point of grouping on them rather than on the
+    float centers they stand for.
+    """
+    ids = np.asarray(ids, dtype=np.int64)
+    group = np.zeros(ids.shape[1], dtype=np.int64)
+    n_groups = 1
+    for row in ids:
+        # Combine with the groups so far into one key per column. `-1` is a
+        # valid id (unreached), hence the shift to make the stride positive.
+        lo = row.min() if len(row) else 0
+        stride = (row.max() - lo + 1) if len(row) else 1
+        group, uniques = pd.factorize(group * stride + (row - lo))
+        n_groups = len(uniques)
+    return group.astype(np.int64, copy=False), n_groups
+
+
+def _collapse_centers(centers):
+    """Collapse rows of identical coordinates into nodes.
+
+    The same thing as ``np.unique(centers, axis=0, return_inverse=True)`` - the
+    nodes in lexicographic order of their coordinates, and a contiguous map from
+    row to node - only about twice as fast: ``np.unique`` sorts a structured view
+    of the rows, where ``np.lexsort`` over the columns gets by without one.
+    """
+    centers = np.asarray(centers)
+    if not len(centers):
+        return centers, np.zeros(0, dtype=np.int64)
+    order = np.lexsort((centers[:, 2], centers[:, 1], centers[:, 0]))
+    srt = centers[order]
+    first = np.r_[True, (srt[1:] != srt[:-1]).any(axis=1)]
+    inverse = np.empty(len(centers), dtype=np.int64)
+    inverse[order] = np.cumsum(first) - 1
+    return srt[first], inverse
 
 
 def _cast_waves_igraph(mesh, edges, waves, origins, step_size,
@@ -487,8 +572,10 @@ def _cast_waves_igraph(mesh, edges, waves, origins, step_size,
 
             pbar.update(len(cc))
 
-    # Get mean centers and radii over all the waves we casted
-    return np.nanmean(centers, axis=2), np.nanmean(radii, axis=1)
+    # Get mean centers and radii over all the waves we casted, then collapse
+    # vertices with identical centers into nodes
+    node_centers, vertex_to_node_map = _collapse_centers(np.nanmean(centers, axis=2))
+    return node_centers, vertex_to_node_map, np.nanmean(radii, axis=1)
 
 
 def dotprops(x, k=20):

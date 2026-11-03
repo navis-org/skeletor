@@ -80,16 +80,19 @@ class TestSkeletonization:
         edges = get_edges_unique(m)
 
         kwargs = dict(origins=np.array([]), step_size=step_size)
-        fc_c, fc_r = wave._cast_waves_fastcore(m, edges, waves,
-                                               radius_agg='mean',
-                                               rad_agg_func=np.mean,
-                                               progress=False, **kwargs)
-        ig_c, ig_r = wave._cast_waves_igraph(m, edges, waves,
-                                             rad_agg_func=np.mean,
-                                             progress=False, **kwargs)
+        fc_n, fc_m, fc_r = wave._cast_waves_fastcore(m, edges, waves,
+                                                     radius_agg='mean',
+                                                     rad_agg_func=np.mean,
+                                                     progress=False, **kwargs)
+        ig_n, ig_m, ig_r = wave._cast_waves_igraph(m, edges, waves,
+                                                   rad_agg_func=np.mean,
+                                                   progress=False, **kwargs)
 
-        assert np.allclose(fc_c, ig_c, atol=1e-9, equal_nan=True)
+        # Same per-vertex centers and radii ...
+        assert np.allclose(fc_n[fc_m], ig_n[ig_m], atol=1e-9, equal_nan=True)
         assert np.allclose(fc_r, ig_r, atol=1e-9, equal_nan=True)
+        # ... and the same vertices collapsed onto the same nodes
+        assert np.array_equal(fc_m, ig_m)
 
     def test_wave_exact(self):
         s = sk.skeletonize.by_wavefront_exact(sk.example_mesh(), step_size=50)
