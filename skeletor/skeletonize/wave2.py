@@ -25,8 +25,8 @@ from scipy.spatial import cKDTree
 from .. import _fastcore
 from ..utilities import make_trimesh, get_edges_unique
 from .base import Skeleton
-from .utils import (adjacency, connected_components, group_by_label,
-                    group_edges_by_component, prep_origins)
+from .utils import (adjacency, connected_components, group_edges_by_component,
+                    prep_origins)
 from .wave import _grouped_agg
 
 __all__ = ["by_wavefront_exact"]
@@ -192,7 +192,11 @@ def _contract(edges, mapping):
     different order would give a different - equally valid, but different - tree,
     and the two backends would drift apart.
     """
-    if _fastcore.has('contract_vertices'):
+    # fastcore's version is parallel, and dispatching to the pool costs ~50 us
+    # before it has looked at an edge - longer than numpy takes to contract a
+    # few thousand of them (the two cross over at ~6k). On a mesh shattered into
+    # thousands of specks that fixed cost was a quarter of the whole run.
+    if _fastcore.has('contract_vertices') and len(edges) > 6_000:
         el = np.asarray(_fastcore.fastcore.contract_vertices(
             edges, mapping.astype(np.uint32)))
     else:
@@ -274,44 +278,72 @@ def _bridges(edges, n_nodes):
     return mask
 
 
-def _edge_to_face_csr(mesh, n_edges):
-    """Inverse of ``faces_unique_edges``: which faces each unique edge belongs to.
+def _group_by_label_csr(labels, n_labels):
+    """Item indices bucketed by label, as CSR ``(indptr, indices)``.
 
-    CSR rather than a padded (E, 2) array because a non-manifold edge can carry
-    more than two faces, and skeletor does not require manifold input.
+    The same grouping as :func:`group_by_label` for labels already dense in
+    ``[0, n_labels)``, but as a counting sort rather than an ``argsort``: the
+    bucket offsets are its first half anyway, and scipy's ``coo_tocsr`` is the
+    second half in C - 14 ms against 113 ms for the comparison sort at 2.6M keys.
+    Within a bucket the items stay in ascending order.
     """
-    fue = np.asarray(mesh.faces_unique_edges)
-    edge_ids = fue.ravel()
-    face_ids = np.repeat(np.arange(len(fue), dtype=np.int64), fue.shape[1])
-
-    # A counting sort, not `argsort`: the keys are bounded by `n_edges`, and the
-    # bucket offsets below are its first half anyway. scipy's `coo_tocsr` is that
-    # sort in C - 14 ms against 113 ms for the comparison sort at 2.6M keys.
-    indptr = np.zeros(n_edges + 1, dtype=np.int64)
-    np.cumsum(np.bincount(edge_ids, minlength=n_edges), out=indptr[1:])
+    indptr = np.zeros(n_labels + 1, dtype=np.int64)
+    np.cumsum(np.bincount(labels, minlength=n_labels), out=indptr[1:])
     indices = scipy.sparse.coo_matrix(
-        (face_ids + 1, (edge_ids, np.arange(len(edge_ids)))),
-        shape=(n_edges, len(edge_ids))).tocsr().data - 1
+        (np.arange(1, len(labels) + 1), (labels, np.arange(len(labels)))),
+        shape=(n_labels, len(labels))).tocsr().data - 1
     return indptr, indices
 
 
-def _pairs_within_groups(order, starts, sizes):
-    """Every unordered pair within each group, from `group_by_label` output.
+def _stitch_pairs(face_edges, first_step, n_ins, offs, n_orig):
+    """Join synthetic vertices that sit on the same face at the same step.
 
-    Loops over the distinct group *sizes* - there are a handful - rather than
-    over the groups, of which there are hundreds of thousands.
+    A front crossing a face enters through one edge and leaves through another,
+    so the two synthetic vertices it put on those edges are part of the same
+    ring. Along an edge the synthetic vertices sit at consecutive steps
+    ``first_step[e], first_step[e] + 1, ...`` and carry consecutive IDs, so for
+    each pair of edges of a face the vertices to join are simply those on the
+    overlap of the two step ranges - no need to tabulate every (vertex, face,
+    step) and group it, which is a sort over twice as many rows as there are
+    synthetic vertices.
+
+    Parameters
+    ----------
+    face_edges :    (F, 3) array
+                    Local edge IDs of each face's edges.
+    first_step :    (E, ) array
+                    Step of the first synthetic vertex on each edge (anything
+                    for edges without one).
+    n_ins :         (E, ) array
+                    Number of synthetic vertices on each edge.
+    offs :          (E + 1, ) array
+                    Cumulative ``n_ins``, so edge ``e``'s vertices are
+                    ``n_orig + offs[e] + j``.
+    n_orig :        int
+
+    Returns
+    -------
+    (P, 2) array of local vertex IDs to join. A face with a repeated edge
+    (degenerate) yields self-pairs, which the contraction drops.
+
     """
-    out = []
-    for s in np.unique(sizes):
-        if s < 2:
-            continue
-        which = np.flatnonzero(sizes == s)
-        members = order[starts[which][:, None] + np.arange(s)[None, :]]
-        a, b = np.triu_indices(s, k=1)
-        out.append(np.column_stack((members[:, a].ravel(), members[:, b].ravel())))
-    if not out:
+    # The three edge pairs of every face, as two long columns
+    a = face_edges[:, [0, 0, 1]].ravel()
+    b = face_edges[:, [1, 2, 2]].ravel()
+    lo = np.maximum(first_step[a], first_step[b])
+    hi = np.minimum(first_step[a] + n_ins[a], first_step[b] + n_ins[b])
+    cnt = np.maximum(hi - lo, 0)
+    which = np.flatnonzero(cnt)
+    if not len(which):
         return np.zeros((0, 2), dtype=np.int64)
-    return np.vstack(out).astype(np.int64)
+    cnt = cnt[which]
+    owner = np.repeat(which, cnt)
+    starts = np.zeros(len(cnt) + 1, dtype=np.int64)
+    np.cumsum(cnt, out=starts[1:])
+    step = lo[owner] + (np.arange(len(owner)) - np.repeat(starts[:-1], cnt))
+    a, b = a[owner], b[owner]
+    return np.column_stack((n_orig + offs[a] + (step - first_step[a]),
+                            n_orig + offs[b] + (step - first_step[b])))
 
 
 def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
@@ -349,30 +381,64 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
     edges_unique = np.asarray(edges_unique, dtype=np.int64)
     edges_unique_length = np.asarray(edges_unique_length, dtype=np.float64)
 
-    e2f_indptr, e2f_indices = _edge_to_face_csr(mesh, len(edges_unique))
+    comp, ccs, eorder, espan = group_edges_by_component(edges_unique, n_verts)
+
+    # The faces of each component (for stitching the fronts) and each edge's
+    # position within its component's edge slice, both set up once here rather
+    # than searched for per component. A face belongs to the component of its
+    # first vertex; `ccs` is in ascending label order, so the position of a
+    # component's label in that list is its index.
+    fue = np.asarray(mesh.faces_unique_edges, dtype=np.int64)
+    cc_labels = np.array([cc[0] for cc in ccs], dtype=np.int64)
+    face_cc = np.searchsorted(cc_labels, comp[np.asarray(mesh.faces)[:, 0]])
+    f_indptr, f_indices = _group_by_label_csr(face_cc, len(ccs))
+    ge2le = np.empty(len(edges_unique), dtype=np.int64)
+    lo_of_edge = np.zeros(len(edges_unique), dtype=np.int64)
+    for lo, hi in espan.values():
+        lo_of_edge[lo:hi] = lo
+    ge2le[eorder] = np.arange(len(eorder)) - lo_of_edge
 
     # Accumulated per component and concatenated at the end, rather than one
     # Python object appended per skeleton node
-    centers, radii, parents = [], [], []
+    centers, parents = [], []
     n_nodes = 0
     mesh_map = np.full(n_verts, -1, dtype=np.int64)
+
+    # The radius aggregation is deferred: a grouped reduction costs ~60 us
+    # before it has looked at a value, so it is run once over every front of
+    # every component after the loop rather than once per component. Groups
+    # are independent, so that is the same result. `node_front` holds each
+    # node's group in that global numbering, `-1` for nodes without one.
+    front_dist, front_group, node_front = [], [], []
+    front_radius = []
+    n_groups = n_pending = 0
+
+    def flush_radii():
+        """Aggregate the pending fronts' radii (bounds the buffer)."""
+        nonlocal n_pending
+        if front_dist:
+            done = sum(len(r) for r in front_radius)
+            front_radius.append(_grouped_agg(np.concatenate(front_dist),
+                                             np.concatenate(front_group) - done,
+                                             radius_agg, rad_agg_func))
+            front_dist.clear()
+            front_group.clear()
+        n_pending = 0
 
     def emit_single(cc, vertex):
         """Collapse a whole component onto one node at `vertex`."""
         nonlocal n_nodes
         mesh_map[cc] = n_nodes
         centers.append(verts[vertex][None, :])
-        radii.append(np.zeros(1))
+        node_front.append(np.full(1, -1, dtype=np.int64))
         parents.append(np.full(1, -1, dtype=np.int64))
         n_nodes += 1
-
-    _, ccs, eorder, espan = group_edges_by_component(edges_unique, n_verts)
 
     glob2loc = np.full(n_verts, -1, dtype=np.int64)
 
     with tqdm(desc='Skeletonizing', total=n_verts,
               disable=not progress, leave=False) as pbar:
-        for cc in ccs:
+        for ci, cc in enumerate(ccs):
             pbar.update(len(cc))
             n_orig = len(cc)
             glob2loc[cc] = np.arange(n_orig)
@@ -410,7 +476,9 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
                 emit_single(cc, cc[seed])
                 continue
 
-            dist_is_step = np.isclose(dist % step_size, 0)
+            # `np.isclose(dist % step_size, 0)`, spelled out: the same test
+            # (|x| <= atol, rtol has nothing to scale) without its overhead
+            dist_is_step = np.abs(dist % step_size) <= 1e-8
 
             # ---- orient every edge proximal -> distal wrt the seed ---------
             d_ends = dist[sub_edges]
@@ -421,7 +489,10 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             cc_pos = verts[cc]
             prox_pos = cc_pos[prox]
             vect = cc_pos[distal] - prox_pos
-            vect /= np.linalg.norm(vect, axis=1)[:, None]
+            with np.errstate(invalid='ignore', divide='ignore'):
+                # Zero-length edges give NaN here, harmlessly: nothing is
+                # ever inserted on them.
+                vect /= np.linalg.norm(vect, axis=1)[:, None]
 
             # ---- how many synthetic vertices does each edge get? -----------
             # A vertex already sitting on a multiple of `step_size` is itself the
@@ -444,7 +515,9 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
 
             d_new = start_ins[owner] + j * step_size
             new_ids = n_orig + np.arange(total_new)
-            new_pos = prox_pos[owner] + vect[owner] * (d_new - d_prox[owner])[:, None]
+            new_pos = vect[owner]
+            new_pos *= (d_new - d_prox[owner])[:, None]
+            new_pos += prox_pos[owner]
 
             n_total = n_orig + total_new
             all_vertices = np.vstack([cc_pos, new_pos])
@@ -459,6 +532,12 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             closing = np.column_stack((new_ids[offs[1:][split] - 1], distal[split]))
             untouched = np.column_stack((prox[~split], distal[~split]))
             edges = np.vstack([untouched, chain, closing]).astype(np.int64)
+            # Consecutive synthetic vertices on one edge are a step apart by
+            # construction, so of the chain only its first link can ever lie
+            # within a front. The level sets are searched over this shorter list;
+            # the contraction, which needs every link, gets the full one.
+            first_link = np.column_stack((prox[split], new_ids[offs[:-1][split]]))
+            edges_lvl = [untouched, first_link, closing]
 
             # ---- which step is each vertex on? -----------------------------
             step_of = np.zeros(n_total, dtype=np.int64)
@@ -478,21 +557,12 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             # faces; two of them on the same face at the same step are part of the
             # same ring and get joined.
             if total_new:
-                g = gedge[owner]
-                nf = e2f_indptr[g + 1] - e2f_indptr[g]
-                rep = np.repeat(np.arange(total_new), nf)
-                slot = np.arange(len(rep)) - np.repeat(
-                    np.concatenate(([0], np.cumsum(nf)[:-1])), nf)
-                face = e2f_indices[e2f_indptr[g][rep] + slot]
-
-                # Group by (face, step) - both non-negative, so one key does
-                new_step = step_of[new_ids]
-                key = face * (new_step.max() + 2) + new_step[rep]
-                order, starts, sizes = group_by_label(key)
-                # `cross` indexes the (vertex, face) rows, so hop back via `rep`
-                cross = _pairs_within_groups(order, starts, sizes)
-                if len(cross):
-                    edges = np.vstack([edges, new_ids[rep[cross]]])
+                first_step = np.zeros(len(sub_edges), dtype=np.int64)
+                first_step[split] = step_of[new_ids[offs[:-1][split]]]
+                face_edges = ge2le[fue[f_indices[f_indptr[ci]:f_indptr[ci + 1]]]]
+                cross = _stitch_pairs(face_edges, first_step, n_ins, offs, n_orig)
+            else:
+                cross = np.zeros((0, 2), dtype=np.int64)
 
             # ---- the fronts themselves --------------------------------------
             # Note we could additionally check for weakly connected components,
@@ -500,7 +570,12 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             #                 | |  | |
             #                 2-3--4-6
             # that leads to lots of side branches, so we don't.
-            front_ids, n_fronts = _level_set_components(edges, n_total, step_of)
+            # The stitches only matter here: both ends of one are on the same
+            # step by construction, so they always land in one front and would
+            # only ever contract to a self-loop.
+            front_ids, n_fronts = _level_set_components(
+                np.vstack(edges_lvl + [cross]).astype(np.int64), n_total, step_of)
+            del cross, edges_lvl, first_link, untouched, chain, closing
 
             # ---- collapse each front to its centre --------------------------
             # Every step here is a grouped reduction. Doing it per front is a
@@ -530,27 +605,40 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             dense = np.full(n_fronts, -1, dtype=np.int64)
             dense[live] = np.arange(len(live))
 
-            sums = np.stack([np.bincount(fid, weights=all_vertices[step_nodes, k],
+            step_pos = all_vertices[step_nodes]
+            sums = np.stack([np.bincount(fid, weights=step_pos[:, k],
                                          minlength=n_fronts) for k in range(3)],
                             axis=1)
             front_center = np.zeros((n_fronts, 3))
             front_center[live] = sums[live] / n_step[live, None]
-            d = np.sqrt(((all_vertices[step_nodes] - front_center[fid]) ** 2).sum(axis=1))
-            front_radius = _grouped_agg(d, dense[fid], radius_agg, rad_agg_func)
+            # Squared distance to the centre, in place: `step_pos` is as long as
+            # there are synthetic vertices and a chain of temporaries that size
+            # is what this step used to spend its time on.
+            step_pos -= front_center[fid]
+            np.square(step_pos, out=step_pos)
+            d = step_pos.sum(axis=1)
+            np.sqrt(d, out=d)
+            del step_pos
+            front_dist.append(d)
+            front_group.append(dense[fid] + n_groups)
+            n_pending += len(d)
 
             has_center = np.zeros(n_total, dtype=bool)
             this_center = np.zeros((n_total, 3))
-            this_radius = np.zeros(n_total)
             has_center[rep[live]] = True
             this_center[rep[live]] = front_center[live]
-            this_radius[rep[live]] = front_radius
-
-            if len(live) != n_fronts:
-                dead = n_step[front_ids] == 0
-                edges = edges[~(dead[edges[:, 0]] | dead[edges[:, 1]])]
 
             # ---- contract, then drop what is left isolated ------------------
             el = _contract(edges, mapping)
+
+            # Edges into a dead front go. Doing this after the contraction
+            # rather than before is the same set of edges - an edge is dropped
+            # iff either end's front is dead, which contracting does not change
+            # - over a few hundred thousand rows instead of tens of millions.
+            if len(live) != n_fronts:
+                dead = np.zeros(n_total, dtype=bool)
+                dead[rep[n_step == 0]] = True
+                el = el[~(dead[el[:, 0]] | dead[el[:, 1]])]
 
             deg = np.bincount(el.ravel(), minlength=n_total)
             keep = np.flatnonzero((deg > 0) & has_center)
@@ -577,8 +665,11 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
             offset = n_nodes
             parents.append(np.where(this_parents >= 0, this_parents + offset, -1))
             centers.append(this_center[keep])
-            radii.append(this_radius[keep])
+            node_front.append(dense[front_ids[keep]] + n_groups)
+            n_groups += len(live)
             n_nodes += len(keep)
+            if n_pending > 2_000_000:
+                flush_radii()
 
             # ---- mesh vertex -> skeleton node --------------------------------
             node_of_local = renum[mapping[:n_orig]]
@@ -595,9 +686,18 @@ def _cast_waves(mesh, step_size, origins=None, radius_agg='mean',
 
     centers = np.vstack(centers)
 
+    # Radii of the fronts still pending, then onto their nodes
+    flush_radii()
+    node_front = np.concatenate(node_front)
+    radii = np.zeros(n_nodes)
+    if n_groups:
+        front_radius = np.concatenate(front_radius)
+        has = node_front >= 0
+        radii[has] = front_radius[node_front[has]]
+
     # Catch any mesh vertices that never made it into the graph. Normally a no-op.
     still = np.flatnonzero(mesh_map == -1)
     if len(still):
         mesh_map[still] = cKDTree(centers).query(verts[still])[1]
 
-    return centers, np.concatenate(radii), np.concatenate(parents), mesh_map
+    return centers, radii, np.concatenate(parents), mesh_map
