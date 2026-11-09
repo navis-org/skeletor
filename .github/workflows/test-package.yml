@@ -8,6 +8,9 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
+        # "minimal" exercises the fallback implementations, "full" the
+        # navis-fastcore/fastremap/robust_laplacian paths
+        deps: ["minimal", "full"]
     steps:
       # This cancels any such job that is still runnning
     - name: Cancel Previous Runs
@@ -15,7 +18,7 @@ jobs:
       with:
         access_token: ${{ github.token }}
     - uses: actions/checkout@v5
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }} (${{ matrix.deps }})
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
@@ -26,7 +29,11 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install skeletor
       run: |
-        pip install -e .
+        if [ "${{ matrix.deps }}" = "full" ]; then
+          pip install -e ".[ncollpyde,fast,robust]"
+        else
+          pip install -e ".[ncollpyde]"
+        fi
     - name: Run tests
       run: |
         pytest --verbose
