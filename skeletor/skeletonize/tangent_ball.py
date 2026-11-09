@@ -25,7 +25,7 @@ from .base import Skeleton
 from .utils import forest_to_swc
 
 from .. import _fastcore
-from ..utilities import make_trimesh, get_edges_unique
+from ..utilities import make_trimesh, make_volume, get_edges_unique
 
 # Interesting references:
 # - https://www.sciencedirect.com/science/article/pii/S037843710600464X
@@ -171,8 +171,7 @@ def by_tangent_ball(mesh):
     centers = np.zeros(mesh.vertices.shape)
     radii = np.zeros(mesh.vertices.shape[0])
 
-    import ncollpyde
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    coll = make_volume(mesh)
     sources = mesh.vertices - mesh.vertex_normals * 0.01
     targets = mesh.vertices - mesh.vertex_normals * (dist.max() * 10)
     ix, loc, is_backface = coll.intersections(sources, targets)

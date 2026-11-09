@@ -771,6 +771,15 @@ class TestPostprocessing:
         s = sk.skeletonize.by_wavefront(mesh, waves=1)
         fixed = sk.post.fix_outside_edges(s, inplace=False, eps='auto')
 
+    def test_missing_ncollpyde(self, monkeypatch):
+        # ncollpyde is optional: without it, the functions that need it should
+        # say how to install it instead of failing somewhere deep inside
+        import sys
+        monkeypatch.setitem(sys.modules, 'ncollpyde', None)
+        s = sk.skeletonize.by_wavefront(sk.example_mesh(), waves=1)
+        with pytest.raises(ImportError, match='pip install ncollpyde'):
+            sk.post.clean_up(s, inplace=False)
+
 
 class TestExamples:
     def test_readme_example(self):

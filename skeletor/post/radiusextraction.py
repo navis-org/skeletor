@@ -21,7 +21,7 @@ import random
 import numpy as np
 import scipy.spatial
 
-from ..utilities import make_trimesh
+from ..utilities import make_trimesh, make_volume
 
 
 def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs):
@@ -48,6 +48,7 @@ def radii(s, mesh=None, method='knn', aggregate='mean', validate=False, **kwargs
                       potential for being very wrong
                     - "ray" uses ray-casting to get radii: slower but sometimes
                       less wrong
+                      (requires `ncollpyde`)
 
     aggregate : "mean" | "median" | "max" | "min" | "percentile75"
                 Function used to aggregate radii over sample (i.e. across
@@ -210,9 +211,7 @@ def get_radius_ray(swc, mesh, n_rays=20, aggregate='mean', projection='sphere',
 
         targets = sources + cx_norm + cy_norm
 
-    # Initialize ncollpyde Volume
-    import ncollpyde
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    coll = make_volume(mesh)
 
     # Get intersections: `ix` points to index of line segment; `loc` is the
     #  x/y/z coordinate of the intersection and `is_backface` is True if

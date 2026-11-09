@@ -55,6 +55,10 @@ setup(
         # Optional: Rust implementations of the graph primitives most methods
         # are built on (see `skeletor._fastcore`). Same results, much faster.
         'fast': ['navis-fastcore', 'fastremap'],
+        # Optional: ray casting and inside/outside tests against the mesh, used
+        # by `by_tangent_ball`, `post.radii(method='ray')` and most of
+        # `skeletor.post`. Not a hard requirement because it has no Pyodide build.
+        'ncollpyde': ['ncollpyde>=0.14.0'],
     },
     python_requires='>=3.8',
     include_package_data=True,

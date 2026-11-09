@@ -22,11 +22,13 @@ import numpy as np
 import scipy.spatial
 import pandas as pd
 
-from ..utilities import make_trimesh, get_edges_unique
+from ..utilities import make_trimesh, make_volume, get_edges_unique
 
 
 def clean_up(s, mesh=None, validate=False, inplace=False, **kwargs):
     """Clean up the skeleton.
+
+    Requires `ncollpyde` (`pip install ncollpyde`).
 
     This function bundles a bunch of procedures to clean up the skeleton:
 
@@ -102,7 +104,8 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
                 use the mesh associated with ``s``.
     los_only :  bool
                 If True, will only remove bristles that are in line of sight of
-                their parent. If False, will remove all single-node bristles.
+                their parent (requires `ncollpyde`). If False, will remove all
+                single-node bristles.
     inplace :   bool
                 If False will make and return a copy of the skeleton. If True,
                 will modify the `s` inplace.
@@ -132,9 +135,7 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
         return s
 
     if los_only:
-        # Initialize ncollpyde Volume
-        import ncollpyde
-        coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+        coll = make_volume(mesh)
 
         # Remove twigs that aren't inside the volume
         twigs = twigs[coll.contains(twigs[["x", "y", "z"]].values)]
@@ -175,6 +176,8 @@ def remove_bristles(s, mesh=None, los_only=False, inplace=False):
 def recenter_vertices(s, mesh=None, inplace=False):
     """Move nodes that ended up outside the mesh back inside.
 
+    Requires `ncollpyde` (`pip install ncollpyde`).
+
     Nodes can end up outside the original mesh e.g. if the mesh contraction
     didn't do a good job (most likely because of internal/degenerate faces that
     messed up the normals). This function rectifies this by snapping those nodes
@@ -208,8 +211,7 @@ def recenter_vertices(s, mesh=None, inplace=False):
         s = s.copy()
 
     # Find nodes that are outside the mesh
-    import ncollpyde
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    coll = make_volume(mesh)
     outside = ~coll.contains(s.vertices)
 
     # Skip if all inside
@@ -350,6 +352,8 @@ def fix_outside_edges(
 ):
     """Fix edges that cross outside the mesh boundary.
 
+    Requires `ncollpyde` (`pip install ncollpyde`).
+
     This function detects skeleton edges that intersect the mesh boundary and
     fixes them by iteratively splitting crossing edges (inserting new vertices
     along the edge) and then recentering any vertices that end up outside the
@@ -422,8 +426,7 @@ def fix_outside_edges(
     if smooth_iters < 0:
         raise ValueError("`smooth_iters` must be >= 0")
 
-    import ncollpyde
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    coll = make_volume(mesh)
 
     # 1. Recenter any nodes outside the mesh
     if (~coll.contains(s.vertices)).any():
@@ -590,6 +593,8 @@ def fix_outside_edges(
 def drop_line_of_sight_twigs(s, mesh=None, max_dist="auto", inplace=False):
     """Collapse twigs that are in line of sight to each other.
 
+    Requires `ncollpyde` (`pip install ncollpyde`).
+
     Note that this only removes 1 layer of twigs (i.e. only the actual leaf
     nodes). Nothing is stopping you from running this function recursively
     though.
@@ -639,9 +644,7 @@ def drop_line_of_sight_twigs(s, mesh=None, max_dist="auto", inplace=False):
     if max_dist == "auto":
         max_dist = s.swc.parent_dist.max()
 
-    # Initialize ncollpyde Volume
-    import ncollpyde
-    coll = ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)
+    coll = make_volume(mesh)
 
     # Find twigs
     twigs = s.swc[~s.swc.node_id.isin(s.swc.parent_id)]

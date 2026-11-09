@@ -275,3 +275,19 @@ def _cache_update(mesh, payload):
         mesh._cache.update(payload)
     except Exception:
         pass
+
+
+def make_volume(mesh):
+    """Build an ``ncollpyde.Volume`` for ray casting and inside/outside tests.
+
+    ``ncollpyde`` is optional, so it is imported here and only when a function
+    actually needs it.
+    """
+    try:
+        import ncollpyde
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            "This function requires `ncollpyde`. Install it with "
+            "`pip install ncollpyde` or `pip install skeletor[ncollpyde]`."
+        ) from None
+    return ncollpyde.Volume(mesh.vertices, mesh.faces, validate=False)

@@ -1,5 +1,15 @@
 # News
 
+## dev
+- `ncollpyde` is now optional so that skeletor can be installed in Pyodide.
+  It is still needed by `by_tangent_ball`, `post.clean_up`,
+  `post.recenter_vertices`, `post.fix_outside_edges`,
+  `post.drop_line_of_sight_twigs`, `post.remove_bristles(los_only=True)` and
+  `post.radii(method='ray')`, which now raise an `ImportError` explaining how to
+  install it. Use `pip install ncollpyde` or `pip install skeletor[ncollpyde]`
+- `igraph` and `ncollpyde` are now imported only when needed, which makes
+  `import skeletor` faster
+
 ## 1.7.1 (2026-07-27)
 - fix: on heavily fragmented meshes `by_wavefront` was ~50x slower instead of ~13x faster, and `by_teasar` was ~2x slower instead of 3x faster on the fastcore path than with the standard igraph implementation
 

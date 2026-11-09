@@ -26,11 +26,11 @@ Automatically installed with `pip`:
 - `trimesh`
 - `tqdm`
 - `python-igraph`
-- `ncollpyde`
 
 Optional because not strictly required for the core functions but  recommended:
 - [navis-fastcore](https://github.com/navis-org/fastcore-rs) for sizeable speed-ups with most methods: `pip3 install navis-fastcore`
 - [fastremap](https://github.com/seung-lab/fastremap) for sizeable speed-ups with some methods: `pip3 install fastremap`
+- [ncollpyde](https://pypi.org/project/ncollpyde/) for ray casting against the mesh, which `by_tangent_ball`, `post.clean_up`, `post.radii(method='ray')` and other post-processing functions need: `pip3 install ncollpyde`.
 - [robust_laplacian](https://github.com/nmwsharp/robust-laplacians-py) for more robust Laplacian operators: `pip3 install robust_laplacian`
 - [pyglet](https://pypi.org/project/pyglet/) is required by trimesh to preview meshes/skeletons in 3D: `pip3 install pyglet`
 
