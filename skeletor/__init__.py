@@ -278,8 +278,8 @@ tucked away into submodules (see side-bar or above table).
 
 """
 
-__version__ = "1.7.1"
-__version_vector__ = (1, 7, 1)
+__version__ = "1.8.0"
+__version_vector__ = (1, 8, 0)
 
 from . import skeletonize
 from . import pre

@@ -1,14 +1,34 @@
 # News
 
-## dev
+## 1.8.0 (2026-11-09)
 - `ncollpyde` is now optional so that skeletor can be installed in Pyodide.
   It is still needed by `by_tangent_ball`, `post.clean_up`,
   `post.recenter_vertices`, `post.fix_outside_edges`,
   `post.drop_line_of_sight_twigs`, `post.remove_bristles(los_only=True)` and
-  `post.radii(method='ray')`, which now raise an `ImportError` explaining how to
+  `post.radii(method='ray')`, which now raise a `ModuleNotFoundError` explaining how to
   install it. Use `pip install ncollpyde` or `pip install skeletor[ncollpyde]`
 - `igraph` and `ncollpyde` are now imported only when needed, which makes
   `import skeletor` faster
+- `by_teasar` is much faster on large meshes: on a 1.5M-vertex mesh it went
+  from ~108s to ~1.6s and uses less memory. With fastcore installed it now uses
+  `GeodesicGraph` for its path searches
+- `by_teasar`: `mesh_map` now assigns each vertex to the *nearest* node that
+  covers it instead of whichever node reached it last, so it no longer depends
+  on the order branches were found (vertices end up much closer to their node)
+- `by_teasar`: `min_length` is now applied to the finished skeleton (repeated
+  until no terminal branch is shorter than `min_length`). Before, whether a
+  short twig survived depended on the order branches were found
+- `by_wavefront` is ~2.5-3x faster on large meshes (4M-vertex mesh:
+  3.7s -> 1.1s with 1 wave). Output is unchanged
+- `by_wavefront_exact` no longer needs `igraph` and is much faster (4.3s ->
+  0.23s on a 105k-vertex mesh, even without fastcore); a further ~1.5x speed-up
+  and lower memory use on very large meshes. Note that where the skeleton
+  contains cycles, the edge that is cut to break them may differ from before
+- `networkx` is no longer used by any of the skeletonization methods; turning
+  edges into a tree/SWC (`edges_to_swc`) and `mst_over_mesh` are many times
+  faster as a result
+- some of the speed-ups need a recent version of `navis-fastcore`; older
+  versions fall back to the previous code paths
 
 ## 1.7.1 (2026-07-27)
 - fix: on heavily fragmented meshes `by_wavefront` was ~50x slower instead of ~13x faster, and `by_teasar` was ~2x slower instead of 3x faster on the fastcore path than with the standard igraph implementation
